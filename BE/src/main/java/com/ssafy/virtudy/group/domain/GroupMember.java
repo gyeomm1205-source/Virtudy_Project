@@ -1,5 +1,6 @@
 package com.ssafy.virtudy.group.domain;
 
+import com.ssafy.virtudy.member.domain.Member;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -17,11 +18,11 @@ public class GroupMember {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "GROUP_ID")
-    private Long groupId; // FK
+    private Group groupId; // FK
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "MEMBER_ID")
-    private Long memberId; // FK
+    private Member member; // FK
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime joinedAt;

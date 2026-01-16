@@ -1,5 +1,6 @@
 package com.ssafy.virtudy.study.domain;
 
+import com.ssafy.virtudy.member.domain.Member;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -16,11 +17,11 @@ public class StudyLog {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "SESSION_ID")
-    private Long sessionId; // FK
+    private StudySession session; // FK
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "MEMBER_ID")
-    private Long memberId; // FK
+    private Member member; // FK
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

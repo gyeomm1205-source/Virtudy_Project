@@ -1,5 +1,6 @@
 package com.ssafy.virtudy.report.domain;
 
+import com.ssafy.virtudy.member.domain.Member;
 import jakarta.persistence.*;
 import lombok.Value;
 
@@ -18,7 +19,7 @@ public class Report {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "MEMBER_ID")
-    private Long memberId; // FK
+    private Member member; // FK
 
     @Column(nullable = false, updatable = false)
     private LocalDate reportDate;

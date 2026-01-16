@@ -1,6 +1,7 @@
 package com.ssafy.virtudy.study.domain;
 
 import com.ssafy.virtudy.common.BaseTimeEntity;
+import com.ssafy.virtudy.member.domain.Member;
 import jakarta.persistence.*;
 import org.hibernate.annotations.ColumnDefault;
 
@@ -18,7 +19,7 @@ public class StudyRoom extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "MEMBER_ID")
-    private Long ownerId; // FK
+    private Member owner; // FK
 
     @Column(nullable = false)
     private String title;
