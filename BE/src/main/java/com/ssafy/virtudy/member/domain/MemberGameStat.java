@@ -14,7 +14,7 @@ public class MemberGameStat {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "MEMBER_ID")
-    private Long memberId; // FK
+    private Member member; // FK
 
     @Column(nullable = false)
     private int point = 0;

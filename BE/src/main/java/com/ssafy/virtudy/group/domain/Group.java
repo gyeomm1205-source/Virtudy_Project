@@ -1,8 +1,14 @@
 package com.ssafy.virtudy.group.domain;
 
+import com.ssafy.virtudy.member.domain.Member;
 import jakarta.persistence.*;
 
 @Entity
+/**
+ *  MySql 예약어 중에 Group 이 있어서 충돌 남.
+ *  Group => studyGroup 변경
+ */
+@Table(name = "studyGroup")
 public class Group {
 
     @Id
@@ -14,7 +20,7 @@ public class Group {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false) // optional=false가 not null 역할을 함
     @JoinColumn(name = "MEMBER_ID")
-    private Long leaderId; // FK
+    private Member leader; // FK
 
     @Column(nullable = false)
     private String name;
