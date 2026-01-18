@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 public class MemberGameStat {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // mysql의 auto_inc 사용하기 위함
     private Long id;// PK
 
     @Column(nullable = false)
