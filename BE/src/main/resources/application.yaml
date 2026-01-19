@@ -36,3 +36,8 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/testschema?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
     username: root
     password: root1234
+
+
+# JWT
+jwt:
+  secret_key: "v3ryS3cr3tK3yF0rJw7T0k3nG3n3r4t10nPbzDon7Sh4r3Th1sK3yW1thAny0n3"
