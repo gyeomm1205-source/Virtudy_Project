@@ -41,8 +41,14 @@ public class StudyRoomService {
             throw new IllegalStateException("방은 최대 3개까지 생성할 수 있습니다.");
         }
 
-        if (request.getType() == RoomType.PRIVATE && (request.getPassword() == null || request.getPassword().isBlank())) {
+        boolean hasPassword = request.getPassword() != null && !request.getPassword().isBlank();
+
+        if (request.getType() == RoomType.PRIVATE && !hasPassword) {
             throw new IllegalArgumentException("비공개 방은 비밀번호가 필수입니다.");
+        }
+
+        if (request.getType() == RoomType.PUBLIC && hasPassword) {
+            throw new IllegalArgumentException("공개 방은 비밀번호가 존재하지 않아야 합니다.");
         }
 
         StudyRoom studyRoom = studyRoomRepository.save(request.toEntity(owner));
