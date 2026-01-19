@@ -38,11 +38,13 @@ public class StudyRoom extends BaseTimeEntity {
     private RoomType type; // PUBLIC, PRIVATE
 
     @Column(nullable = false)
+    @Builder.Default
     private int maxUser = 6;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @ColumnDefault("'OPEN'")
+    @Builder.Default
     private RoomStatType status = RoomStatType.OPEN;
 
     public void update(String title, String password) {
