@@ -14,7 +14,7 @@ import java.util.Collections;
  * 시큐리티 컨텍스트(SecurityContext)에는 Member 엔티티가 직접 들어가는 게 아니라,
  * 이 UserPrincipal이 들어가기 때문에 따로 만들어줘야함.
  * 
- * UserDetails - 시큐리티가 관리하는 사용자 정보
+ * UserDetails - 스프링 시큐리티가 관리하는 사용자 정보
  */
 
 @Getter

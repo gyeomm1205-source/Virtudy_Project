@@ -20,16 +20,26 @@ public class PrincipalDetailsService implements UserDetailsService {
 
     private final MemberRepository memberRepository;
 
+    /**
+     * 로그인 시에는 memberId(String)를 사용하여 조회
+     * @param username
+     * @return UserDetails 
+     * @throws UsernameNotFoundException
+     */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // 로그인 시에는 memberId(String)를 사용하여 조회
         Member member = memberRepository.findByMemberId(username)
                 .orElseThrow(() -> new UsernameNotFoundException("해당하는 유저를 찾을 수 없습니다."));
         
         return new UserPrincipal(member);
     }
 
-    // JWT 인증 시에는 PK(Long)를 사용하여 조회
+    /**
+     * JWT 인증 시에는 PK(Long)를 사용하여 조회
+     * 
+     * @param id
+     * @return UserDetails
+     */
     public UserDetails loadUserById(Long id) {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
