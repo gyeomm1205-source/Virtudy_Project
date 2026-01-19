@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class Report {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // mysql의 auto_inc 사용하기 위함
     private Long id; // PK
 
     @Column(nullable = false)
