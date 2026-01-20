@@ -8,5 +8,4 @@ import org.springframework.stereotype.Service;
 public class RankService {
 
     // 랭크 조회
-    public List<RankD>
 }
