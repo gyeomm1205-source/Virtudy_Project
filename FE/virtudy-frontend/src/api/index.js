@@ -15,7 +15,8 @@ const instance = axios.create({
 instance.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore();
-    const token = authStore.getItem('accessToken'); //Pinia 스토어에서 가져오기
+    // Axios 인터셉터 내부 수정
+    const token = authStore.accessToken; // getItem 대신 직접 접근
     if (token) {
       // 백엔드 가이드: AT는 Auth 헤더에 명시
       config.headers.Authorization = `Bearer ${token}`;
@@ -44,14 +45,16 @@ instance.interceptors.response.use(
         
         // 새 AT 저장 (백엔드가 Json Body로 주기로 함)
         const newAccessToken = data.accessToken;
-        localStorage.setItem('accessToken', newAccessToken);
+        // 수정: localStorage만 하는게 아니라 Pinia 스토어의 상태도 업데이트해야 합니다.
+        const authStore = useAuthStore();
+        authStore.setToken(newAccessToken);
 
         // 실패했던 이전 요청의 헤더를 새 토큰으로 교체하고 재시도
         config.headers.Authorization = `Bearer ${newAccessToken}`;
         return instance(config);
       } catch (refreshError) {
-        // 재발급도 실패하면(RT 만료 등) 로그아웃 처리
-        localStorage.removeItem('accessToken');
+        const authStore = useAuthStore();
+        authStore.clearAuth(); // 스토어와 로컬스토리지를 함께 비웁니다.
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
