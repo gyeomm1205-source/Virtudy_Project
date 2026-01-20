@@ -67,16 +67,17 @@ public class JwtTokenProvider {
     }
 
     /**
-     * 토큰 유효성 검사 (Boolean 반환)
-     * - 단순히 "통과냐 아니냐"만 궁금할 때 사용
+     * getClaims해봤는데 문제가 있으면(예외가 터지면) 명확한 에러로 바꿔서 던지기 위함.
+     * 
+     * @param token
      */
-    public boolean validateToken(String token) {
+    public void validateOrThrow(String token) {
         try {
-            getClaims(token); // 위에서 만든 메서드 재활용
-            return true;
-        } catch (Exception e) {
-            // 여기서는 예외를 던지지 않고 false만 리턴하여 필터에서 처리하게 할 수도 있음
-            return false;
+            getClaims(token); // 여기서 파싱이 안 터지면 된다.
+        } catch (ExpiredJwtException e) { // 만료된 토큰이면
+            throw new BaseException(BaseErrorCode.TOKEN_EXPIRED);
+        } catch (JwtException | IllegalArgumentException e) { // 구조 이상, 서명 실패, null/빈값 등
+            throw new BaseException(BaseErrorCode.INVALID_TOKEN);
         }
     }
 }
