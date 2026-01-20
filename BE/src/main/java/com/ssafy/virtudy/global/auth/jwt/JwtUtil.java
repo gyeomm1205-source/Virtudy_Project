@@ -33,7 +33,7 @@ public class JwtUtil {
     public String createAccessToken(MemberDto member) {
         return jtp.createJwtToken(
                 member.getMemberId(),
-                ACCESS_TOKEN_EXPIRE_MIN * 60,
+                ACCESS_TOKEN_EXPIRE_MIN,
                 Map.of(
                         "tokenType", "ACCESS",
                         "userId", member.getMemberId(),
@@ -50,7 +50,7 @@ public class JwtUtil {
     public String createRefreshToken(MemberDto member) {
         return jtp.createJwtToken(
                 member.getMemberId(),
-                REFRESH_TOKEN_EXPIRE_MIN * 60,
+                REFRESH_TOKEN_EXPIRE_MIN,
                 Map.of(
                         "tokenType", "REFRESH",
                         "userId", member.getMemberId()));
