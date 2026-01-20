@@ -12,3 +12,13 @@ __pycache__/
 
 # 윈도우 썸네일 파일
 Thumbs.db
+
+# yolo 가중치 파일
+*.pt
+
+# Node : FE는 이미 다른 브랜치/경로로 관리되거나, 최소한 node_modules는 절대 올라가면 안 됩니다.
+node_modules/
+**/node_modules/
+.pnpm-store/
+**/.pnpm/
+**/.pnp.*
