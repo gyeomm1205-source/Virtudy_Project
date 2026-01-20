@@ -6,7 +6,9 @@
 import { onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import instance from '@/api/index'; //axios 인스턴스
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -22,8 +24,8 @@ onMounted(async () => {
       
       // 3. 백엔드 정책: 응답 바디의 accessToken 저장
       const { accessToken } = response.data;
-      localStorage.setItem('accessToken', accessToken);
-
+      // 수정: localStorage 직접 저장 대신 스토어 액션 사용
+      authStore.setToken(accessToken);
       alert('로그인 성공!');
       
       // 4. 메인 화면으로 이동 (또는 추가 정보 입력이 필요하면 온보딩 페이지로)
