@@ -1,6 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-
-// 아래 경로들이 실제 파일 위치와 일치하는지 꼭 확인하세요!
 import LoginView from '@/views/auth/LoginView.vue'
 import OAuthCallbackView from '@/views/auth/OAuthCallbackView.vue'
 

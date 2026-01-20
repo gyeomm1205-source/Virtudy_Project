@@ -40,12 +40,12 @@ instance.interceptors.response.use(
       // 토큰 만료 에러(AUTH_004)일 경우 재발급 시도
       try {
         // RT는 쿠키에 있으므로 별도 데이터 없이 재발급 요청만 보냄
-        // 새 주석: instance 대신 axios(기본)를 사용하여 재발급 요청 자체가 인터셉터에 걸리지 않게 함
+        // instance 대신 axios(기본)를 사용하여 재발급 요청 자체가 인터셉터에 걸리지 않게 함
         const { data } = await axios.post(`${instance.defaults.baseURL}/v1/auth/reissue`, {}, { withCredentials: true });
         
         // 새 AT 저장 (백엔드가 Json Body로 주기로 함)
         const newAccessToken = data.accessToken;
-        // 수정: localStorage만 하는게 아니라 Pinia 스토어의 상태도 업데이트해야 합니다.
+        // 수정: localStorage만 하는게 아니라 Pinia 스토어의 상태도 업데이트
         const authStore = useAuthStore();
         authStore.setToken(newAccessToken);
 
@@ -54,14 +54,14 @@ instance.interceptors.response.use(
         return instance(config);
       } catch (refreshError) {
         const authStore = useAuthStore();
-        authStore.clearAuth(); // 스토어와 로컬스토리지를 함께 비웁니다.
+        authStore.clearAuth(); // 스토어와 로컬스토리지를 함께 비우기
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }
 
     // 그 외 에러는 백엔드가 정의한 에러 메시지를 활용해 알림 처리
-    // 새 주석: AUTH_004(재발급 흐름)일 때는 alert을 띄우지 않도록 조건 추가
+    // AUTH_004(재발급 흐름)일 때는 alert을 띄우지 않도록 조건 추가
     if (response?.data?.code !== 'AUTH_004') {
       const errorMessage = response?.data?.message || '문제가 발생했습니다.';
       alert(errorMessage);
