@@ -25,7 +25,7 @@ spring:
     show-sql: true
     properties:
       hibernate.format_sql: true
-      dialect: org.hibernate.dialect.MySQL8InnoDBDialect
+      dialect: org.hibernate.dialect.MySQLDialect
 
 
   # MySql
@@ -37,7 +37,8 @@ spring:
     username: root
     password: root1234
 
-
 # JWT
 jwt:
   secret_key: "v3ryS3cr3tK3yF0rJw7T0k3nG3n3r4t10nPbzDon7Sh4r3Th1sK3yW1thAny0n3"
+  access-expmin: 30    # 30분
+  refresh-expmin: 20160 # 2주로 처리 
