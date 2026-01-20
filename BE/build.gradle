@@ -33,8 +33,18 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+
+	// Spring Boot Starter Data Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// build.gradle 맨 아래 추가
+jar {
+	enabled = false
+}
+
