@@ -19,7 +19,7 @@ onMounted(async () => {
   if (code) {
     try {
       // 2. 백엔드 명세: POST /api/v1/auth/login/kakao
-      // 바디에 인가 코드를 담아 보냅니다.
+      // 바디에 인가 코드를 담아 보내기
       const response = await instance.post('/v1/auth/login/kakao', { code });
       
       // 3. 백엔드 정책: 응답 바디의 accessToken 저장

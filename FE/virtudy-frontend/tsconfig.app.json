@@ -4,12 +4,12 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "types": ["vite/client"],
 
-    // --- 여기 두 줄을 추가하세요 ---
+   
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
-    // ----------------------------
+   
 
     /* Linting */
     "strict": true,
