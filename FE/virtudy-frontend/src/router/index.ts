@@ -1,13 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/auth/LoginView.vue'
 import OAuthCallbackView from '@/views/auth/OAuthCallbackView.vue'
+import TermsOfServiceView from '@/views/onboarding/TermsOfServiceView.vue'
+import OnboardingSurveyView from '@/views/onboarding/OnboardingSurveyView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      redirect: '/login'
+      name: 'home',
+      component: HomeView
     },
     {
       path: '/login',
@@ -19,6 +23,16 @@ const router = createRouter({
       path: '/login/callback/kakao',
       name: 'kakao-callback',
       component: OAuthCallbackView 
+    },
+    {
+      path: '/terms',
+      name: 'terms',
+      component: TermsOfServiceView,
+    },
+    {
+      path: '/survey',
+      name: 'survey',
+      component: OnboardingSurveyView,
     }
   ]
 })
