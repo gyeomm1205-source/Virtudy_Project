@@ -12,6 +12,12 @@ spring:
   profiles:
     active: local
 
+  data:
+    redis:
+      host: host.docker.internal  # Redis 서버 주소
+      port: 6379       # 기본 포트
+      password: ssafy1234
+
 
   # JPA
   jpa:
@@ -33,9 +39,9 @@ spring:
   # testschema => 내 테이블 이름
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/tes tschema?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://127.0.0.1:3306/virtudy?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
     username: root
-    password: root1234
+    password: ssafy1234
 
 # [수정] 우리가 만든 KakaoClient가 사용할 커스텀 설정
 kakao:

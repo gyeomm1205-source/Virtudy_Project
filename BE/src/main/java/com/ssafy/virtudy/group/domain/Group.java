@@ -2,6 +2,9 @@ package com.ssafy.virtudy.group.domain;
 
 import com.ssafy.virtudy.member.domain.Member;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 
 @Entity
 /**
@@ -9,6 +12,9 @@ import jakarta.persistence.*;
  *  Group => studyGroup 변경
  */
 @Table(name = "studyGroup")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Group {
 
     @Id
