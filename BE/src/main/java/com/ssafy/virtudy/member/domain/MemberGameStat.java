@@ -1,8 +1,14 @@
 package com.ssafy.virtudy.member.domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 
 @Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MemberGameStat {
 
     @Id

@@ -17,7 +17,9 @@ import java.io.Serializable;
 public class Rank implements Serializable {
 
     @Id
-    private String id;
+    private Long id;
+
+    private String nickName;
 
     // 순위
     private int rank;
