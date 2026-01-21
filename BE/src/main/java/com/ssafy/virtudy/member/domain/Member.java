@@ -28,7 +28,7 @@ public class Member extends BaseTimeEntity {
 
 //    @Enumerated(EnumType.STRING)
 //    @Column(nullable = false)
-//    private AgreedType isAgreed;
+//    private AgreedType isAgreed
 
     @Column(nullable = false)
     private boolean isServiceAgreed;
