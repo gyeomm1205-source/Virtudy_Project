@@ -11,12 +11,12 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
+      component: LoginView
     },
     {
-      path: '/login',
-      name: 'login',
-      component: LoginView
+      path: '/dashboard',
+      name: 'dashboard',
+      component: HomeView
     },
     {
       // 카카오 Redirect URI 설정과 맞춘 경로

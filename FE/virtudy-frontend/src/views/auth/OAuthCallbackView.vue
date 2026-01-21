@@ -8,7 +8,7 @@
 import { onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import api from '@/api';
+import api from '@/api/index.ts';
 
 const route = useRoute();
 const router = useRouter();
