@@ -59,8 +59,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth'; // Pinia 스토어 임포트
-import api from '@/api/index.ts'; // Axios 인스턴스 임포트
+import { useAuthStore } from '@/features/auth/logic/authStore'; // Pinia 스토어 임포트
+import api from '@/shared/api/axios.config.ts'; // Axios 인스턴스 임포트
 
 const router = useRouter();
 const authStore = useAuthStore(); // 스토어 인스턴스 사용
@@ -87,7 +87,7 @@ const submitSurvey = async () => {
   const signupInfo = authStore.signupInfo;
   if (!signupInfo) {
     alert('비정상적인 접근입니다. 다시 로그인해주세요.');
-    router.push('/login');
+    router.push({ name: 'guest' });
     return;
   }
   
@@ -108,8 +108,8 @@ const submitSurvey = async () => {
     authStore.clearSignupInfo();
     
     alert('회원가입이 완료되었습니다. Virtudy를 시작합니다!');
-    // 5. 온보딩 완료 후 메인 페이지로 이동
-    router.push('/');
+    // 5. 온보딩 완료 후 유저 페이지로 이동
+    router.push({ name: 'user' });
   } catch (error) {
     console.error('최종 회원가입 실패:', error);
     alert('회원가입 중 오류가 발생했습니다. 다시 시도해주세요.');
