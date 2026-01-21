@@ -68,4 +68,9 @@ public class Member extends BaseTimeEntity {
     public void setFavoriteRoom(StudyRoom studyRoom) {
         this.favoriteRoom = studyRoom;
     }
+    public void updateProfile(String nickName, JobType jobType) {
+        this.nickName = nickName;
+        this.jobType = jobType;
+    }
+
 }
