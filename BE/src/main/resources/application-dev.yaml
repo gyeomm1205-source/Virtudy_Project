@@ -37,3 +37,9 @@ jwt:
   secret_key: ${JWT_SECRET_KEY}
   access-expmin: ${JWT_ACCESS_EXPMIN}
   refresh-expmin: ${JWT_REFRESH_EXPMIN}
+
+livekit:
+  url: ${LIVEKIT_URL}
+  api:
+    key: ${LIVEKIT_API_KEY}
+    secret: ${LIVEKIT_API_SECRET}
