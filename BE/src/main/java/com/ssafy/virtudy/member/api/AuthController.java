@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 /**
  *  http://localhost:3030/login/callback/kakao
  */
+
 // TODO: 회원가입, 로그인, 로그아웃, 회원탈퇴 api 모두 존재해야 함
 @RestController
 @RequestMapping("/api/auth")
