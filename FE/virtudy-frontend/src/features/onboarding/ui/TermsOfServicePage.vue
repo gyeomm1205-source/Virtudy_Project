@@ -34,7 +34,7 @@ const router = useRouter();
 const goToNext = () => {
   if (agreed.value) {
     // 약관 동의 후 성향 조사 페이지로 이동
-    router.push('/survey');
+    router.push({ name: 'survey' });
   }
 };
 </script>

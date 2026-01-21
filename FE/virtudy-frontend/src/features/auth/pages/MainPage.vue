@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/auth';
+import { useAuthStore } from '@/features/auth/logic/authStore';
 import GuestPage from './GuestPage.vue';
 import UserPage from './UserPage.vue';
 

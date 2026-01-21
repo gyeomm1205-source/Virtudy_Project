@@ -1,5 +1,7 @@
 # 1. 베이스 이미지 (자바 버전 선택)
-FROM openjdk:17-jdk-slim
+FROM amazoncorretto:17
+
+WORKDIR /app
 
 # 2. 내 빌드된 Jar 파일을 이미지 안으로 복사
 COPY build/libs/*-SNAPSHOT.jar app.jar
