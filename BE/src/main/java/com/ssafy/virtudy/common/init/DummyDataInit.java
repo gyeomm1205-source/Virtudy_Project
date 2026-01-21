@@ -36,8 +36,10 @@ public class DummyDataInit implements CommandLineRunner {
     private final Faker faker = new Faker(new Locale("en"));
     private final Random random = new Random();
     private final RedisTemplate<String, Object> redisTemplate;
+
     private static final String RANK_PRIVATE_KEY = "rank:private:season:1";
     private static final String RANK_TEAM_KEY = "rank:team:season:1";
+
     @Override
     // @Transactional // 필요시 주석 해제 (Lazy Loading 문제 발생 시)
     public void run(String... args) throws Exception {
