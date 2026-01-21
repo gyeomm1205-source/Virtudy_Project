@@ -1,8 +1,10 @@
 
-
 # 포트 바꿀 시에
 server:
   port: 8080
+
+websocket:
+  port: 8081
 
 spring:
   application:
