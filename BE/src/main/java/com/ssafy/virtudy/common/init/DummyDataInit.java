@@ -36,7 +36,7 @@ public class DummyDataInit implements CommandLineRunner {
     // Faker: 가짜 데이터 생성 라이브러리 (한국어 설정)
     private final Faker faker = new Faker(new Locale("ko"));
     private final Random random = new Random();
-    private final RedisTemplate<Object, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public void run(String... args) throws Exception {
@@ -103,11 +103,14 @@ public class DummyDataInit implements CommandLineRunner {
                 .memberId("user" + index)
                 .password("{noop}1234") // 테스트용 암호화 안 된 비번
                 .email(faker.internet().emailAddress())
-                .isAgreed(AgreedType.VIDEO)
+                .isVideoAgreed(true)
+                .isServiceAgreed(true)
+                .isPersonalAgreed(true)
                 .nickName(faker.name().fullName()) // "김철수", "이영희" 등 생성
                 .jobType(JobType.values()[random.nextInt(JobType.values().length)]) // Enum 랜덤
                 .status(MemberStatType.ACTIVE)
                 .avatarImageUrl("https://api.dicebear.com/7.x/avataaars/svg?seed=" + index) // 랜덤 아바타 API
+                .avatarGenCount(0)
                 .build();
     }
 

@@ -14,25 +14,24 @@ import org.springframework.web.bind.annotation.*;
 /**
  *  http://localhost:3030/login/callback/kakao
  */
-// TODO: 회원가입, 로그인, 회원정보 수정, 회원탈퇴, 마이페이지 조회 api 모두 존재해야 함
+// TODO: 회원가입, 로그인, 회원탈퇴, 로그아웃 api 모두 존재해야 함
 // TODO: url mapping 변경 필요
 @RestController
 @RequestMapping("/api/auth")
-        @RequiredArgsConstructor
-        public class AuthController {
+@RequiredArgsConstructor
+public class AuthController {
 
-            private final AuthService authService;
+    private final AuthService authService;
 
-            // 1. 카카오 로그인 (인가 코드 전달 받음)
-            @GetMapping("/kakao")
-            public ResponseEntity<MemberKakaoLoginResponse> kakaoLogin(@RequestParam String code, HttpServletResponse response) {
-                MemberKakaoLoginResponse result = authService.kakaoLogin(code);
+    // 1. 카카오 로그인 (인가 코드 전달 받음)
+    @GetMapping("/kakao")
+    public ResponseEntity<MemberKakaoLoginResponse> kakaoLogin(@RequestParam String code, HttpServletResponse response) {
+        MemberKakaoLoginResponse result = authService.kakaoLogin(code);
 
         if (!result.isNeedSignup()) {
             // 로그인 성공 시 쿠키/헤더 세팅
             setTokenToResponse(response, result.getAccessToken(), result.getRefreshToken());
         }
-
         return ResponseEntity.ok(result);
     }
 

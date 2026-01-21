@@ -32,12 +32,38 @@ public class RedisConfig {
         return new LettuceConnectionFactory(config);
     }
 
-    public RedisTemplate<String, String> redisTemplate_rank() {
-        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+//    @Bean
+//    public RedisTemplate<String, String> redisTemplate_rank() {
+//        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+//
+//        redisTemplate.setKeySerializer(new StringRedisSerializer());
+//        redisTemplate.setValueSerializer(new StringRedisSerializer());
+//        redisTemplate.setConnectionFactory(redisConnectionFactory());
+//
+//        return redisTemplate;
+//    }
 
+    /**
+     * [핵심 변경]
+     * 1. 메서드 이름을 redisTemplate으로 변경 (범용성)
+     * 2. @Bean 추가 (스프링에게 "이걸 써!"라고 알려줌)
+     * 3. Key, Value 모두 StringSerializer 적용 (외계어 방지)
+     */
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate() {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory());
+
+        // 일반적인 Key:Value 저장 시 사람이 읽을 수 있게 직렬화
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(new StringRedisSerializer());
-        redisTemplate.setConnectionFactory(redisConnectionFactory());
+
+        // Hash 자료구조(객체 저장)를 쓸 때를 위한 설정
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+
+        // 모든 설정 적용
+        redisTemplate.afterPropertiesSet();
 
         return redisTemplate;
     }
