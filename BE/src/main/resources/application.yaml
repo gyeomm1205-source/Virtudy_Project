@@ -45,9 +45,11 @@ spring:
     username: root
     password: ssafy1234
 
+# TODO
 # [수정] 우리가 만든 KakaoClient가 사용할 커스텀 설정
 kakao:
   client-id: "91af8651b410c843ad31649c6e22cc9b"
+  client-secret: "pxtt8ide8k4nS3qjYCKIKxQhBXUrFtzk"
   # 프론트엔드에서 인가 코드를 받을 때 사용한 주소와 100% 일치해야 함
   # (보통 프론트엔드 라우터 주소)
   redirect-uri: "http://localhost:3030/login/callback/kakao"
