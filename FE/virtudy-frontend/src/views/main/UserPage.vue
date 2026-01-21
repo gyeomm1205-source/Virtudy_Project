@@ -17,7 +17,7 @@ const router = useRouter();
 const handleLogout = () => {
   authStore.clearAuth();
   alert('로그아웃 되었습니다.');
-  router.push('/login');
+  router.push('/');
 };
 </script>
 
