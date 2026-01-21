@@ -5,9 +5,7 @@ import com.ssafy.virtudy.global.auth.oauth.KakaoClient;
 import com.ssafy.virtudy.global.auth.oauth.KakaoUserInfo;
 import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
 import com.ssafy.virtudy.global.event.exception.BaseException;
-import com.ssafy.virtudy.member.domain.Member;
-import com.ssafy.virtudy.member.domain.MemberPreference;
-import com.ssafy.virtudy.member.domain.MemberStatType;
+import com.ssafy.virtudy.member.domain.*;
 import com.ssafy.virtudy.member.dto.MemberDto;
 import com.ssafy.virtudy.member.dto.MemberKakaoLoginResponse;
 import com.ssafy.virtudy.member.dto.MemberSignUpRequest;
@@ -74,16 +72,26 @@ public class AuthService {
             throw new BaseException(BaseErrorCode.DUPLICATED_MEMBER);
         }
 
-        // 엔티티 생성
         Member newMember = Member.builder()
-                .memberId(request.getEmail()) // 이메일을 아이디로 사용
-                .password("") // 소셜 로그인은 비번 없음 (빈 문자열 or UUID)
-                .nickName(request.getNickname())
-                .email(request.getEmail())
-                .status(MemberStatType.ACTIVE)
-                .avatarGenCount(0)
-                .build();
+                // [식별자 & 기본 정보]
+                .memberId(request.getEmail())       // 이메일을 식별자(ID)로 사용
+                .email(request.getEmail())          // 실제 이메일 데이터
+                .nickName(request.getNickname())    // 사용자 입력 닉네임
+                .password("")                       // 소셜 로그인은 비밀번호 없음 (빈 값)
 
+                // [사용자 선택 정보]
+                .jobType(request.getJobType())      // 직업 (DTO Enum -> Entity Enum 바로 매핑)
+
+                // [약관 동의 정보]
+                .isServiceAgreed(request.getIsServiceAgreed())
+                .isPersonalAgreed(request.getIsPersonaAgreed())
+                .isVideoAgreed(request.getIsVideoAgreed())
+
+                // [시스템 기본값 초기화] (NOT NULL 에러 방지)
+                .status(MemberStatType.ACTIVE)      // 가입 즉시 활성 상태
+                .avatarGenCount(0)                  // 아바타 생성 횟수 0회 초기화
+                .avatarImageUrl("")                 // 이미지 URL 빈 값 초기화; TODO 아바타 이미지 생성 url 투입
+                .build();
         memberRepository.save(newMember);
 
         MemberPreference memberPreference = MemberPreference.builder()
@@ -92,7 +100,7 @@ public class AuthService {
                 .activeTime(request.getActiveTimeType())
                 .member(newMember)
                 .averageHours(0)
-                .prefId(String.valueOf(java.util.UUID.randomUUID())) // [!!] UUID 랜덤으로 삽입 ?
+                .prefId(String.valueOf(java.util.UUID.randomUUID()))
                 .build();
 
         memberPreferenceRepository.save(memberPreference);
