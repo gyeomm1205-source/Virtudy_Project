@@ -108,6 +108,7 @@ public class DummyDataInit implements CommandLineRunner {
                 .jobType(JobType.values()[random.nextInt(JobType.values().length)]) // Enum 랜덤
                 .status(MemberStatType.ACTIVE)
                 .avatarImageUrl("https://api.dicebear.com/7.x/avataaars/svg?seed=" + index) // 랜덤 아바타 API
+                .avatarGenCount(0)
                 .build();
     }
 
