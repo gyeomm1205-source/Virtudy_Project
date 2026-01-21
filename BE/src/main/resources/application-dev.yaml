@@ -8,8 +8,8 @@ spring:
 
   data:
     redis:
-      host: host.docker.internal  # Redis 서버 주소
-      port: ${REDIS_PORT}       # 기본 포트
+      host: host.docker.internal
+      port: ${REDIS_PORT}
       password: ${DEV_REDIS_PASSWORD}
 
   jpa:
@@ -26,18 +26,13 @@ spring:
 server:
   port: ${SERVER_PORT}
 
-
-# [수정] 우리가 만든 KakaoClient가 사용할 커스텀 설정
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
-  # 프론트엔드에서 인가 코드를 받을 때 사용한 주소와 100% 일치해야 함
-  # (보통 프론트엔드 라우터 주소)
   redirect-uri: "http://localhost:3030/login/callback/kakao"
   token-uri: "https://kauth.kakao.com/oauth/token"
   user-info-uri: "https://kapi.kakao.com/v2/user/me"
 
-# JWT
 jwt:
   secret_key: ${JWT_SECRET_KEY}
-  access-expmin: ${JWT_ACCESS_EXPMIN}    # 30분
-  refresh-expmin: ${JWT_REFRESH_EXPMIN} # 2주로 처리
+  access-expmin: ${JWT_ACCESS_EXPMIN}
+  refresh-expmin: ${JWT_REFRESH_EXPMIN}
