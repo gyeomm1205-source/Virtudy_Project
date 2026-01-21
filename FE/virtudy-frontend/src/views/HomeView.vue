@@ -16,8 +16,6 @@ const router = useRouter();
 
 const handleLogout = () => {
   authStore.clearAuth();
-  // 백엔드에 로그아웃 요청을 보낼 수도 있습니다.
-  // 예: await api.post('/v1/auth/logout');
   alert('로그아웃 되었습니다.');
   router.push('/login');
 };

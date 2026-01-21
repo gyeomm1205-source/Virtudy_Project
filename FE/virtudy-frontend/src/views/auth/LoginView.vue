@@ -2,12 +2,12 @@
   <div>
     <h1>Virtudy 로그인</h1>
     <button @click="kakaoLogin">
-      <img src="/kakao_login_medium_narrow.png" alt="카카오로 시작하기" style="width: 180px;"/>
+      카카오로 로그인하기
     </button>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const kakaoLogin = () => {
   const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID;
   const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI;
@@ -19,7 +19,6 @@ const kakaoLogin = () => {
 </script>
 
 <style scoped>
-/* CSS 불필요 요청에 따라 스타일은 최소화합니다. */
 div {
   display: flex;
   flex-direction: column;

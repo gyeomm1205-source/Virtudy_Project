@@ -15,8 +15,7 @@ const instance = axios.create({
 instance.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore();
-    // Axios 인터셉터 내부 수정
-    const token = authStore.accessToken; // getItem 대신 직접 접근
+    const token = authStore.accessToken; // Pinia 스토어에서 AT 조회
     if (token) {
       // 백엔드 가이드: AT는 Auth 헤더에 명시
       config.headers.Authorization = `Bearer ${token}`;
@@ -35,13 +34,13 @@ instance.interceptors.response.use(
     // 백엔드 가이드: 401(Unauthorized) 또는 특정 코드(AUTH_004) 체크
     // 추가: config._retry 플래그를 확인하여 재발급 요청은 딱 한 번만 시도하도록 제한 (무한 루프 방지)
     if (response && response.status === 401 && response.data.code === 'AUTH_004' && !config._retry) {
-      config._retry = true; // 새 주석: 현재 요청이 재시도 중임을 표시
+      config._retry = true; //현재 요청이 재시도 중임을 표시
 
       // 토큰 만료 에러(AUTH_004)일 경우 재발급 시도
       try {
         // RT는 쿠키에 있으므로 별도 데이터 없이 재발급 요청만 보냄
         // instance 대신 axios(기본)를 사용하여 재발급 요청 자체가 인터셉터에 걸리지 않게 함
-        const { data } = await axios.post(`${instance.defaults.baseURL}/v1/auth/reissue`, {}, { withCredentials: true });
+        const { data } = await axios.post(`${instance.defaults.baseURL}/auth/reissue`, {}, { withCredentials: true });
         
         // 새 AT 저장 (백엔드가 Json Body로 주기로 함)
         const newAccessToken = data.accessToken;
