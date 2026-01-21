@@ -23,9 +23,18 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false, unique = true)
     private String memberId; // UUID
 
-    @Enumerated(EnumType.STRING)
+//    @Enumerated(EnumType.STRING)
+//    @Column(nullable = false)
+//    private AgreedType isAgreed;
+
     @Column(nullable = false)
-    private AgreedType isAgreed;
+    private boolean isServiceAgreed;
+
+    @Column(nullable = false)
+    private boolean isPersonalAgreed;
+
+    @Column(nullable = false)
+    private boolean isVideoAgreed;
 
     @Column(nullable = false)
     private String email;
