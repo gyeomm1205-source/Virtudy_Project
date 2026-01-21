@@ -19,12 +19,6 @@ import io.livekit.server.RoomName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import io.livekit.server.AccessToken;
-import io.livekit.server.RoomJoin;
-import io.livekit.server.RoomName;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,13 +30,13 @@ import java.util.concurrent.ThreadLocalRandom;
 @Transactional
 public class StudySessionService {
 
-    private final static int MAX_USER = 6;
-
     private final StudySessionRepository studySessionRepository;
     private final StudyRoomRepository studyRoomRepository;
     private final MemberRepository memberRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final LiveKitConfig liveKitConfig;
+
+    private final static int MAX_USER = 6;
 
     public SessionMemberInfoResponse enterRoom(Member member, String roomId) {
         StudyRoom room = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
