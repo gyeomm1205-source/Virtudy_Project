@@ -8,10 +8,12 @@ public class SessionMemberInfoResponse {
     private final String memberId;
     private final String nickName;
     private final String avatarImageUrl;
+    private final String liveKitToken;
 
-    public SessionMemberInfoResponse(Member member) {
+    public SessionMemberInfoResponse(Member member, String liveKitToken) {
         this.memberId = member.getMemberId();
         this.nickName = member.getNickName();
         this.avatarImageUrl = member.getAvatarImageUrl();
+        this.liveKitToken = liveKitToken;
     }
 }

@@ -1,5 +1,6 @@
 package com.ssafy.virtudy.study.service;
 
+import com.ssafy.virtudy.global.config.LiveKitConfig;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
@@ -13,6 +14,9 @@ import com.ssafy.virtudy.study.repository.StudySessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.livekit.server.AccessToken;
+import io.livekit.server.RoomJoin;
+import io.livekit.server.RoomName;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -26,6 +30,7 @@ public class StudySessionService {
     private final StudyRoomRepository studyRoomRepository;
     private final MemberRepository memberRepository;
     private final StudyMemberRepository studyMemberRepository;
+    private final LiveKitConfig liveKitConfig;
 
     public SessionMemberInfoResponse enterRoom(String memberId, String roomId) {
         Member member = memberRepository.findByMemberId(memberId)
@@ -53,7 +58,13 @@ public class StudySessionService {
                 .build();
         studySessionRepository.save(newSession);
 
-        return new SessionMemberInfoResponse(member);
+        // LiveKit 토큰 생성
+        AccessToken token = new AccessToken(liveKitConfig.getLiveKitApiKey(), liveKitConfig.getLiveKitApiSecret());
+        token.setName(member.getNickName());
+        token.setIdentity(memberId);
+        token.addGrants(new RoomJoin(true), new RoomName(roomId));
+
+        return new SessionMemberInfoResponse(member, token.toJwt());
     }
 
     public SessionMemberInfoResponse enterRandomRoom(String memberId) {
