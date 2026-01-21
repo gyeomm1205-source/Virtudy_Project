@@ -50,6 +50,7 @@ public class Member extends BaseTimeEntity {
 
     // Member.java 내부에 필드 추가
     @Column(nullable = false)
+    @Builder.Default
     private Integer avatarGenCount = 0; // 아바타 생성 횟수 (기본값 0)
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -58,5 +59,10 @@ public class Member extends BaseTimeEntity {
 
     public void setFavoriteRoom(StudyRoom studyRoom) {
         this.favoriteRoom = studyRoom;
+    }
+
+    public void updateProfile(String nickName, JobType jobType) {
+        this.nickName = nickName;
+        this.jobType = jobType;
     }
 }
