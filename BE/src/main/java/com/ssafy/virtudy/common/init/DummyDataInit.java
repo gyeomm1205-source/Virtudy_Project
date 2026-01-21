@@ -148,6 +148,7 @@ public class DummyDataInit implements CommandLineRunner {
         String uniqueEmail = index + "_" + faker.internet().emailAddress();
         String uuid = UUID.randomUUID().toString();
         return Member.builder()
+<<<<<<< HEAD
                 .memberId(uuid)
                 .password("{noop}1234")
                 .email(uniqueEmail)
@@ -156,6 +157,16 @@ public class DummyDataInit implements CommandLineRunner {
                 .isPersonalAgreed(true)
                 .nickName(faker.name().name())
                 .jobType(JobType.values()[random.nextInt(JobType.values().length)])
+=======
+                .memberId("user" + index)
+                .password("{noop}1234") // 테스트용 암호화 안 된 비번
+                .email(faker.internet().emailAddress())
+                .isVideoAgreed(true)
+                .isServiceAgreed(true)
+                .isPersonalAgreed(true)
+                .nickName(faker.name().fullName()) // "김철수", "이영희" 등 생성
+                .jobType(JobType.values()[random.nextInt(JobType.values().length)]) // Enum 랜덤
+>>>>>>> eb6376f (fix: 약관 동의 필드 변경; 3개로 나눔)
                 .status(MemberStatType.ACTIVE)
                 // avatarImage fk로 생성.
                 .avatarGenCount(0)

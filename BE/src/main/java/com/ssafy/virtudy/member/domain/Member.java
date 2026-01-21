@@ -1,6 +1,6 @@
 package com.ssafy.virtudy.member.domain;
 
-import com.ssafy.virtudy.common.BaseTimeEntity;
+import com.ssafy.virtudy.global.BaseTimeEntity;
 import com.ssafy.virtudy.study.domain.StudyRoom;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
