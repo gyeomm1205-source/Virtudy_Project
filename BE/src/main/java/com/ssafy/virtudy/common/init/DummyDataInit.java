@@ -36,7 +36,7 @@ public class DummyDataInit implements CommandLineRunner {
     // Faker: 가짜 데이터 생성 라이브러리 (한국어 설정)
     private final Faker faker = new Faker(new Locale("ko"));
     private final Random random = new Random();
-    private final RedisTemplate<Object, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public void run(String... args) throws Exception {
