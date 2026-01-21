@@ -1,21 +1,26 @@
 package com.ssafy.virtudy.member.domain;
 
 import com.ssafy.virtudy.common.BaseTimeEntity;
+import com.ssafy.virtudy.study.domain.StudyRoom;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
-import org.springframework.cglib.core.Local;
-
-import java.math.BigInteger;
-import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Member extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // mysql의 auto_inc 사용하기 위함
     private Long id; // PK
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String memberId; // UUID
 
     @Enumerated(EnumType.STRING)
@@ -33,7 +38,7 @@ public class Member extends BaseTimeEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private JobType jobType;
+    private JobType jobType; // STUDENT, JOB_SEEKER, WORKER
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -42,4 +47,16 @@ public class Member extends BaseTimeEntity {
 
     @Column(nullable = false)
     private String avatarImageUrl;
+
+    // Member.java 내부에 필드 추가
+    @Column(nullable = false)
+    private Integer avatarGenCount = 0; // 아바타 생성 횟수 (기본값 0)
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "favorite_room_id")
+    private StudyRoom favoriteRoom;
+
+    public void setFavoriteRoom(StudyRoom studyRoom) {
+        this.favoriteRoom = studyRoom;
+    }
 }

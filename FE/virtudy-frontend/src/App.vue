@@ -3,9 +3,14 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
+import { RouterView } from 'vue-router'
 </script>
 
 <style>
-/* 전역 스타일을 여기에 추가할 수 있습니다. */
+/* 전역 스타일 리셋 등 */
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 </style>
