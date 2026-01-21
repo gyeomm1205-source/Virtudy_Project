@@ -28,6 +28,7 @@ server:
 
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
+  client-secret-id: ${KAKAO_CLIENT_SECRET_ID}
   redirect-uri: "http://localhost:3030/login/callback/kakao"
   token-uri: "https://kauth.kakao.com/oauth/token"
   user-info-uri: "https://kapi.kakao.com/v2/user/me"
