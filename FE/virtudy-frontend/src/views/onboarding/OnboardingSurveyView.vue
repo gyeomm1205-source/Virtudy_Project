@@ -59,9 +59,11 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth'; // Pinia 스토어 임포트
 import api from '@/api'; // Axios 인스턴스 임포트
 
 const router = useRouter();
+const authStore = useAuthStore(); // 스토어 인스턴스 사용
 
 const studyTimeOptions = ['1~2시간', '3~4시간', '5~6시간', '7~8시간', '9시간 이상'];
 const timeSlots = [
@@ -81,18 +83,36 @@ const surveyData = ref({
 });
 
 const submitSurvey = async () => {
-  console.log('제출할 설문 데이터:', surveyData.value);
+  // 1. 스토어에서 임시 가입 정보 가져오기
+  const signupInfo = authStore.signupInfo;
+  if (!signupInfo) {
+    alert('비정상적인 접근입니다. 다시 로그인해주세요.');
+    router.push('/login');
+    return;
+  }
   
   try {
-    // 백엔드 API가 준비되었다고 가정하고, 설문 데이터를 전송합니다.
-    // 예: await api.post('/v1/members/survey', surveyData.value);
+    // 2. 백엔드 최종 회원가입 API 호출
+    const payload = {
+      ...signupInfo, // { provider, providerId, email } 등
+      ...surveyData.value, // 설문 데이터
+    };
+
+    const response = await api.post('/members/signup', payload);
     
-    alert('설문이 제출되었습니다. Virtudy를 시작합니다!');
-    // 온보딩 완료 후 메인 페이지로 이동
+    // 3. 응답으로 받은 최종 Access Token 저장
+    const { accessToken } = response.data;
+    authStore.setToken(accessToken);
+
+    // 4. 스토어에 남아있던 임시 가입 정보 삭제
+    authStore.clearSignupInfo();
+    
+    alert('회원가입이 완료되었습니다. Virtudy를 시작합니다!');
+    // 5. 온보딩 완료 후 메인 페이지로 이동
     router.push('/');
   } catch (error) {
-    console.error('설문 제출 실패:', error);
-    alert('설문 제출 중 오류가 발생했습니다. 다시 시도해주세요.');
+    console.error('최종 회원가입 실패:', error);
+    alert('회원가입 중 오류가 발생했습니다. 다시 시도해주세요.');
   }
 };
 </script>
