@@ -1,10 +1,10 @@
-<script setup lang="ts">
-import StudyRoom from './components/StudyRoom.vue'
-</script>
-
 <template>
-  <StudyRoom />
+  <RouterView />
 </template>
+
+<script setup lang="ts">
+import { RouterView } from 'vue-router'
+</script>
 
 <style>
 /* 전역 스타일 리셋 등 */
