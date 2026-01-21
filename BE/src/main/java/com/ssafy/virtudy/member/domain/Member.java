@@ -38,7 +38,7 @@ public class Member extends BaseTimeEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private JobType jobType;
+    private JobType jobType; // STUDENT, JOB_SEEKER, WORKER
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -47,6 +47,10 @@ public class Member extends BaseTimeEntity {
 
     @Column(nullable = false)
     private String avatarImageUrl;
+
+    // Member.java 내부에 필드 추가
+    @Column(nullable = false)
+    private Integer avatarGenCount = 0; // 아바타 생성 횟수 (기본값 0)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "favorite_room_id")

@@ -1,8 +1,10 @@
 
-
 # 포트 바꿀 시에
 server:
-  port: 8000
+  port: 8080
+
+websocket:
+  port: 8081
 
 spring:
   application:
@@ -31,7 +33,7 @@ spring:
     show-sql: true
     properties:
       hibernate.format_sql: true
-      dialect: org.hibernate.dialect.MySQL8InnoDBDialect
+      dialect: org.hibernate.dialect.MySQLDialect
 
 
   # MySql
@@ -42,3 +44,18 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/virtudy?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
     username: root
     password: ssafy1234
+
+# [수정] 우리가 만든 KakaoClient가 사용할 커스텀 설정
+kakao:
+  client-id: "91af8651b410c843ad31649c6e22cc9b"
+  # 프론트엔드에서 인가 코드를 받을 때 사용한 주소와 100% 일치해야 함
+  # (보통 프론트엔드 라우터 주소)
+  redirect-uri: "http://localhost:3030/login/callback/kakao"
+  token-uri: "https://kauth.kakao.com/oauth/token"
+  user-info-uri: "https://kapi.kakao.com/v2/user/me"
+
+# JWT
+jwt:
+  secret_key: "v3ryS3cr3tK3yF0rJw7T0k3nG3n3r4t10nPbzDon7Sh4r3Th1sK3yW1thAny0n3"
+  access-expmin: 30    # 30분
+  refresh-expmin: 20160 # 2주로 처리
