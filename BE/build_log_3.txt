@@ -1,0 +1,18 @@
+﻿> Task :compileJava UP-TO-DATE
+> Task :processResources
+> Task :classes
+> Task :compileTestJava UP-TO-DATE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+
+> Task :test
+
+VirtudyApplicationTests > contextLoads() FAILED
+    java.lang.IllegalStateException at DefaultCacheAwareContextLoaderDelegate.java:180
+        Caused by: org.springframework.beans.factory.BeanCreationException at AbstractAutowireCapableBeanFactory.java:1826
+            Caused by: org.hibernate.service.spi.ServiceException at AbstractServiceRegistryImpl.java:276
+                Caused by: org.hibernate.HibernateException at DialectFactoryImpl.java:191
+
+
+> Task :test FAILED
+4 actionable tasks: 2 executed, 2 up-to-date
