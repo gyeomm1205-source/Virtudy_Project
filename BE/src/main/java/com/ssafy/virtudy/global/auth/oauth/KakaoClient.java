@@ -20,6 +20,9 @@ public class KakaoClient {
     @Value("${kakao.client-id}")
     private String clientId;
 
+    @Value("${kakao.client-secret}") // [추가] 비밀키 가져오기
+    private String clientSecret;
+
     @Value("${kakao.redirect-uri}")
     private String redirectUri;
 
@@ -49,7 +52,7 @@ public class KakaoClient {
         params.add("client_id", clientId);
         params.add("redirect_uri", redirectUri);
         params.add("code", code);
-
+        params.add("client_secret", clientSecret);
         // 요청 객체 생성
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
 
