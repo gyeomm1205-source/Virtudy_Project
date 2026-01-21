@@ -1,10 +1,13 @@
 package com.ssafy.virtudy.study.service;
 
 import com.ssafy.virtudy.global.config.LiveKitConfig;
+<<<<<<< HEAD
 import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
 import com.ssafy.virtudy.global.event.exception.BaseException;
 import com.ssafy.virtudy.group.domain.RoomMember;
 import com.ssafy.virtudy.group.repository.RoomMemberRepository;
+=======
+>>>>>>> b9a6bab ([S14P11A703-119-websocket-livekit] Livekit 설정)
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
@@ -19,6 +22,9 @@ import io.livekit.server.RoomName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.livekit.server.AccessToken;
+import io.livekit.server.RoomJoin;
+import io.livekit.server.RoomName;
 
 import java.time.LocalDateTime;
 import java.util.List;

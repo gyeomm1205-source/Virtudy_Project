@@ -11,6 +11,7 @@ import lombok.Getter;
 public class SessionMemberInfoResponse {
     @Schema(description = "회원 고유 ID (UUID)", example = "550e8400-e29b-41d4-a716-446655440000")
     private final String memberId;
+<<<<<<< HEAD
 
     @Schema(description = "회원 닉네임", example = "싸피최고")
     private final String nickName;
@@ -25,6 +26,16 @@ public class SessionMemberInfoResponse {
         this.memberId = member.getMemberId();
         this.nickName = member.getNickName();
         this.avatar = AvatarResponse.from(member.getAvatar());
+=======
+    private final String nickName;
+    private final String avatarImageUrl;
+    private final String liveKitToken;
+
+    public SessionMemberInfoResponse(Member member, String liveKitToken) {
+        this.memberId = member.getMemberId();
+        this.nickName = member.getNickName();
+        this.avatarImageUrl = member.getAvatarImageUrl();
+>>>>>>> b9a6bab ([S14P11A703-119-websocket-livekit] Livekit 설정)
         this.liveKitToken = liveKitToken;
     }
 }
