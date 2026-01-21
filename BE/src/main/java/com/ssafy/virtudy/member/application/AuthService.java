@@ -100,6 +100,7 @@ public class AuthService {
 
         Member newMember = Member.builder()
                 // [식별자 & 기본 정보]
+
                 .memberId(java.util.UUID.randomUUID().toString())
                 .email(request.getEmail())          // 실제 이메일 데이터
                 .nickName(request.getNickname())    // 사용자 입력 닉네임
