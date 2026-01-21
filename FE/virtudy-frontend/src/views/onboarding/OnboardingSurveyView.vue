@@ -56,11 +56,11 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth'; // Pinia 스토어 임포트
-import api from '@/api'; // Axios 인스턴스 임포트
+import api from '@/api/index.ts'; // Axios 인스턴스 임포트
 
 const router = useRouter();
 const authStore = useAuthStore(); // 스토어 인스턴스 사용
