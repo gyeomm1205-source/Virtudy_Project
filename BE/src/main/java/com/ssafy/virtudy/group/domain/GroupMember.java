@@ -2,11 +2,18 @@ package com.ssafy.virtudy.group.domain;
 
 import com.ssafy.virtudy.member.domain.Member;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+
 @Entity
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class GroupMember {
 
     @Id
