@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '@/views/HomeView.vue'
-import LoginView from '@/views/auth/LoginView.vue'
+import MainPage from '@/views/main/MainPage.vue'
 import OAuthCallbackView from '@/views/auth/OAuthCallbackView.vue'
 import TermsOfServiceView from '@/views/onboarding/TermsOfServiceView.vue'
 import OnboardingSurveyView from '@/views/onboarding/OnboardingSurveyView.vue'
@@ -11,12 +10,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: LoginView
-    },
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: HomeView
+      component: MainPage
     },
     {
       // 카카오 Redirect URI 설정과 맞춘 경로
