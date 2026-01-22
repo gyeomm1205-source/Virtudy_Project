@@ -7,146 +7,168 @@
 ## 📂 1. 전체 프로젝트 구조 (FSD)
 
 ```
-virtudy/
-├── src/
+virtudy-frontend/
+├── public/                         # 빌드 시 그대로 복사되는 정적 파일
+│   └── favicon.ico
+│
+├── src/                            # 실제 프론트엔드 소스 코드
 │   ├── app/                        # 애플리케이션 진입점 및 전역 설정
-│   │   ├── App.vue                # 루트 컴포넌트
-│   │   ├── main.ts                # 애플리케이션 초기화
-│   │   ├── router/                # 라우터 설정
-│   │   │   └── index.ts
-│   │   ├── store/                 # Pinia 스토어 설정
-│   │   │   └── index.ts
-│   │   └── providers/             # 🆕 Context Providers
-│   │       └── HighFrequencyProvider.vue  # 고속 데이터 제공
+│   │   ├── App.vue                 # 루트 컴포넌트
+│   │   ├── main.ts                 # Vue 앱 초기화
+│   │   ├── router/
+│   │   │   └── index.ts            # 전역 라우터 설정
+│   │   ├── store/
+│   │   │   └── index.ts            # Pinia 인스턴스 생성 (createPinia)
+│   │   └── providers/
+│   │       └── HighFrequencyProvider.vue  # 고주파 데이터 Provider
 │   │
-│   ├── features/                   # 🎯 핵심! 기능별 모듈 (Feature-Sliced)
-│   │   ├── study-room/            # 스터디룸 기능
-│   │   │   ├── ui/                # UI 컴포넌트 (B: UI 담당자)
-│   │   │   │   ├── StudyRoom.vue
+│   ├── features/                   # 🎯 핵심: 기능 단위(feature) 레이어
+│   │   ├── auth/
+│   │   │   ├── api/                # 인증 관련 API
+│   │   │   │   └── authAPI.ts
+│   │   │   ├── logic/              # 비즈니스 로직 / composables
+│   │   │   │   ├── useAuth.ts
+│   │   │   │   └── useOAuthCallback.ts
+│   │   │   ├── pages/              # 라우트 단위 페이지
+│   │   │   │   ├── GuestPage.vue
+│   │   │   │   ├── MainPage.vue
+│   │   │   │   ├── OAuthCallbackPage.vue
+|   |   |   |   |── UserPage.vue
+│   │   │   |
+│   │   │   ├── ui/                 # 재사용 가능한 UI 컴포넌트
+│   │   │   │   ├── LoginForm.vue
+│   │   │   │   └── SignupForm.vue
+│   │   │   └── types/              # 인증 타입
+│   │   │       └── auth.types.ts
+│   │   │
+│   │   ├── study-room/
+│   │   │   ├── api/
+│   │   │   │   ├── roomAPI.ts
+│   │   │   │   └── studyAPI.ts
+│   │   │   ├── logic/
+│   │   │   │   ├── useFocus.ts     # 🆕 집중도 분석
+│   │   │   │   ├── useAvatar.ts    # 🆕 아바타 매핑 
+│   │   │   │   ├── useWebRTC.ts    # WebRTC 연결
+│   │   │   │   ├── useSocket.ts    # Socket 통신
+│   │   │   │   └── useTimer.ts     # 타이머 로직
+│   │   │   ├── pages/
+│   │   │   │   └── StudyRoomPage.vue
+│   │   │   ├── ui/
 │   │   │   │   ├── Avatar.vue
 │   │   │   │   ├── VideoPanel.vue
 │   │   │   │   ├── TimerPanel.vue
 │   │   │   │   ├── FocusChart.vue
 │   │   │   │   └── ControlBar.vue
-│   │   │   │
-│   │   │   ├── logic/             # 비즈니스 로직 (A: AI, C: Logic)
-│   │   │   │   ├── useFocus.ts    # 🆕 집중도 분석 (A)
-│   │   │   │   ├── useAvatar.ts   # 🆕 아바타 매핑 (A)
-│   │   │   │   ├── useWebRTC.ts   # WebRTC 연결 (C)
-│   │   │   │   ├── useSocket.ts   # Socket 통신 (C)
-│   │   │   │   └── useTimer.ts    # 타이머 로직 (C)
-│   │   │   │
-│   │   │   ├── api/               # API 통신 (C: Backend)
-│   │   │   │   ├── roomAPI.ts
-│   │   │   │   └── studyAPI.ts
-│   │   │   │
-│   │   │   ├── types/             # 타입 정의 (공통)
-│   │   │   │   ├── room.types.ts
-│   │   │   │   └── focus.types.ts
-│   │   │   │
-│   │   │   └── index.ts           # Public API (외부 노출)
-│   │   │
-│   │   ├── auth/                  # 인증 기능
-│   │   │   ├── ui/
-│   │   │   │   ├── LoginForm.vue
-│   │   │   │   └── SignupForm.vue
-│   │   │   ├── logic/
-│   │   │   │   └── useAuth.ts
-│   │   │   ├── api/
-│   │   │   │   └── authAPI.ts
 │   │   │   └── types/
-│   │   │       └── auth.types.ts
+│   │   │       ├── room.types.ts
+│   │   │       └── focus.types.ts
 │   │   │
-│   │   ├── lobby/                 # 로비 (방 목록)
-│   │   ├── ranking/               # 랭킹
-│   │   ├── report/                # 리포트
-│   │   └── mypage/                # 마이페이지
+│   │   ├── mypage/
+│   │   │   ├── api/
+│   │   │   │   └── mypageAPI.ts
+│   │   │   ├── logic/
+│   │   │   │   └── useMypage.ts
+│   │   │   ├── pages/
+│   │   │   │   └── MypagePage.vue
+│   │   │   ├── ui/
+│   │   │   │   ├── ProfileCard.vue
+│   │   │   │   └── EditForm.vue
+│   │   │   └── types/
+│   │   │       └── mypage.types.ts
+│   │   │
+│   │   ├── lobby/
+│   │   │   ├── api/
+│   │   │   │   └── lobbyAPI.ts
+│   │   │   ├── logic/
+│   │   │   │   └── useLobby.ts
+│   │   │   ├── pages/
+│   │   │   │   └── LobbyPage.vue
+│   │   │   ├── ui/
+│   │   │   │   └── RoomCard.vue
+│   │   │   └── types/
+│   │   │       └── lobby.types.ts
+│   │   │
+│   │   ├── ranking/
+│   │   │   ├── api/
+│   │   │   │   └── rankingAPI.ts
+│   │   │   ├── logic/
+│   │   │   │   └── useRanking.ts
+│   │   │   ├── pages/
+│   │   │   │   └── RankingPage.vue
+│   │   │   ├── ui/
+│   │   │   │   └── RankingList.vue
+│   │   │   └── types/
+│   │   │       └── ranking.types.ts
+│   │   │
+│   │   └── report/
+│   │       ├── api/
+│   │       │   └── reportAPI.ts
+│   │       ├── logic/
+│   │       │   └── useReport.ts
+│   │       ├── pages/
+│   │       │   └── ReportPage.vue
+│   │       ├── ui/
+│   │       │   └── ReportCard.vue
+│   │       └── types/
+│   │           └── report.types.ts
 │   │
-│   ├── shared/                    # 공유 리소스 (모든 feature에서 사용)
-│   │   ├── ui/                    # 공통 UI 컴포넌트
+│   ├── entities/                  # 🧩 순수 도메인 (비즈니스 모델/타입)
+│   │   ├── user/
+│   │   │   └── types/user.types.ts
+│   │   ├── room/
+│   │   │   └── types/room.types.ts
+│   │   └── ranking/
+│   │       └── types/ranking.types.ts
+│   │
+│   ├── shared/                    # 🔁 전 feature 공용 리소스
+│   │   ├── ui/
 │   │   │   ├── Button.vue
 │   │   │   ├── Modal.vue
 │   │   │   ├── Input.vue
 │   │   │   └── LoadingSpinner.vue
-│   │   │
-│   │   ├── lib/                   # 유틸리티 함수
-│   │   │   ├── format.ts          # 날짜/시간 포맷
-│   │   │   ├── validation.ts      # 유효성 검증
-│   │   │   └── storage.ts         # LocalStorage 래퍼
-│   │   │
-│   │   ├── api/                   # 공통 API 설정
-│   │   │   ├── axios.config.ts    # Axios 인스턴스
-│   │   │   └── interceptors.ts    # 요청/응답 인터셉터
-│   │   │
-│   │   └── config/                # 환경 설정
-│   │       ├── env.ts             # 환경 변수
-│   │       └── constants.ts       # 상수
+│   │   ├── lib/
+│   │   │   ├── format.ts
+│   │   │   ├── validation.ts
+│   │   │   └── storage.ts
+│   │   ├── api/
+│   │   │   ├── axios.config.ts
+│   │   │   └── interceptors.ts
+│   │   └── config/
+│   │       ├── env.d.ts
+│   │       └── constants.ts
 │   │
-│   ├── entities/                  # 비즈니스 엔티티 (도메인 모델)
-│   │   ├── user/
-│   │   │   ├── model/
-│   │   │   │   └── userStore.ts   # Pinia 사용자 스토어
-│   │   │   ├── api/
-│   │   │   │   └── userAPI.ts
-│   │   │   └── types/
-│   │   │       └── user.types.ts
-│   │   │
-│   │   ├── room/
-│   │   │   ├── model/
-│   │   │   │   └── roomStore.ts   # Pinia 방 스토어
-│   │   │   └── types/
-│   │   │       └── room.types.ts
-│   │   │
-│   │   └── ranking/
-│   │       ├── model/
-│   │       │   └── rankingStore.ts
-│   │       └── types/
-│   │           └── ranking.types.ts
-│   │
-│   ├── core/                      # 🆕 핵심 인프라 (Singleton 매니저)
+│   ├── core/                      # 🏗 인프라 / 싱글톤 매니저
 │   │   ├── managers/              # 생명주기 관리 매니저
 │   │   │   ├── SocketManager.ts   # 🔌 Socket.IO 매니저
 │   │   │   ├── WebRTCManager.ts   # 📹 WebRTC 매니저
-│   │   │   └── MediaPipeManager.ts # 🤖 MediaPipe 매니저
-│   │   │
-│   │   └── context/               # 🆕 고속 데이터 Context
+│   │   │   └── MediaPipeManager.ts  # 🤖 MediaPipe 매니저
+│   │   └── context/                 # 🆕 고속 데이터 Context
 │   │       └── HighFrequencyContext.ts  # 60FPS 데이터 바이패스
 │   │
-│   └── assets/                    # 정적 자산
+│   └── assets/                    # 소스에서 사용하는 정적 자산
 │       ├── images/
 │       ├── styles/
 │       │   ├── global.css
-│       │   └── neon.css           # 80년대 네온 스타일
+│       │
 │       └── fonts/
 │
-├── public/                        # 빌드 시 복사되는 정적 파일
-│   └── favicon.ico
-│
-├── conventions/                   # 📘 프로젝트 컨벤션 문서
-│   ├── README.md
-│   ├── 01-git/
-│   │   ├── 01-branch-strategy.md
-│   │   ├── 02-commit-message.md
-│   │   └── 03-pull-request-rules.md
-│   └── 02-frontend/
-│       ├── 01-directory-structure.md
-│       ├── 02-naming.md
-│       ├── 03-coding-style.md
-│       ├── 04-state-management.md
-│       └── 05-testing.md
-│
-├── tests/                         # 테스트 코드
+├── tests/                         # 테스트 코드 (unit / integration / e2e)
 │   ├── unit/
 │   ├── integration/
 │   └── e2e/
 │
-├── .vscode/                       # VSCode 설정
-├── .husky/                        # Git hooks
-├── node_modules/
+├── conventions/                   # 프로젝트 규칙 / 문서
+│
+├── .env                           # 환경 변수
+├── .env.local
+├── .gitignore
+├── .husky/
+├── .vscode/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
 └── README.md
+
 ```
 
 ---
