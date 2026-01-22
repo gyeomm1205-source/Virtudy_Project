@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '@/features/auth/logic/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'vue-router';
 
 const authStore = useAuthStore();

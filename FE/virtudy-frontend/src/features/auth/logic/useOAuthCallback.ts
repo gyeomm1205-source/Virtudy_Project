@@ -1,7 +1,7 @@
 
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '../logic/authStore';
+import { useAuthStore } from '../../../stores/authStore';
 import { authAPI } from '../api/authAPI';
 
 /**
