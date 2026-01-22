@@ -1,6 +1,6 @@
 // @ts-nocheck
 import axios from 'axios';
-import { useAuthStore } from '@/features/auth/logic/authStore';
+import { useAuthStore } from '@/stores/authStore';
 
 // 1. Axios 인스턴스 생성
 const instance = axios.create({

@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { useAuthStore } from '@/features/auth/logic/authStore';
+import { useAuthStore } from '@/stores/authStore';
 
 // 페이지 컴포넌트 임포트
 import GuestPage from '@/features/auth/pages/GuestPage.vue';
 import UserPage from '@/features/auth/pages/UserPage.vue';
 import OAuthCallbackPage from '@/features/auth/pages/OAuthCallbackPage.vue'; // 콜백 처리를 위한 페이지
-import TermsOfServicePage from '@/features/onboarding/ui/TermsOfServicePage.vue';
-import OnboardingSurveyPage from '@/features/onboarding/ui/OnboardingSurveyView.vue';
+import TermsOfServicePage from '@/features/onboarding/pages/TermsOfServicePage.vue';
+import OnboardingSurveyPage from '@/features/onboarding/pages/OnboardingSurveyView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

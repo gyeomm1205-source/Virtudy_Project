@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/features/auth/logic/authStore'; // Pinia 스토어 임포트
+import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어 임포트
 import api from '@/shared/api/axios.config.ts'; // Axios 인스턴스 임포트
 
 const router = useRouter();
