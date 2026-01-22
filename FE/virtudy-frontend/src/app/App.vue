@@ -1,9 +1,11 @@
 <template>
+  <GlobalNavBar />
   <RouterView />
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView } from 'vue-router';
+import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 </script>
 
 <style>
