@@ -1,14 +1,14 @@
 package com.ssafy.virtudy.study.service;
 
 import com.ssafy.virtudy.global.config.LiveKitConfig;
+import com.ssafy.virtudy.group.domain.RoomMember;
+import com.ssafy.virtudy.group.repository.RoomMemberRepository;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
-import com.ssafy.virtudy.study.domain.StudyMember;
 import com.ssafy.virtudy.study.domain.StudyRoom;
 import com.ssafy.virtudy.study.domain.StudySession;
 import com.ssafy.virtudy.study.dto.SessionMemberInfoResponse;
-import com.ssafy.virtudy.study.repository.StudyMemberRepository;
 import com.ssafy.virtudy.study.repository.StudyRoomRepository;
 import com.ssafy.virtudy.study.repository.StudySessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,9 @@ import io.livekit.server.AccessToken;
 import io.livekit.server.RoomJoin;
 import io.livekit.server.RoomName;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
@@ -26,10 +28,12 @@ import java.util.concurrent.ThreadLocalRandom;
 @Transactional
 public class StudySessionService {
 
+    private final static int MAX_USER = 6;
+
     private final StudySessionRepository studySessionRepository;
     private final StudyRoomRepository studyRoomRepository;
     private final MemberRepository memberRepository;
-    private final StudyMemberRepository studyMemberRepository;
+    private final RoomMemberRepository roomMemberRepository;
     private final LiveKitConfig liveKitConfig;
 
     public SessionMemberInfoResponse enterRoom(String memberId, String roomId) {
@@ -44,12 +48,17 @@ public class StudySessionService {
         });
 
         int currentUsers = studySessionRepository.findByRoomAndEndTimeIsNull(room).size();
-        if (currentUsers >= room.getMaxUser()) {
+        if (currentUsers >= MAX_USER) {
             throw new IllegalStateException("방이 가득 찼습니다.");
         }
 
-        if (!studyMemberRepository.existsByMemberAndStudyRoom(member, room)) {
-            studyMemberRepository.save(StudyMember.of(member, room));
+        if (!roomMemberRepository.existsByMemberAndRoom(member, room)) {
+            roomMemberRepository.save(RoomMember.builder()
+                    .roomMemberId(UUID.randomUUID().toString())
+                    .room(room)
+                    .member(member)
+                    .joinedAt(LocalDateTime.now())
+                    .build());
         }
 
         StudySession newSession = StudySession.builder()
@@ -74,7 +83,7 @@ public class StudySessionService {
         }
 
         List<StudyRoom> availableRooms = openRooms.stream()
-                .filter(room -> studySessionRepository.findByRoomAndEndTimeIsNull(room).size() < room.getMaxUser())
+                .filter(room -> studySessionRepository.findByRoomAndEndTimeIsNull(room).size() < MAX_USER)
                 .toList();
 
         if (availableRooms.isEmpty()) {

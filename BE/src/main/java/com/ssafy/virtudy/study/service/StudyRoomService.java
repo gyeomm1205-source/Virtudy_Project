@@ -1,22 +1,24 @@
 package com.ssafy.virtudy.study.service;
 
+import com.ssafy.virtudy.group.domain.RoomMember;
+import com.ssafy.virtudy.group.repository.RoomMemberRepository;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
 import com.ssafy.virtudy.study.domain.RoomType;
-import com.ssafy.virtudy.study.domain.StudyMember;
 import com.ssafy.virtudy.study.domain.StudyRoom;
 import com.ssafy.virtudy.study.dto.StudyRoomListResponse;
 import com.ssafy.virtudy.study.dto.StudyRoomResponse;
 import com.ssafy.virtudy.study.dto.StudyRoomSaveRequest;
 import com.ssafy.virtudy.study.dto.StudyRoomUpdateRequest;
-import com.ssafy.virtudy.study.repository.StudyMemberRepository;
 import com.ssafy.virtudy.study.repository.StudyRoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,7 +32,7 @@ public class StudyRoomService {
 
     private final StudyRoomRepository studyRoomRepository;
     private final MemberRepository memberRepository;
-    private final StudyMemberRepository studyMemberRepository;
+    private final RoomMemberRepository roomMemberRepository;
 
     @Transactional
     public StudyRoomResponse createRoom(String memberId, StudyRoomSaveRequest request) {
@@ -52,14 +54,19 @@ public class StudyRoomService {
         }
 
         StudyRoom studyRoom = studyRoomRepository.save(request.toEntity(owner));
-        studyMemberRepository.save(StudyMember.of(owner, studyRoom));
+        roomMemberRepository.save(RoomMember.builder()
+                .roomMemberId(UUID.randomUUID().toString())
+                .room(studyRoom)
+                .member(owner)
+                .joinedAt(LocalDateTime.now())
+                .build());
         return new StudyRoomResponse(studyRoom, 1);
     }
 
     public List<StudyRoomListResponse> findAllOpenRooms() {
         return studyRoomRepository.findAllByStatus(RoomStatType.OPEN).stream()
                 .map(studyRoom -> {
-                    int currentUser = studyMemberRepository.countByStudyRoom(studyRoom);
+                    int currentUser = roomMemberRepository.countByRoom(studyRoom);
                     return new StudyRoomListResponse(studyRoom, currentUser);
                 })
                 .collect(Collectors.toList());
@@ -70,8 +77,8 @@ public class StudyRoomService {
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
 
         List<StudyRoom> ownedRooms = studyRoomRepository.findAllByOwnerId(member.getId());
-        List<StudyRoom> joinedRooms = studyMemberRepository.findAllByMember(member).stream()
-                .map(StudyMember::getStudyRoom)
+        List<StudyRoom> joinedRooms = roomMemberRepository.findAllByMember(member).stream()
+                .map(RoomMember::getRoom)
                 .toList();
 
         // TODO : 이렇게 만들면 추가 쿼리가 10번 나간다..
@@ -80,7 +87,7 @@ public class StudyRoomService {
                 .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
                 .limit(10)
                 .map(studyRoom -> {
-                    int currentUser = studyMemberRepository.countByStudyRoom(studyRoom);
+                    int currentUser = roomMemberRepository.countByRoom(studyRoom);
                     return new StudyRoomListResponse(studyRoom, currentUser);
                 })
                 .collect(Collectors.toList());
@@ -89,7 +96,7 @@ public class StudyRoomService {
     public StudyRoomResponse findRoomByCode(String roomId) {
         StudyRoom studyRoom = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
                 .orElseThrow(() -> new IllegalArgumentException("종료되었거나 존재하지 않는 방입니다."));
-        int currentUser = studyMemberRepository.countByStudyRoom(studyRoom);
+        int currentUser = roomMemberRepository.countByRoom(studyRoom);
         return new StudyRoomResponse(studyRoom, currentUser);
     }
 
@@ -108,7 +115,7 @@ public class StudyRoomService {
             throw new IllegalStateException("방장만 수정할 수 있습니다.");
         }
 
-        studyRoom.update(request.getTitle(), request.getPassword());
+        studyRoom.update(request.getTitle(), request.getPassword(), request.getDescription());
     }
 
     @Transactional
@@ -136,7 +143,7 @@ public class StudyRoomService {
         StudyRoom studyRoom = studyRoomRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방입니다."));
 
-        if (!studyMemberRepository.existsByMemberAndStudyRoom(member, studyRoom)) {
+        if (!roomMemberRepository.existsByMemberAndRoom(member, studyRoom)) {
             throw new IllegalStateException("방에 참여하고 있지 않습니다.");
         }
 

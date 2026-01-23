@@ -38,8 +38,11 @@ public class StudyRoom extends BaseTimeEntity {
     private RoomType type; // PUBLIC, PRIVATE
 
     @Column(nullable = false)
+    private String description;
+
+    @Column(nullable = false)
     @Builder.Default
-    private int maxUser = 6;
+    private int roomTierScore = 0;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -47,9 +50,10 @@ public class StudyRoom extends BaseTimeEntity {
     @Builder.Default
     private RoomStatType status = RoomStatType.OPEN;
 
-    public void update(String title, String password) {
+    public void update(String title, String password, String description) {
         this.title = title;
         this.password = password;
+        this.description = description;
     }
 
     public void close() {
