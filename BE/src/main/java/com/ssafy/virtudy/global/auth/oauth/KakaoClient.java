@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -20,7 +21,7 @@ public class KakaoClient {
     @Value("${kakao.client-id}")
     private String clientId;
 
-    @Value("${kakao.client-secret}") // [추가] 비밀키 가져오기
+    @Value("${kakao.client-secret-id}") // [추가] 비밀키 가져오기
     private String clientSecret;
 
     @Value("${kakao.redirect-uri}")
@@ -32,12 +33,12 @@ public class KakaoClient {
     @Value("${kakao.user-info-uri}")
     private String userInfoUri;
 
-
     private final RestTemplate restTemplate; // Config에 Bean 등록 필요
 
     /**
      * 인가 코드로 토큰 요청
      * 요청 URL: https://kauth.kakao.com/oauth/token
+     * 
      * @param code: 인가 코드
      * @return access token 문자열
      */
@@ -61,8 +62,7 @@ public class KakaoClient {
             ResponseEntity<KakaoTokenResponse> response = restTemplate.postForEntity(
                     tokenUri,
                     request,
-                    KakaoTokenResponse.class
-            );
+                    KakaoTokenResponse.class);
             return response.getBody().getAccessToken();
         } catch (Exception e) {
             log.error("카카오 토큰 발급 실패: {}", e.getMessage());
@@ -73,6 +73,7 @@ public class KakaoClient {
     /**
      * 위에서 발급받은 access Token으로 사용자 정보 요청하기
      * 요청 URL: https://kapi.kakao.com/v2/user/me
+     * 
      * @param accessToken: 발급받은 인가 코드
      * @return KakaoUserInfo Dto로 매핑해서 리턴한다
      */
@@ -91,8 +92,7 @@ public class KakaoClient {
                     userInfoUri,
                     HttpMethod.GET,
                     request,
-                    KakaoUserInfo.class
-            );
+                    KakaoUserInfo.class);
             return response.getBody();
         } catch (Exception e) {
             log.error("카카오 유저 정보 조회 실패: {}", e.getMessage());
