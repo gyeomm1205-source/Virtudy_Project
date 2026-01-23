@@ -1,7 +1,11 @@
 package com.ssafy.virtudy.global.auth.jwt;
 
 import java.io.IOException;
+import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,6 +44,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final PrincipalDetailsService principalDetailsService;
+    private final StringRedisTemplate redisTemplate; // [추가] Redis 주입
+    private final ObjectMapper objectMapper; // Spring이 자동으로 주입해줌 (JSON 변환기)
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -47,7 +53,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
 
+        // 1. 토큰 유효성 검사
         if (token != null && jwtUtil.validateToken(token)) {
+
+            // [추가] 2. Redis 블랙리스트 확인
+            // "BL:" + token 키가 존재하면 로그아웃된 토큰임
+            String isLogout = redisTemplate.opsForValue().get("BL:" + token);
+            if (isLogout != null) {
+                // 로그아웃된 토큰 요청 시 401 에러 혹은 다음 필터 진행 안 함
+                // 명시적으로 에러 전달
+                jwtExceptionHandler(response, BaseErrorCode.INVALID_TOKEN);
+                return;
+            }
+
             String tokenType = jwtUtil.getTokenType(token);
             if ("ACCESS".equals(tokenType)) {
                 String memberId = jwtUtil.getLoginId(token);
@@ -71,6 +89,34 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * [필터 에러] JSON으로 응답
+     * @param response
+     * @param errorCode
+     */
+    public void jwtExceptionHandler(HttpServletResponse response, BaseErrorCode errorCode) {
+        response.setStatus(errorCode.getStatus().value()); // 401 or 400 등
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            // BaseResponse나 ErrorResponse 객체 모양에 맞춰 JSON 생성
+            // 예시: {"code": "AUTH_002", "message": "유효하지 않은 토큰입니다."}
+            String json = objectMapper.writeValueAsString(Map.of(
+                    "code", errorCode.name(),
+                    "message", errorCode.getMessage()
+            ));
+            response.getWriter().write(json);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    /**
+     * [request 분해] 토큰 꺼내기
+     * @param request
+     * @return
+     */
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {

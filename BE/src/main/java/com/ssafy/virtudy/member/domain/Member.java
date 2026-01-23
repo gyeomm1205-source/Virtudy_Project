@@ -9,6 +9,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 @NoArgsConstructor
@@ -36,7 +39,7 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean isVideoAgreed;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
@@ -65,6 +68,20 @@ public class Member extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "favorite_room_id")
     private StudyRoom favoriteRoom;
+
+    /**
+     * [CASCADE 설정 추가]
+     * mappedBy = "member": 자식 엔티티(MemberPreference)에 있는 'member' 필드가 주인임을 명시
+     * cascade = CascadeType.ALL: 부모(Member)가 저장/삭제/수정될 때 자식도 같이 처리
+     * orphanRemoval = false
+     */
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default // 빌더 패턴 사용 시 리스트 초기화 방지
+    private List<MemberPreference> preferences = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<MemberGameStat> gameStats = new ArrayList<>();
 
     public void setFavoriteRoom(StudyRoom studyRoom) {
         this.favoriteRoom = studyRoom;
