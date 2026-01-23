@@ -9,14 +9,12 @@ public class StudyRoomListResponse {
     private final String roomId;
     private final String title;
     private final RoomType type;
-    private final int maxUser;
     private final int currentUser;
 
     public StudyRoomListResponse(StudyRoom studyRoom, int currentUser) {
         this.roomId = studyRoom.getRoomId();
         this.title = studyRoom.getTitle();
         this.type = studyRoom.getType();
-        this.maxUser = studyRoom.getMaxUser();
         this.currentUser = currentUser;
     }
 }
