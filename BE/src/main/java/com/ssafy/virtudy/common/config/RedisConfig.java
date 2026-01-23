@@ -32,17 +32,6 @@ public class RedisConfig {
         return new LettuceConnectionFactory(config);
     }
 
-//    @Bean
-//    public RedisTemplate<String, String> redisTemplate_rank() {
-//        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
-//
-//        redisTemplate.setKeySerializer(new StringRedisSerializer());
-//        redisTemplate.setValueSerializer(new StringRedisSerializer());
-//        redisTemplate.setConnectionFactory(redisConnectionFactory());
-//
-//        return redisTemplate;
-//    }
-
     /**
      * [핵심 변경]
      * 1. 메서드 이름을 redisTemplate으로 변경 (범용성)

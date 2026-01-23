@@ -1,11 +1,13 @@
 package com.ssafy.virtudy.global.auth.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.virtudy.global.auth.jwt.JwtAuthFilter;
 import com.ssafy.virtudy.global.auth.jwt.JwtUtil;
 import com.ssafy.virtudy.global.auth.principal.PrincipalDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -27,6 +29,10 @@ public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
     private final PrincipalDetailsService principalDetailsService;
+
+    // [추가] 필터에 넘겨줄 의존성 주입
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -54,17 +60,21 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated())
 
-                // [2] JWT 필터 등록
-                .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService),
-                        UsernamePasswordAuthenticationFilter.class)
+                // [수정] JwtAuthFilter 생성자에 필요한 모든 파라미터 전달
+                .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
+                        UsernamePasswordAuthenticationFilter.class);
 
-                // [3] 로그아웃 설정 (쿠키 삭제용) - 선택 사항
+                // [참고] 우리가 AuthController에서 커스텀 로그아웃(/api/auth/logout)을 만들었으므로
+                // 시큐리티의 기본 logout 설정은 충돌이 나거나 필요 없을 수 있습니다.
+                // 헷갈리지 않게 일단 주석 처리하거나 지우는 것을 추천합니다.
+                /*
                 .logout(logout -> logout
-                        .logoutUrl("/api/members/logout") // 로그아웃 요청 URL
-                        .deleteCookies("refreshToken") // [중요] RT 쿠키 삭제
+                        .logoutUrl("/api/members/logout")
+                        .deleteCookies("refreshToken")
                         .logoutSuccessHandler((request, response, authentication) -> {
-                            response.setStatus(200); // 성공 시 200 OK 반환
+                            response.setStatus(200);
                         }));
+                */
 
         return http.build();
     }
