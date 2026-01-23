@@ -33,6 +33,7 @@ public class RedisConfig {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     /**
      * [핵심 변경]
      * 1. 메서드 이름을 redisTemplate으로 변경 (범용성)
@@ -56,6 +57,8 @@ public class RedisConfig {
 //        return redisTemplate;
 //    }
 
+=======
+>>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
     /**
      * [핵심 변경]
      * 1. 메서드 이름을 redisTemplate으로 변경 (범용성)

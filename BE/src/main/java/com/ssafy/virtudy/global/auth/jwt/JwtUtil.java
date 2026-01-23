@@ -41,7 +41,11 @@ public class JwtUtil {
                         "userId", member.getMemberId(),
                         "email", member.getEmail(),
                         "userName", member.getNickName(),
+<<<<<<< HEAD
                         "userProfileImgUrl", member.getAvatar()
+=======
+                        "userProfileImgUrl", member.getAvatarImageUrl()
+>>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
                 ));
     }
 
