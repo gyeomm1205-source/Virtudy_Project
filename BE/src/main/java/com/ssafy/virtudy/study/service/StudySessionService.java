@@ -1,8 +1,11 @@
 package com.ssafy.virtudy.study.service;
 
 import com.ssafy.virtudy.global.config.LiveKitConfig;
+<<<<<<< HEAD
 import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
 import com.ssafy.virtudy.global.event.exception.BaseException;
+=======
+>>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
 import com.ssafy.virtudy.group.domain.RoomMember;
 import com.ssafy.virtudy.group.repository.RoomMemberRepository;
 import com.ssafy.virtudy.member.domain.Member;

@@ -14,7 +14,10 @@ public class StudyRoomUpdateRequest {
 
     @Schema(description = "변경할 스터디방 비밀번호", example = "5678")
     private String password;
+<<<<<<< HEAD
 
     @Schema(description = "변경할 스터디방 설명", example = "변경된 설명입니다.")
+=======
+>>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
     private String description;
 }

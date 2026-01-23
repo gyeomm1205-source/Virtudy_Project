@@ -17,8 +17,11 @@ public class StudyRoomListResponse {
 
     @Schema(description = "스터디방 공개 여부 (PUBLIC, PRIVATE)", example = "PUBLIC")
     private final RoomType type;
+<<<<<<< HEAD
 
     @Schema(description = "현재 참여 인원 수", example = "5")
+=======
+>>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
     private final int currentUser;
 
     public StudyRoomListResponse(StudyRoom studyRoom, int currentUser) {

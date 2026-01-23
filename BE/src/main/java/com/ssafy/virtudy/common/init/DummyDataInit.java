@@ -1,8 +1,15 @@
 package com.ssafy.virtudy.common.init;
 
 import com.ssafy.virtudy.group.repository.RoomMemberRepository;
+<<<<<<< HEAD
 import com.ssafy.virtudy.member.domain.*;
 import com.ssafy.virtudy.member.repository.AvatarRepository;
+=======
+import com.ssafy.virtudy.member.domain.JobType;
+import com.ssafy.virtudy.member.domain.Member;
+import com.ssafy.virtudy.member.domain.MemberGameStat;
+import com.ssafy.virtudy.member.domain.MemberStatType;
+>>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
@@ -21,6 +28,9 @@ import org.springframework.transaction.annotation.Transactional; // 트랜잭션
 
 import java.util.*;
 
+/**
+ * TODO : RoomMember 추가 (이전 Group)
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -30,6 +40,10 @@ public class DummyDataInit implements CommandLineRunner {
 
     private final MemberRepository memberRepository;
     private final StudyRoomRepository studyRoomRepository;
+<<<<<<< HEAD
+=======
+    private final RoomMemberRepository roomMemberRepository;
+>>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
     private final MemberGameStatRepository memberGameStatRepository;
     private final AvatarRepository avatarRepository;
 
@@ -72,7 +86,12 @@ public class DummyDataInit implements CommandLineRunner {
             // ⭐ [핵심 수정] savedMember를 넘겨야 ID가 null이 아닙니다.
             createAndSaveGameStat(savedMember, RANK_PRIVATE_KEY);
         }
+<<<<<<< HEAD
         // 4. 스터디룸 생성
+=======
+
+        // 2. 스터디룸(StudyRoom) 생성
+>>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
         for (int i = 0; i < 20; i++) {
             // 저장된 멤버 목록에서 랜덤으로 주인을 뽑음
             Member owner = savedMembers.get(random.nextInt(savedMembers.size()));
@@ -84,6 +103,7 @@ public class DummyDataInit implements CommandLineRunner {
         for (Member member: members) {
             Long studyIndex = (long) ((index++ % 20) + 1);
 
+<<<<<<< HEAD
             StudyRoom room = studyRoomRepository.getReferenceById(studyIndex);
             member.setFavoriteRoom(room);
             memberRepository.save(member);
@@ -144,6 +164,9 @@ public class DummyDataInit implements CommandLineRunner {
                 .clothes(outfit)            // 예: "outfit_knit"
                 .clothesColor(clothesColor) // 예: "#FF0000"
                 .build();
+=======
+        log.info("✅ 더미 데이터 생성이 완료되었습니다. (Member: 100명, Room: 20개)");
+>>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
     }
 
     private Member createMember(int index) {
@@ -188,6 +211,7 @@ public class DummyDataInit implements CommandLineRunner {
                 .build();
 
         memberGameStatRepository.save(stat);
+<<<<<<< HEAD
         // Redis에 저장
         // member.getMemberId() (예: "user0") 또는 member.getId() (PK) 사용
         // 여기서는 memberId("user0")를 사용한다고 가정
@@ -196,6 +220,12 @@ public class DummyDataInit implements CommandLineRunner {
         } else {
             log.warn("⚠️ Member ID is null for member: {}", member);
         }
+=======
+
+        // ⭐ [중요] Redis 랭킹에도 동기화 (바로 테스트 가능하도록)
+        String rankingKey = "rank:season:1";
+        redisTemplate.opsForZSet().add(rankingKey, String.valueOf(member.getId()), score);
+>>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
     }
 
     private StudyRoom createStudyRoom(Member owner) {
