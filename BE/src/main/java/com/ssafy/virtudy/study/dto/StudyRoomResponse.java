@@ -8,15 +8,15 @@ import lombok.Getter;
 public class StudyRoomResponse {
     private final String roomId;
     private final String title;
+    private final String description;
     private final RoomType type;
-    private final int maxUser;
     private final int currentUser;
 
     public StudyRoomResponse(StudyRoom studyRoom, int currentUser) {
         this.roomId = studyRoom.getRoomId();
         this.title = studyRoom.getTitle();
+        this.description = studyRoom.getDescription();
         this.type = studyRoom.getType();
-        this.maxUser = studyRoom.getMaxUser();
         this.currentUser = currentUser;
     }
 }

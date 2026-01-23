@@ -13,6 +13,7 @@ import java.util.UUID;
 public class StudyRoomSaveRequest {
     private String title;
     private String password;
+    private String description;
     private RoomType type;
 
     public StudyRoom toEntity(Member owner) {
@@ -21,6 +22,7 @@ public class StudyRoomSaveRequest {
                 .owner(owner)
                 .title(title)
                 .password(password)
+                .description(description)
                 .type(type)
                 .build();
     }

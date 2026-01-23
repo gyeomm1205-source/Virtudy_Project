@@ -1,10 +1,10 @@
 package com.ssafy.virtudy.common.init;
 
-import com.ssafy.virtudy.group.domain.Group;
-import com.ssafy.virtudy.group.domain.GroupMember;
-import com.ssafy.virtudy.group.repository.GroupMemberRepository;
-import com.ssafy.virtudy.group.repository.GroupRepository;
-import com.ssafy.virtudy.member.domain.*;
+import com.ssafy.virtudy.group.repository.RoomMemberRepository;
+import com.ssafy.virtudy.member.domain.JobType;
+import com.ssafy.virtudy.member.domain.Member;
+import com.ssafy.virtudy.member.domain.MemberGameStat;
+import com.ssafy.virtudy.member.domain.MemberStatType;
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
@@ -19,9 +19,11 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * TODO : RoomMember 추가 (이전 Group)
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -29,9 +31,8 @@ import java.util.*;
 public class DummyDataInit implements CommandLineRunner {
 
     private final MemberRepository memberRepository;
-    private final GroupRepository groupRepository;
     private final StudyRoomRepository studyRoomRepository;
-    private final GroupMemberRepository groupMemberRepository;
+    private final RoomMemberRepository roomMemberRepository;
     private final MemberGameStatRepository memberGameStatRepository;
     // Faker: 가짜 데이터 생성 라이브러리 (한국어 설정)
     private final Faker faker = new Faker(new Locale("ko"));
@@ -62,40 +63,14 @@ public class DummyDataInit implements CommandLineRunner {
             createAndSaveGameStat(member);
         }
 
-        // 2. 그룹(Group) 생성 (10개)
-        List<Group> groups = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            // 랜덤한 리더 선정
-            Member leader = members.get(random.nextInt(members.size()));
-            Group group = createGroup(leader);
-            groupRepository.save(group);
-            groups.add(group);
-        }
-
-        // 3. 그룹 가입 (GroupMember) - 랜덤하게 가입시키기
-        for (Group group : groups) {
-            int joinCount = random.nextInt(10) + 1; // 그룹당 1~10명 가입
-            for (int k = 0; k < joinCount; k++) {
-                Member member = members.get(random.nextInt(members.size()));
-                // 이미 가입했는지 체크 로직은 생략 (더미니까)
-                GroupMember groupMember = GroupMember.builder()
-                        .groupId(group)     // 연관관계 편의 메서드가 있다면 사용
-                        .groupMemberId(UUID.randomUUID().toString())
-                        .member(member)
-                        .joinedAt(LocalDateTime.now().minusDays(random.nextInt(100)))
-                        .build();
-                groupMemberRepository.save(groupMember);
-            }
-        }
-
-        // 4. 스터디룸(StudyRoom) 생성
+        // 2. 스터디룸(StudyRoom) 생성
         for (int i = 0; i < 20; i++) {
             Member owner = members.get(random.nextInt(members.size()));
             StudyRoom room = createStudyRoom(owner);
             studyRoomRepository.save(room);
         }
 
-        log.info("✅ 더미 데이터 생성이 완료되었습니다. (Member: 100명, Group: 10개)");
+        log.info("✅ 더미 데이터 생성이 완료되었습니다. (Member: 100명, Room: 20개)");
     }
 
     private Member createMember(int index) {
@@ -133,24 +108,14 @@ public class DummyDataInit implements CommandLineRunner {
         redisTemplate.opsForZSet().add(rankingKey, String.valueOf(member.getId()), score);
     }
 
-    private Group createGroup(Member leader) {
-        return Group.builder()
-                .groupId(UUID.randomUUID().toString())
-                .leader(leader)
-                .name(faker.team().name() + " 스터디")
-                .description(faker.lorem().sentence())
-                .region(faker.address().city())
-                .groupTierScore(random.nextInt(500))
-                .build();
-    }
-
     private StudyRoom createStudyRoom(Member owner) {
         return StudyRoom.builder()
                 .owner(owner)
                 .roomId(UUID.randomUUID().toString())
                 .title(faker.book().title() + " 같이 공부해요")
                 .type(RoomType.values()[random.nextInt(RoomType.values().length)])
-                .maxUser(random.nextInt(6) + 2) // 2~8명
+                .description(faker.lorem().sentence())
+                .roomTierScore(random.nextInt(500))
                 .status(RoomStatType.OPEN)
                 .build();
     }
