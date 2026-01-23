@@ -37,6 +37,9 @@ public class StudySession extends BaseTimeEntity {
     @Column(nullable = false)
     private int sessionRealStudyTime = 0;
 
+    @Column(nullable = false)
+    private int sessionRealStudyTime = 0;
+
     @Column
     private LocalDateTime endTime; // 세션 종료시각
 

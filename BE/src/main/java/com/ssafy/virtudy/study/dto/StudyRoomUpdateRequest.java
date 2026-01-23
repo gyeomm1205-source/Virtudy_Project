@@ -18,4 +18,3 @@ public class StudyRoomUpdateRequest {
     @Schema(description = "변경할 스터디방 설명", example = "변경된 설명입니다.")
     private String description;
 }
-

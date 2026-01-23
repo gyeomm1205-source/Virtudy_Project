@@ -18,4 +18,3 @@ public interface RoomMemberRepository extends JpaRepository<RoomMember, Long> {
             "WHERE rm.member_id = :memberId AND sr.status = 'OPEN'", nativeQuery = true)
     List<RoomMember> findAllByMemberAndRoomStatusOpen(@Param("memberId") Long memberId);
 }
-
