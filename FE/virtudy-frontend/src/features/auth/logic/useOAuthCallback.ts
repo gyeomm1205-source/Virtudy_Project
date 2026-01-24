@@ -38,7 +38,7 @@ export const useOAuthCallback = () => {
       const response = await authAPI.kakaoCallback(code);
 
       // 응답에서 토큰 및 신규/기존 유저 여부 추출
-      const { isNewUser, accessToken, signupInfo } = response.data;
+      const { needSignup: isNewUser, accessToken, ...signupInfo } = response.data;
 
       if (isNewUser) {
         // 신규 유저 → 임시 가입 정보 저장 후 약관 페이지로
@@ -46,7 +46,14 @@ export const useOAuthCallback = () => {
         alert('Virtudy에 오신 것을 환영합니다! 몇 가지 추가 정보만 입력해주세요.');
         await router.push({ name: 'terms' });
       } else {
-        // 기존 유저 → 토큰 저장 후 유저 페이지로
+        // 기존 유저
+        if (!accessToken) {
+          // isNewUser가 false인데 토큰이 없는 경우 -> 서버 오류
+          throw new Error(
+            '로그인에 실패했습니다. 서버에서 인증 토큰을 받지 못했습니다.',
+          );
+        }
+        // 토큰 저장 후 유저 페이지로
         authStore.setToken(accessToken);
         await router.push({ name: 'user' });
       }

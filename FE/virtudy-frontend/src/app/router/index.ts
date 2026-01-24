@@ -55,24 +55,50 @@ const router = createRouter({
       path: '/onboarding/terms',
       name: 'terms',
       component: TermsOfServicePage,
-      beforeEnter: () => {
+      beforeEnter: (to, from, next) => {
         const authStore = useAuthStore();
-        // 임시 정보가 없으면 비정상 접근으로 간주하여 guest 페이지로
-        if (!authStore.signupInfo) {
-          return { name: 'guest' };
+
+        // 1. Pinia store에 정보가 있으면 통과
+        if (authStore.signupInfo) {
+          return next();
         }
+
+        // 2. Pinia에 없으면 localStorage 확인 (새로고침 대비)
+        const storedInfo = localStorage.getItem('signupInfo');
+        if (storedInfo && storedInfo !== 'undefined') {
+          try {
+            // localStorage 정보를 다시 Pinia에 저장하고 통과
+            authStore.setSignupInfo(JSON.parse(storedInfo));
+            return next();
+          } catch (e) {
+            console.error(
+              'signupInfo 파싱 오류. 게스트 페이지로 리디렉션합니다.',
+              e
+            );
+            return next({ name: 'guest' }); // 파싱 실패 시 접근 거부
+          }
+        }
+
+        // 3. 둘 다 없으면 비정상 접근으로 간주, 게스트 페이지로 리디렉션
+        alert('비정상적인 접근입니다. 로그인부터 다시 진행해주세요.');
+        return next({ name: 'guest' });
       }
     },
     {
       path: '/onboarding/survey',
       name: 'survey',
       component: OnboardingSurveyPage,
-      beforeEnter: (to, from) => {
+      beforeEnter: (to, from, next) => {
         const authStore = useAuthStore();
-        // 약관 동의 페이지에서 온 것이 아니거나, 임시 정보가 없으면 비정상 접근
-        if (from.name !== 'terms' || !authStore.signupInfo) {
-          return { name: 'guest' };
+        // 1. Pinia나 LocalStorage에 가입 정보가 있는지 확인
+        const hasInfo = authStore.signupInfo || localStorage.getItem('signupInfo');
+
+        // 2. 정보가 없으면 내쫓기
+        if (!hasInfo) {
+          alert("잘못된 접근입니다. 처음부터 다시 시도해주세요.");
+          return next({ name: 'guest' });
         }
+        return next(); // 통과
       }
     },
     {

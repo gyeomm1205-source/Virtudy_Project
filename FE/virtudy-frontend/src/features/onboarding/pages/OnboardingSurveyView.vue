@@ -2,52 +2,53 @@
   <div>
     <h1>학습 성향 조사</h1>
     <form @submit.prevent="submitSurvey">
-      <!-- 일일 평균 공부 시간 -->
       <div>
         <label for="avg-study-time">일일 평균 공부 시간: </label>
         <select id="avg-study-time" v-model="surveyData.avgStudyTime">
           <option disabled value="">선택하세요</option>
-          <option v-for="time in studyTimeOptions" :key="time" :value="time">{{ time }}</option>
+          <option v-for="option in studyTimeOptions" :key="option.value" :value="option.value">
+            {{ option.text }}
+          </option>
         </select>
       </div>
 
-      <!-- 일 목표 공부 시간 -->
       <div>
         <label for="goal-study-time">일 목표 공부 시간: </label>
         <select id="goal-study-time" v-model="surveyData.goalStudyTime">
           <option disabled value="">선택하세요</option>
-          <option v-for="time in studyTimeOptions" :key="time" :value="time">{{ time }}</option>
+          <option v-for="option in studyTimeOptions" :key="option.value" :value="option.value">
+            {{ option.text }}
+          </option>
         </select>
       </div>
 
-      <!-- 주 학습 시간대 -->
       <div>
-        <p>주 학습 시간대 (중복 가능):</p>
+        <p>주 학습 시간대:</p>
         <label v-for="slot in timeSlots" :key="slot.value">
-          <input type="checkbox" :value="slot.value" v-model="surveyData.preferredTimeSlots" />
+          <input type="radio" :value="slot.value" v-model="surveyData.preferredTimeSlots" name="preferredTimeSlotGroup" />
           {{ slot.text }}
         </label>
       </div>
 
-      <!-- 학습 스타일 -->
       <div>
         <p>학습 스타일:</p>
         <label>
-          <input type="radio" value="marathon" v-model="surveyData.studyStyle" />
+          <input type="radio" value="MARATHON" v-model="surveyData.studyStyle" />
           마라톤형 (꾸준히 길게)
         </label>
         <label>
-          <input type="radio" value="sprint" v-model="surveyData.studyStyle" />
+          <input type="radio" value="SPRINT" v-model="surveyData.studyStyle" />
           스프린터형 (짧고 굵게)
         </label>
       </div>
 
-      <!-- 직업(신분) -->
       <div>
         <label for="occupation">직업(신분): </label>
         <select id="occupation" v-model="surveyData.occupation">
           <option disabled value="">선택하세요</option>
-          <option v-for="job in jobOptions" :key="job" :value="job">{{ job }}</option>
+          <option v-for="option in jobOptions" :key="option.value" :value="option.value">
+            {{ option.text }}
+          </option>
         </select>
       </div>
 
@@ -59,57 +60,117 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어 임포트
-import api from '@/shared/api/axios.config.ts'; // Axios 인스턴스 임포트
+import { useAuthStore } from '@/stores/authStore';
+import api from '@/shared/api/axios.config.ts';
 
 const router = useRouter();
-const authStore = useAuthStore(); // 스토어 인스턴스 사용
+const authStore = useAuthStore();
 
-const studyTimeOptions = ['1~2시간', '3~4시간', '5~6시간', '7~8시간', '9시간 이상'];
-const timeSlots = [
-  { text: '새벽 (00:00 ~ 06:00)', value: 'dawn' },
-  { text: '오전 (06:00 ~ 12:00)', value: 'morning' },
-  { text: '오후 (12:00 ~ 18:00)', value: 'afternoon' },
-  { text: '저녁 (18:00 ~ 24:00)', value: 'evening' },
+// [수정 3] 보여주는 텍스트(text)와 서버로 보낼 코드(value) 정의
+// 백엔드 Enum과 철자가 정확히 일치해야 합니다.
+const studyTimeOptions = [
+  { text: '1~2시간', value: 'ONE_TO_TWO' },
+  { text: '3~4시간', value: 'THREE_TO_FOUR' },
+  { text: '5~6시간', value: 'FIVE_TO_SIX' },
+  { text: '7~8시간', value: 'SEVEN_TO_EIGHT' },
+  { text: '9시간 이상', value: 'OVER_NINE' },
 ];
-const jobOptions = ['학생 (초/중/고)', '대학생/대학원생', '취업준비생', '직장인', '기타'];
 
-const surveyData = ref({
+const timeSlots = [
+  { text: '새벽 (00:00 ~ 06:00)', value: 'DAWN' },
+  { text: '오전 (06:00 ~ 12:00)', value: 'MORNING' },
+  { text: '오후 (12:00 ~ 18:00)', value: 'AFTERNOON' },
+  { text: '저녁 (18:00 ~ 24:00)', value: 'EVENING' },
+];
+
+const jobOptions = [
+  { text: '학생 (초/중/고)', value: 'MIDDLE_HIGH_SCHOOL' },
+  { text: '대학생/대학원생', value: 'UNIVERSITY_STUDENT' },
+  { text: '취업준비생', value: 'JOB_SEEKER' },
+  { text: '직장인', value: 'OFFICE_WORKER' },
+  { text: '기타', value: 'ETC' },
+];
+
+interface SurveyData {
+  avgStudyTime: string;
+  goalStudyTime: string;
+  preferredTimeSlots: string;
+  studyStyle: string;
+  occupation: string;
+}
+
+const surveyData = ref<SurveyData>({
   avgStudyTime: '',
   goalStudyTime: '',
-  preferredTimeSlots: [],
-  studyStyle: '',
+  preferredTimeSlots: '', //빈 문자열로 초기화
+  studyStyle: '', // 초기값 빈 문자열
   occupation: '',
 });
 
 const submitSurvey = async () => {
-  // 1. 스토어에서 임시 가입 정보 가져오기
-  const signupInfo = authStore.signupInfo;
+  let signupInfo = authStore.signupInfo;
+
   if (!signupInfo) {
-    alert('비정상적인 접근입니다. 다시 로그인해주세요.');
+    const storedInfo = localStorage.getItem('signupInfo');
+    if (storedInfo && storedInfo !== "undefined") {
+      try {
+        signupInfo = JSON.parse(storedInfo);
+        authStore.setSignupInfo(signupInfo);
+      } catch (e) {
+        console.error('가입 정보 파싱 실패', e);
+      }
+    }
+  }
+
+  if (!signupInfo) {
+    alert('비정상적인 접근입니다. 가입 정보가 유실되었습니다.');
     router.push({ name: 'guest' });
     return;
   }
-  
+
   try {
-    // 2. 백엔드 최종 회원가입 API 호출
+    // Client-side validation
+    if (
+      !surveyData.value.avgStudyTime ||
+      !surveyData.value.goalStudyTime ||
+      !surveyData.value.preferredTimeSlots || // 변경: 빈 문자열 체크
+      !surveyData.value.studyStyle ||
+      !surveyData.value.occupation
+    ) {
+      alert('모든 항목을 선택해주세요.');
+      return;
+    }
+
+    // [수정 4] 복잡한 변환 로직 제거하고 바로 전송
     const payload = {
-      ...signupInfo, // { provider, providerId, email } 등
-      ...surveyData.value, // 설문 데이터
+      // 1. Auth Info
+      email: signupInfo.email.trim(),
+      nickname: signupInfo.tempNickname,
+      isServiceAgreed: signupInfo.isServiceAgreed,
+      isVideoAgreed: signupInfo.isVideoAgreed,
+      isPersonaAgreed: signupInfo.isPersonaAgreed,
+
+      // 2. Survey Info 
+      studyType: surveyData.value.studyStyle, // "MARATHON" or "SPRINT"
+      activeTime: surveyData.value.preferredTimeSlots, // 단일 문자열 전송
+      jobType: surveyData.value.occupation, // "UNIVERSITY_STUDENT" etc.
+      
+      averageHours: surveyData.value.avgStudyTime,   // "ONE_TO_TWO"
+      targetHours: surveyData.value.goalStudyTime, // "ONE_TO_TWO"
     };
 
-    const response = await api.post('/members/signup', payload);
-    
-    // 3. 응답으로 받은 최종 Access Token 저장
+    console.log('전송할 데이터:', payload);
+    const response = await api.post('/auth/signup', payload);
+
     const { accessToken } = response.data;
     authStore.setToken(accessToken);
 
-    // 4. 스토어에 남아있던 임시 가입 정보 삭제
     authStore.clearSignupInfo();
-    
+    localStorage.removeItem('signupInfo');
+
     alert('회원가입이 완료되었습니다. Virtudy를 시작합니다!');
-    // 5. 온보딩 완료 후 유저 페이지로 이동
     router.push({ name: 'user' });
+
   } catch (error) {
     console.error('최종 회원가입 실패:', error);
     alert('회원가입 중 오류가 발생했습니다. 다시 시도해주세요.');
