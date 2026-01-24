@@ -47,6 +47,7 @@ export const useOAuthCallback = () => {
         await router.push({ name: 'terms' });
       } else {
         // 기존 유저
+        const { nickName } = response.data;
         if (!accessToken) {
           // isNewUser가 false인데 토큰이 없는 경우 -> 서버 오류
           throw new Error(
@@ -55,6 +56,9 @@ export const useOAuthCallback = () => {
         }
         // 토큰 저장 후 유저 페이지로
         authStore.setToken(accessToken);
+        if (nickName) {
+          authStore.setUserInfo({ nickName });
+        }
         await router.push({ name: 'user' });
       }
     } catch (err) {

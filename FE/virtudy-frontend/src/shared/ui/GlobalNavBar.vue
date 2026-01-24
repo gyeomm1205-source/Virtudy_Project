@@ -6,6 +6,7 @@
     </div>
     <div class="nav-right">
       <router-link to="/ranking" class="nav-link">랭킹</router-link>
+      <router-link v-if="isLoggedIn" to="/mypage" class="nav-link">마이페이지</router-link>
       <button v-if="!isLoggedIn" @click="kakaoLogin" class="login-button">
         카카오로 시작하기
       </button>

@@ -9,6 +9,7 @@ import TermsOfServicePage from '@/features/onboarding/pages/TermsOfServicePage.v
 import OnboardingSurveyPage from '@/features/onboarding/pages/OnboardingSurveyView.vue';
 import IntroductionPage from '@/features/introduction/pages/IntroductionPage.vue';
 import RankingPage from '@/features/ranking/pages/RankingPage.vue';
+import MyPage from '@/features/mypage/pages/MyPage.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -110,6 +111,17 @@ const router = createRouter({
       path: '/ranking',
       name: 'ranking',
       component: RankingPage
+    },
+    {
+      path: '/mypage',
+      name: 'mypage',
+      component: MyPage,
+      beforeEnter: () => {
+        const authStore = useAuthStore();
+        if (!authStore.isLoggedIn) {
+          return { name: 'guest' };
+        }
+      }
     }
   ]
 });
