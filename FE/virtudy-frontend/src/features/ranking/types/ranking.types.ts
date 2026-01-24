@@ -1,0 +1,13 @@
+export type RankType = 'private' | 'team';
+
+export interface RankItem {
+  id: string;      // 닉네임 또는 팀명
+  rank: number;
+  score: number;
+  tier: string;
+  profileImg?: string;
+}
+
+export interface MyRankInfo extends RankItem {
+  // 내 정보에만 있는 추가 필드가 있다면 여기에 작성
+}
