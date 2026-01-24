@@ -22,4 +22,3 @@ public class StudyLogRequest {
     @Schema(description = "이벤트 감지 시간 (ISO-8601 형식)", example = "2024-01-24T10:00:00", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime detectedAt;
 }
-
