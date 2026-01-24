@@ -26,7 +26,7 @@ public class AuthController {
     private final AuthService authService;
 
     // 1. 카카오 로그인 (인가 코드 전달 받음)
-    @GetMapping("/kakao")
+    @PostMapping("/kakao/callback")
     public ResponseEntity<MemberKakaoLoginResponse> kakaoLogin(@RequestParam String code, HttpServletResponse response) {
         MemberKakaoLoginResponse result = authService.kakaoLogin(code);
 
