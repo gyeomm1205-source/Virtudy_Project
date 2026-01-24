@@ -19,4 +19,7 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
 
     // 특정 사용자의 특정 방에 대한 가장 최신 세션 조회
     Optional<StudySession> findTopByMemberAndRoomOrderByStartTimeDesc(Member member, StudyRoom studyRoom);
+
+    // 세션 ID로 세션 조회
+    Optional<StudySession> findBySessionId(String sessionId);
 }

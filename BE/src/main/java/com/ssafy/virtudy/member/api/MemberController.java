@@ -10,8 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /*
- * TODO : Member 완성 후 parameter 수정
- * TODO : 로컬 테스트
  * TODO : API 명세서 작성
  */
 @RestController
