@@ -63,6 +63,7 @@ public class SecurityConfig {
 //                UsernamePasswordAuthenticationFilter.class)
 =======
                         .requestMatchers(
+//                                "/api/**",             // 로컬 테스트용
                                 "/api/members/login", // 로그인
                                 "/api/members/signup", // 회원가입
                                 "/api/auth/**", // [추가] 카카오 등 소셜 로그인 경로 확보

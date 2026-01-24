@@ -2,15 +2,19 @@ package com.ssafy.virtudy.study.repository;
 
 import com.ssafy.virtudy.study.domain.StudyLog;
 import org.springframework.data.jpa.repository.JpaRepository;
+<<<<<<< HEAD
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+=======
+>>>>>>> c0ec20e ([S14P11A703-138] 스터디 로그 C)
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface StudyLogRepository extends JpaRepository<StudyLog, Long> {
+<<<<<<< HEAD
 
     /**
      * 특정 세션에 속한 모든 학습 로그를 조회합니다.
@@ -32,4 +36,6 @@ public interface StudyLogRepository extends JpaRepository<StudyLog, Long> {
     List<StudyLog> findByMemberIdAndDateRange(@Param("memberId") Long memberId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
+=======
+>>>>>>> c0ec20e ([S14P11A703-138] 스터디 로그 C)
 }

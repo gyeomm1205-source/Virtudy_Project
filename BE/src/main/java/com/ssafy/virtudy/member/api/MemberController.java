@@ -19,7 +19,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+<<<<<<< HEAD
 @Tag(name = "회원 정보 API", description = "마이페이지에 필요한 회원 상세정보 API")
+=======
+/*
+ * TODO : API 명세서 작성
+ */
+>>>>>>> c0ec20e ([S14P11A703-138] 스터디 로그 C)
 @RestController
 @RequestMapping("/api/members")
 @RequiredArgsConstructor
