@@ -1,6 +1,7 @@
 package com.ssafy.virtudy.study.controller;
 
 import com.ssafy.virtudy.study.dto.SessionMemberInfoResponse;
+import com.ssafy.virtudy.study.dto.StudyLogRequest;
 import com.ssafy.virtudy.study.service.StudySessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,5 +35,15 @@ public class StudySessionController {
     ) {
         SessionMemberInfoResponse response = studySessionService.enterRandomRoom(memberId);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "스터디 로그 저장", description = "사용자의 상태 변경(FOCUS, SLEEP, PHONE, AWAY) 로그를 저장합니다.")
+    @PostMapping("/log")
+    public ResponseEntity<Void> saveStudyLog(
+            @Parameter(description = "사용자 ID", required = true) @RequestHeader("X-MEMBER-ID") String memberId,
+            @RequestBody StudyLogRequest request
+    ) {
+        studySessionService.saveStudyLog(memberId, request);
+        return ResponseEntity.ok().build();
     }
 }

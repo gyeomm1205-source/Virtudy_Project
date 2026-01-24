@@ -2,10 +2,16 @@ package com.ssafy.virtudy.study.domain;
 
 import com.ssafy.virtudy.member.domain.Member;
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class StudyLog {
 
     @Id
@@ -13,7 +19,8 @@ public class StudyLog {
     private Long id; // PK
 
     @Column(nullable = false)
-    private String logId; // UUID
+    @Builder.Default
+    private String logId = UUID.randomUUID().toString(); // UUID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "SESSION_ID")
