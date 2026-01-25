@@ -6,9 +6,12 @@ import com.ssafy.virtudy.group.repository.RoomMemberRepository;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
+import com.ssafy.virtudy.study.domain.StudyLog;
 import com.ssafy.virtudy.study.domain.StudyRoom;
 import com.ssafy.virtudy.study.domain.StudySession;
 import com.ssafy.virtudy.study.dto.SessionMemberInfoResponse;
+import com.ssafy.virtudy.study.dto.StudyLogRequest;
+import com.ssafy.virtudy.study.repository.StudyLogRepository;
 import com.ssafy.virtudy.study.repository.StudyRoomRepository;
 import com.ssafy.virtudy.study.repository.StudySessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,7 @@ public class StudySessionService {
     private final StudyRoomRepository studyRoomRepository;
     private final MemberRepository memberRepository;
     private final RoomMemberRepository roomMemberRepository;
+    private final StudyLogRepository studyLogRepository;
     private final LiveKitConfig liveKitConfig;
 
     public SessionMemberInfoResponse enterRoom(String memberId, String roomId) {
@@ -44,7 +48,8 @@ public class StudySessionService {
                 .orElseThrow(() -> new IllegalArgumentException("종료되었거나 존재하지 않는 방입니다."));
 
         studySessionRepository.findByMemberAndEndTimeIsNull(member).ifPresent(session -> {
-            throw new IllegalStateException("이미 다른 방에 참여중입니다. 기존 방에서 먼저 퇴장해주세요.");
+            // [Fix] Ghost Session Logic: 기존 세션이 있다면 강제 종료 후 재입장 허용
+            session.close();
         });
 
         int currentUsers = studySessionRepository.findByRoomAndEndTimeIsNull(room).size();
@@ -103,5 +108,26 @@ public class StudySessionService {
                 .orElseThrow(() -> new IllegalStateException("현재 참여중인 방이 없습니다."));
 
         session.close();
+    }
+
+    public void saveStudyLog(String memberId, StudyLogRequest request) {
+        Member member = memberRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
+
+        StudySession session = studySessionRepository.findBySessionId(request.getSessionId())
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 세션입니다."));
+
+        if (!session.getMember().getId().equals(member.getId())) {
+            throw new IllegalArgumentException("해당 세션의 사용자가 아닙니다.");
+        }
+
+        StudyLog studyLog = StudyLog.builder()
+                .session(session)
+                .member(member)
+                .eventType(request.getEventType())
+                .detectedAt(request.getDetectedAt())
+                .build();
+
+        studyLogRepository.save(studyLog);
     }
 }

@@ -39,6 +39,13 @@ public class CurrentMemberArgumentResolver implements HandlerMethodArgumentResol
                     .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
         }
 
+//        // [개발/테스트용] SecurityContext에 인증 정보가 없을 경우 X-MEMBER-ID 헤더로 식별
+//        String memberIdHeader = webRequest.getHeader("X-MEMBER-ID");
+//        if (memberIdHeader != null && !memberIdHeader.isBlank()) {
+//            return memberRepository.findByMemberId(memberIdHeader)
+//                    .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
+//        }
+
         throw new BaseException(BaseErrorCode.INVALID_JWT);
     }
 }
