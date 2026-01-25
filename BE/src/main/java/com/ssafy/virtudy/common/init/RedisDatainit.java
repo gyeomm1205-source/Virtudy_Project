@@ -1,4 +1,4 @@
-package com.ssafy.virtudy.common.init;
+package com.ssafy.virtudy.global.init;
 
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.domain.MemberGameStat;

@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
 @EnableJpaAuditing
+@EnableScheduling
 @SpringBootApplication
 public class VirtudyApplication {
 

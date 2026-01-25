@@ -5,6 +5,10 @@ import com.ssafy.virtudy.member.dto.MemberDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
 import java.util.List;
 import java.util.Optional;
 
@@ -13,11 +17,14 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByMemberId(String memberId);
 
     List<Member> findByNickName(String nickName);
+<<<<<<< HEAD
 
     // 기존 findAllMemberImages() 대신 사용
     // SELECT * FROM member WHERE member_id IN ('user1', 'user2', ...)
     List<Member> findByMemberIdIn(List<String> memberIds);
 
+=======
+>>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
     Optional<Member> findByEmail(String email);
 
     boolean existsByMemberId(String memberId);
