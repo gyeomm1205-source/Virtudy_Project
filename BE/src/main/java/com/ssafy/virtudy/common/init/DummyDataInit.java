@@ -28,9 +28,6 @@ import org.springframework.transaction.annotation.Transactional; // 트랜잭션
 
 import java.util.*;
 
-/**
- * TODO : RoomMember 추가 (이전 Group)
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -41,19 +38,28 @@ public class DummyDataInit implements CommandLineRunner {
     private final MemberRepository memberRepository;
     private final StudyRoomRepository studyRoomRepository;
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     private final RoomMemberRepository roomMemberRepository;
 >>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
     private final MemberGameStatRepository memberGameStatRepository;
     private final AvatarRepository avatarRepository;
+=======
+    private final MemberGameStatRepository memberGameStatRepository;
+>>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
 
     private final Faker faker = new Faker(new Locale("en"));
     private final Random random = new Random();
     private final RedisTemplate<String, Object> redisTemplate;
+<<<<<<< HEAD
 
     private static final String RANK_PRIVATE_KEY = "rank:private:season:1";
     private static final String RANK_TEAM_KEY = "rank:team:season:1";
 
+=======
+    private static final String RANK_PRIVATE_KEY = "rank:private:season:1";
+    private static final String RANK_TEAM_KEY = "rank:team:season:1";
+>>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
     @Override
     // @Transactional // 필요시 주석 해제 (Lazy Loading 문제 발생 시)
     public void run(String... args) throws Exception {
@@ -72,12 +78,22 @@ public class DummyDataInit implements CommandLineRunner {
         log.info("🚀 더미 데이터 생성을 시작합니다...");
         List<Member> savedMembers = new ArrayList<>(); // 저장된 멤버 리스트
 
+<<<<<<< HEAD
         // 3. 회원 생성 루프
         for (int i = 0; i < 100; i++) {
             Member member = createMember(i);
             // 여기서 아바타 생성할거임.
             Avatar avatar = createAvater(i, member);
             member.setAvatar(avatar);
+=======
+        log.info("🚀 더미 데이터 생성을 시작합니다...");
+
+        List<Member> savedMembers = new ArrayList<>(); // 저장된 멤버 리스트
+
+        // 3. 회원 생성 루프
+        for (int i = 0; i < 100; i++) {
+            Member member = createMember(i);
+>>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
 
             // ⭐ [핵심 수정] save()가 반환한 객체(savedMember)를 받아야 ID가 들어있습니다!
             Member savedMember = memberRepository.save(member);
@@ -90,8 +106,12 @@ public class DummyDataInit implements CommandLineRunner {
         // 4. 스터디룸 생성
 =======
 
+<<<<<<< HEAD
         // 2. 스터디룸(StudyRoom) 생성
 >>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
+=======
+        // 4. 스터디룸 생성
+>>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
         for (int i = 0; i < 20; i++) {
             // 저장된 멤버 목록에서 랜덤으로 주인을 뽑음
             Member owner = savedMembers.get(random.nextInt(savedMembers.size()));
@@ -103,6 +123,7 @@ public class DummyDataInit implements CommandLineRunner {
         for (Member member: members) {
             Long studyIndex = (long) ((index++ % 20) + 1);
 
+<<<<<<< HEAD
 <<<<<<< HEAD
             StudyRoom room = studyRoomRepository.getReferenceById(studyIndex);
             member.setFavoriteRoom(room);
@@ -194,6 +215,41 @@ public class DummyDataInit implements CommandLineRunner {
 >>>>>>> eb6376f (fix: 약관 동의 필드 변경; 3개로 나눔)
                 .status(MemberStatType.ACTIVE)
                 // avatarImage fk로 생성.
+=======
+        List<Member> members = memberRepository.findAll();
+
+
+        int index = 0;
+        for (Member member: members) {
+            Long studyIndex = (long) ((index++ % 20) + 1);
+
+            StudyRoom room = studyRoomRepository.getReferenceById(studyIndex);
+            member.setFavoriteRoom(room);
+            memberRepository.save(member);
+
+
+        }
+
+        log.info("✅ 더미 데이터 생성 완료! (Member: 100, Room: 20)");
+    }
+
+    private Member createMember(int index) {
+
+        String uniqueEmail = index + "_" + faker.internet().emailAddress();
+
+        String uuid = UUID.randomUUID().toString();
+        return Member.builder()
+                .memberId(uuid)
+                .password("{noop}1234")
+                .email(uniqueEmail)
+                .isVideoAgreed(true)
+                .isServiceAgreed(true)
+                .isPersonalAgreed(true)
+                .nickName(faker.name().name())
+                .jobType(JobType.values()[random.nextInt(JobType.values().length)])
+                .status(MemberStatType.ACTIVE)
+                .avatarImageUrl("https://api.dicebear.com/7.x/avataaars/svg?seed=" + index)
+>>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
                 .avatarGenCount(0)
                 .build();
     }
@@ -222,10 +278,21 @@ public class DummyDataInit implements CommandLineRunner {
         }
 =======
 
+<<<<<<< HEAD
         // ⭐ [중요] Redis 랭킹에도 동기화 (바로 테스트 가능하도록)
         String rankingKey = "rank:season:1";
         redisTemplate.opsForZSet().add(rankingKey, String.valueOf(member.getId()), score);
 >>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
+=======
+        // Redis에 저장
+        // member.getMemberId() (예: "user0") 또는 member.getId() (PK) 사용
+        // 여기서는 memberId("user0")를 사용한다고 가정
+        if (member.getMemberId() != null) {
+            redisTemplate.opsForZSet().add(rankingKey, member.getMemberId(), score);
+        } else {
+            log.warn("⚠️ Member ID is null for member: {}", member);
+        }
+>>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
     }
 
     private StudyRoom createStudyRoom(Member owner) {

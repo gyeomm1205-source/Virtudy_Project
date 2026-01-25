@@ -60,7 +60,10 @@ public class RedisDatainit implements ApplicationRunner {
                     MemberGameStatDto.RedisResponse.builder()
                     .id(memberGameStat.getMember().getMemberId())
                     .nickName(memberGameStat.getMember().getNickName())
+<<<<<<< HEAD
                     .email(memberGameStat.getMember().getEmail())
+=======
+>>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
                     .tierScore(memberGameStat.getTierScore())
                     .build()
             );
@@ -73,7 +76,10 @@ public class RedisDatainit implements ApplicationRunner {
                     MemberGameStatDto.RedisResponse.builder()
                             .id(studyRoom.getRoomId())
                             .nickName(studyRoom.getTitle())
+<<<<<<< HEAD
                             .email(studyRoom.getOwner().getEmail())
+=======
+>>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
                             .tierScore(studyRoom.getRoomTierScore())
                             .build()
             );
