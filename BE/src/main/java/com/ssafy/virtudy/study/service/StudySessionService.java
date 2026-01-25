@@ -48,7 +48,8 @@ public class StudySessionService {
                 .orElseThrow(() -> new IllegalArgumentException("종료되었거나 존재하지 않는 방입니다."));
 
         studySessionRepository.findByMemberAndEndTimeIsNull(member).ifPresent(session -> {
-            throw new IllegalStateException("이미 다른 방에 참여중입니다. 기존 방에서 먼저 퇴장해주세요.");
+            // [Fix] Ghost Session Logic: 기존 세션이 있다면 강제 종료 후 재입장 허용
+            session.close();
         });
 
         int currentUsers = studySessionRepository.findByRoomAndEndTimeIsNull(room).size();
