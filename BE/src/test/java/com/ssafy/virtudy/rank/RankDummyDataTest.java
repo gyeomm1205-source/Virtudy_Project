@@ -1,15 +1,10 @@
 package com.ssafy.virtudy.rank;
 
-import com.ssafy.virtudy.rank.domain.Rank;
-import com.ssafy.virtudy.rank.repository.RankRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 @SpringBootTest

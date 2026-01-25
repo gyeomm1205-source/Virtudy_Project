@@ -29,11 +29,11 @@ public class RankService {
     private final MemberGameStatRepository memberGameStatRepository;
     private final StudyRoomRepository studyRoomRepository;
 
-
     private final RedisTemplate<String, String> redisTemplate;
 
     private static final String RANK_PRIATE_KEY = "rank:private:season:1";
     private static final String RANK_TEAM_KEY = "rank:team:season:1";
+    private static final String ROOMTYPE_PRIVATE = "private";
     private static final int PAGE_SIZE = 10;
 
     // 랭크 조회
@@ -41,7 +41,7 @@ public class RankService {
         Set<ZSetOperations.TypedTuple<String>> tuples = null;
 
 
-        if (type.equals("private")) {
+        if (type.equals(ROOMTYPE_PRIVATE)) {
             tuples = redisTemplate.opsForZSet().reverseRangeWithScores(RANK_PRIATE_KEY, start, end);
         } else {
             // 팀 랭킹
@@ -82,7 +82,7 @@ public class RankService {
         Long rankIndex;
         Double scoreVal ;
 
-        if (type.equals("private")) {
+        if (type.equals(ROOMTYPE_PRIVATE)) {
             nickName = member.getNickName();
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_PRIATE_KEY, userId);
             scoreVal = redisTemplate.opsForZSet().score(RANK_PRIATE_KEY, userId);
@@ -121,7 +121,7 @@ public class RankService {
         String nickName = null;
         String userId = null;
         List<RankDTO.Response> responseList = new ArrayList<>();
-        if (type.equals("private")) {
+        if (type.equals(ROOMTYPE_PRIVATE)) {
             List<Member> memberList = memberRepository.findByNickName(name);
 
 
