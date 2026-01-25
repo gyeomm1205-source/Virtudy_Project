@@ -16,81 +16,108 @@ import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional; // 트랜잭션 추가 권장
 
 import java.util.*;
 
-/**
- * TODO : RoomMember 추가 (이전 Group)
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Profile("local") // "local" 프로파일일 때만 실행(배포 서버 사고 방지)
+@Profile("local")
+@Order(1)
 public class DummyDataInit implements CommandLineRunner {
 
     private final MemberRepository memberRepository;
     private final StudyRoomRepository studyRoomRepository;
-    private final RoomMemberRepository roomMemberRepository;
     private final MemberGameStatRepository memberGameStatRepository;
-    // Faker: 가짜 데이터 생성 라이브러리 (한국어 설정)
-    private final Faker faker = new Faker(new Locale("ko"));
+
+    private final Faker faker = new Faker(new Locale("en"));
     private final Random random = new Random();
     private final RedisTemplate<String, Object> redisTemplate;
-
+    private static final String RANK_PRIVATE_KEY = "rank:private:season:1";
+    private static final String RANK_TEAM_KEY = "rank:team:season:1";
     @Override
+    // @Transactional // 필요시 주석 해제 (Lazy Loading 문제 발생 시)
     public void run(String... args) throws Exception {
-        // 이미 데이터가 있으면 생성하지 않음 (선택 사항)
+
+        // 1. ddl-auto: create 라면 DB는 비어있지만, Redis는 그대로일 수 있음.
+        //    확실한 초기화를 위해 Redis 키도 삭제해줍니다.
+        redisTemplate.delete(RANK_TEAM_KEY);
+        redisTemplate.delete(RANK_PRIVATE_KEY);
+        log.info("🧹 Redis 랭킹 데이터({}) 초기화 완료", RANK_PRIVATE_KEY);
+
+        // 2. 중복 방지 (ddl-auto: create면 항상 0이라 통과함)
         if (memberRepository.count() > 0) {
-            log.info("데이터가 이미 존재하여 더미 데이터 생성을 건너뜁니다.");
-            return ;
+            log.info("ℹ️ DB에 데이터가 존재하여 생성을 건너뜁니다.");
+            return;
         }
 
-        log.info("더미 데이터 생성을 시작합니다...");
+        log.info("🚀 더미 데이터 생성을 시작합니다...");
 
-        // 1. 회원(Member) & 게임스탯(MemberGameStat) 생성 (100명)
-        List<Member> members = new ArrayList<>();
+        List<Member> savedMembers = new ArrayList<>(); // 저장된 멤버 리스트
 
+        // 3. 회원 생성 루프
         for (int i = 0; i < 100; i++) {
             Member member = createMember(i);
-            members.add(member);
 
-            // 회원 저장
-            memberRepository.save(member);
+            // ⭐ [핵심 수정] save()가 반환한 객체(savedMember)를 받아야 ID가 들어있습니다!
+            Member savedMember = memberRepository.save(member);
+            savedMembers.add(savedMember);
 
-            // 게임 스탯 생성 및 저장
-            createAndSaveGameStat(member);
+            // ⭐ [핵심 수정] savedMember를 넘겨야 ID가 null이 아닙니다.
+            createAndSaveGameStat(savedMember, RANK_PRIVATE_KEY);
         }
 
-        // 2. 스터디룸(StudyRoom) 생성
+        // 4. 스터디룸 생성
         for (int i = 0; i < 20; i++) {
-            Member owner = members.get(random.nextInt(members.size()));
+            // 저장된 멤버 목록에서 랜덤으로 주인을 뽑음
+            Member owner = savedMembers.get(random.nextInt(savedMembers.size()));
             StudyRoom room = createStudyRoom(owner);
             studyRoomRepository.save(room);
         }
 
-        log.info("✅ 더미 데이터 생성이 완료되었습니다. (Member: 100명, Room: 20개)");
+        List<Member> members = memberRepository.findAll();
+
+
+        int index = 0;
+        for (Member member: members) {
+            Long studyIndex = (long) ((index++ % 20) + 1);
+
+            StudyRoom room = studyRoomRepository.getReferenceById(studyIndex);
+            member.setFavoriteRoom(room);
+            memberRepository.save(member);
+
+
+        }
+
+        log.info("✅ 더미 데이터 생성 완료! (Member: 100, Room: 20)");
     }
 
     private Member createMember(int index) {
+
+        String uniqueEmail = index + "_" + faker.internet().emailAddress();
+
+        String uuid = UUID.randomUUID().toString();
         return Member.builder()
-                .memberId("user" + index)
-                .password("{noop}1234") // 테스트용 암호화 안 된 비번
-                .email(faker.internet().emailAddress())
+                .memberId(uuid)
+                .password("{noop}1234")
+                .email(uniqueEmail)
                 .isVideoAgreed(true)
                 .isServiceAgreed(true)
                 .isPersonalAgreed(true)
-                .nickName(faker.name().fullName()) // "김철수", "이영희" 등 생성
-                .jobType(JobType.values()[random.nextInt(JobType.values().length)]) // Enum 랜덤
+                .nickName(faker.name().name())
+                .jobType(JobType.values()[random.nextInt(JobType.values().length)])
                 .status(MemberStatType.ACTIVE)
-                .avatarImageUrl("https://api.dicebear.com/7.x/avataaars/svg?seed=" + index) // 랜덤 아바타 API
+                .avatarImageUrl("https://api.dicebear.com/7.x/avataaars/svg?seed=" + index)
                 .avatarGenCount(0)
                 .build();
     }
 
-    private void createAndSaveGameStat(Member member) {
-        int score = random.nextInt(3000); // 0 ~ 3000 점
+    private void createAndSaveGameStat(Member member, String rankingKey) {
+        int score = random.nextInt(3000);
         int totalStudyTime = random.nextInt(10000);
 
         MemberGameStat stat = MemberGameStat.builder()
@@ -98,14 +125,19 @@ public class DummyDataInit implements CommandLineRunner {
                 .point(score)
                 .statId(UUID.randomUUID().toString())
                 .totalStudyTime(totalStudyTime)
-                .tierScore(score / 100) // 대충 계산
+                .tierScore(score / 100)
                 .build();
 
         memberGameStatRepository.save(stat);
 
-        // ⭐ [중요] Redis 랭킹에도 동기화 (바로 테스트 가능하도록)
-        String rankingKey = "rank:season:1";
-        redisTemplate.opsForZSet().add(rankingKey, String.valueOf(member.getId()), score);
+        // Redis에 저장
+        // member.getMemberId() (예: "user0") 또는 member.getId() (PK) 사용
+        // 여기서는 memberId("user0")를 사용한다고 가정
+        if (member.getMemberId() != null) {
+            redisTemplate.opsForZSet().add(rankingKey, member.getMemberId(), score);
+        } else {
+            log.warn("⚠️ Member ID is null for member: {}", member);
+        }
     }
 
     private StudyRoom createStudyRoom(Member owner) {

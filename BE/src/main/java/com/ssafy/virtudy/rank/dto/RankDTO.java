@@ -13,6 +13,7 @@ public class RankDTO {
     @AllArgsConstructor
     public static class Response {
         private String id;
+        private String nickName;
         private int rank;
         private int score;
         private Tier tier;
