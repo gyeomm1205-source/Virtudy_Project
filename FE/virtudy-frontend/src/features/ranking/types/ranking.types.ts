@@ -1,7 +1,8 @@
 export type RankType = 'private' | 'team';
 
 export interface RankItem {
-  id: string;      // 닉네임 또는 팀명
+  id: string;      // 유저 ID 또는 팀 ID
+  nickName: string;// 유저 닉네임 또는 팀 이름
   rank: number;
   score: number;
   tier: string;
