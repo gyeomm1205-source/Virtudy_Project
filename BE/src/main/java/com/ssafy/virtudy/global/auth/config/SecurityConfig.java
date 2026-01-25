@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
 <<<<<<< HEAD
+<<<<<<< HEAD
                         .anyRequest().permitAll()); // TODO : 추후 정상 인증 로직 아래 버전으로 수정 필요
 //                        .requestMatchers(
 //                                            "/swagger-ui.html",
@@ -88,6 +89,13 @@ public class SecurityConfig {
                         }));
                 */
 >>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
+=======
+                        .anyRequest().permitAll()); //
+
+        // 개발 중에는 아래 필터를 주석 처리하여 토큰 없이도 통과하게 만듭니다.
+        // .addFilterBefore(new JwtAuthFilter(...),
+        // UsernamePasswordAuthenticationFilter.class);
+>>>>>>> cd0c681 (fix: 유령 세션 문제 해결 및 로컬 FE CORS 허용)
 
         return http.build();
     }
