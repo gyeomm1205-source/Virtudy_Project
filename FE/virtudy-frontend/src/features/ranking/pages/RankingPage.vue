@@ -11,8 +11,8 @@
              <span v-else>Me</span>
            </div>
            <div class="text-info">
-             <p v-if="authStore.userInfo">{{ authStore.userInfo.nickName }} {{ rankType === 'private' ? '님의 순위' : '팀의 순위' }}</p>
-             <p v-else>{{ myRankInfo.id }} {{ rankType === 'private' ? '님의 순위' : '팀의 순위' }}</p>
+             <p v-if="myRankInfo">{{ myRankInfo.nickName }}{{ rankType === 'private' ? '님의 순위' : '팀의 순위' }} </p>
+             <p v-else></p>
              <p class="rank-number">{{ myRankInfo.rank }}위</p>
            </div>
         </div>
@@ -35,13 +35,14 @@
       <div v-else class="rank-list">
         <div v-for="item in rankList" :key="item.id" class="rank-item">
           <span class="col-rank">{{ item.rank }}</span>
-          <span class="col-name">{{ item.id }}</span>
+          <span class="col-name">{{ item.nickName }}</span>
           <span class="col-score">{{ item.score }}p</span>
           <span class="col-tier">{{ item.tier }}</span>
         </div>
       </div>
+    </div>
 
-      <div class="pagination">
+    <div class="pagination">
         <button 
           @click="changePage(Math.max(0, currentPage - 5))" 
           :disabled="currentPage === 0"
@@ -83,7 +84,6 @@
           &gt;&gt;
         </button>
       </div>
-    </div>
   </div>
 </template>
 
@@ -111,7 +111,7 @@ const goBack = () => {
 
 <style scoped>
 .ranking-container {
-  background-color: #D6B48D; 
+  background-color: #FFF5E0; 
   color: #5A4632;
   padding: 20px;
   min-height: 100vh;
