@@ -14,10 +14,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,12 +46,17 @@ public class RankService {
             tuples = redisTemplate.opsForZSet().reverseRangeWithScores(RANK_TEAM_KEY, start, end);
         }
 
-        System.out.println(tuples);
-
         if (tuples == null || tuples.isEmpty()) return List.of();
 
         List<RankDTO.Response> responseList = new ArrayList<>();
 
+        List<Object[]> results = memberRepository.findAllMemberImages();
+
+        Map<String, String> memberMap = results.stream()
+                .collect(Collectors.toMap(
+                        row -> (String) row[0], // key: memberId
+                        row -> (String) row[1] // value : avatarImageUrl
+                ));
         int currentRank = (int) start + 1;
 
         // 2. 반복문 돌면서 DTO로 변환
@@ -61,12 +64,12 @@ public class RankService {
             String userId = tuple.getValue();
             Double scoreVal = tuple.getScore();
             int score = (scoreVal != null) ? scoreVal.intValue() : 0;
-
             // 3. DTO 빌더 패턴 사용
             RankDTO.Response dto = RankDTO.Response.builder()
                     .id(userId)
                     .rank(currentRank++)
                     .score(score)
+                    .avatarImageUrl(memberMap.get(userId))
                     .tier(calculateTier(score))
                     .build();
 
@@ -81,11 +84,12 @@ public class RankService {
         String nickName = null;
         Long rankIndex;
         Double scoreVal ;
-
+        String imageUrl = "" ;
         if (type.equals(ROOMTYPE_PRIVATE)) {
             nickName = member.getNickName();
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_PRIATE_KEY, userId);
             scoreVal = redisTemplate.opsForZSet().score(RANK_PRIATE_KEY, userId);
+            imageUrl = member.getAvatarImageUrl();
         } else {
             // 최애 팀 깎고 와야됨.
             StudyRoom studyRoom = member.getFavoriteRoom();
@@ -103,6 +107,7 @@ public class RankService {
                 .nickName(nickName)
                 .rank(rankIndex.intValue() + 1)
                 .score(scoreVal.intValue())
+                .avatarImageUrl(imageUrl)
                 .tier(calculateTier(scoreVal))
                 .build();
     }
@@ -145,6 +150,7 @@ public class RankService {
                                 .nickName(nickName)
                                 .rank(rankIndex.intValue() + 1)
                                 .score(scoreVal.intValue())
+                                .avatarImageUrl(tempMember.getAvatarImageUrl())
                                 .tier(calculateTier(scoreVal))
                                 .build()
                 );
