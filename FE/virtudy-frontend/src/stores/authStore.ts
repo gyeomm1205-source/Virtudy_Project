@@ -9,7 +9,7 @@ interface User {
 
 export const useAuthStore = defineStore('auth', () => {
   // 상태 (State)
-  const accessToken = ref(localStorage.getItem('accessToken') || null);
+  const accessToken = ref(localStorage.getItem('accessToken') || 'MOCK_ACCESS_TOKEN');
   const signupInfo = ref(localStorage.getItem('signupInfo') ? JSON.parse(localStorage.getItem('signupInfo')!) : null); // 신규 유저 임시 정보
   const userInfo = ref<User | null>(localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')!) : null); // 추가 정보(닉네임 등) 저장용
 
@@ -32,7 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
     signupInfo.value = info;
     localStorage.setItem('signupInfo', JSON.stringify(info)); // 페이지 이동 대비
   };
-  
+
   // 3. 임시 정보 클리어
   const clearSignupInfo = () => {
     signupInfo.value = null;

@@ -3,14 +3,15 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
-const LIVEKIT_URL = 'wss://your-livekit-server-url'; // 실제 LiveKit 서버 주소
-const SOCKET_URL = 'http://localhost:8080/ws'; // 실제 백엔드 소켓 주소
+const LIVEKIT_URL = 'ws://127.0.0.1:7880'; // 실제 LiveKit 서버 주소 (로컬 기본값)
+const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
 
 export class RoomManager {
     private static instance: RoomManager;
     private room: Room | null = null;
     private stompClient: Client | null = null;
     private roomId: string = '';
+    private memberId: string = ''; // [추가] 멤버 ID 저장
 
     private constructor() { }
 
@@ -21,19 +22,22 @@ export class RoomManager {
         return RoomManager.instance;
     }
 
+    public getRoom(): Room | null {
+        return this.room;
+    }
+
     // 1. 통합 연결 함수 (입장 API -> LiveKit 연결 -> 소켓 연결)
     async joinStudyRoom(roomId: string, memberId: string) {
         this.roomId = roomId;
+        this.memberId = memberId; // [추가] 멤버 ID 저장
 
         try {
-            // 1-1. 백엔드 API 호출하여 LiveKit 토큰 가져오기
-            // 실제 구현 시에는 axios 등을 사용하여 API 호출
-            // const response = await api.enterRoom(roomId, memberId);
-            // const liveKitToken = response.data.liveKitToken;
-            const liveKitToken = 'MOCK_TOKEN_NEED_BE_IMP'; // 백엔드 구현 전 임시 토큰
+            // [수정] 프론트엔드 로컬 토큰 생성기 사용 (백엔드 미구현 대응)
+            const { LocalTokenGenerator } = await import('./LocalTokenGenerator');
+            const liveKitToken = await LocalTokenGenerator.generateToken(roomId, memberId);
 
             if (!liveKitToken) {
-                throw new Error('LiveKit 토큰을 받아오지 못했습니다.');
+                throw new Error('LiveKit 토큰을 생성하지 못했습니다.');
             }
 
             // 1-2. LiveKit 연결 (미디어 플레인)
@@ -63,21 +67,23 @@ export class RoomManager {
             this.handleTrackSubscribed(track, publication, participant);
         });
 
+        this.room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+            this.handleTrackUnsubscribed(track, publication, participant);
+        });
+
         this.room.on(RoomEvent.Disconnected, () => {
             console.warn('[LiveKit] 연결이 끊어졌습니다.');
             // 여기서 "연결 끊김" 모달을 띄우거나 홈으로 이동
         });
 
         try {
-            // [테스트용] 실제 서버 주소가 아니면 연결 시늉만 하고 넘어감
-            if (LIVEKIT_URL.includes('your-livekit-server-url')) {
-                console.warn('⚠️ [TEST MODE] 가상 연결로 진행합니다.');
-                await new Promise(resolve => setTimeout(resolve, 800)); // 0.8초 대기
-                return;
-            }
-
+            // [수정] Test Mode 제거 및 Video: true 설정
             await this.room.connect(LIVEKIT_URL, token);
             console.log('[LiveKit] 서버 연결 성공');
+
+            // 카메라 명시적 켜기 (connect 옵션 대신 표준 메소드 사용)
+            await this.room.localParticipant.setMicrophoneEnabled(false);
+            await this.room.localParticipant.setCameraEnabled(true);
         } catch (e) {
             console.error(e);
             throw e;
@@ -86,12 +92,6 @@ export class RoomManager {
 
     // 3. WebSocket(SockJS+Stomp) 연결 로직
     private connectWebSocket() {
-        // [테스트용] 실제 소켓 주소가 아니면 연결 시늉만 함
-        if (SOCKET_URL.includes('localhost:8080')) {
-            console.warn('⚠️ [TEST MODE] 가상 소켓 연결로 진행합니다.');
-            return;
-        }
-
         this.stompClient = new Client({
             // SockJS를 Factory로 주입
             webSocketFactory: () => new SockJS(SOCKET_URL),
@@ -107,9 +107,6 @@ export class RoomManager {
                     const payload = JSON.parse(message.body);
                     this.handleSocketMessage(payload);
                 });
-
-                // 입장 알림 전송 (필요 시)
-                // this.sendControlMessage('USER_JOIN', { ... });
             },
             onStompError: (frame) => {
                 console.error('[Stomp] 에러 발생:', frame.headers['message']);
@@ -126,24 +123,48 @@ export class RoomManager {
         participant: RemoteParticipant
     ) {
         if (track.kind === 'video' || track.kind === 'audio') {
-            // Vue 컴포넌트 등에서 사용할 수 있도록 엘리먼트 생성 또는 이벤트 발송
-            // const element = track.attach();
-            // document.getElementById('grid-container').appendChild(element);
             console.log(`[LiveKit] 트랙 수신: ${participant.identity} (${track.kind})`);
+            // 리스너들에게 알림
+            this.trackListeners.forEach(listener => listener(track, participant));
         }
+    }
+
+    // 트랙 구독 해제 핸들러
+    private handleTrackUnsubscribed(
+        track: RemoteTrack,
+        publication: RemoteTrackPublication,
+        participant: RemoteParticipant
+    ) {
+        console.log(`[LiveKit] 트랙 해제: ${participant.identity} (${track.kind})`);
+        this.trackCleanupListeners.forEach(listener => listener(track, participant));
     }
 
     // 메시지 리스너 관리
     private messageListeners: ((payload: any) => void)[] = [];
+    // 트랙 리스너 관리
+    private trackListeners: ((track: RemoteTrack, participant: RemoteParticipant) => void)[] = [];
+    private trackCleanupListeners: ((track: RemoteTrack, participant: RemoteParticipant) => void)[] = [];
 
     // 메시지 수신 이벤트 등록
     onMessage(callback: (payload: any) => void) {
         this.messageListeners.push(callback);
     }
 
+    // 트랙 수신 이벤트 등록
+    onTrackSubscribed(callback: (track: RemoteTrack, participant: RemoteParticipant) => void) {
+        this.trackListeners.push(callback);
+    }
+
+    // 트랙 해제 이벤트 등록
+    onTrackUnsubscribed(callback: (track: RemoteTrack, participant: RemoteParticipant) => void) {
+        this.trackCleanupListeners.push(callback);
+    }
+
     // 모든 리스너 제거 (중복 방지용)
     removeAllListeners() {
         this.messageListeners = [];
+        this.trackListeners = [];
+        this.trackCleanupListeners = [];
     }
 
     // 소켓 메시지 핸들러 (상태 업데이트)
@@ -165,20 +186,17 @@ export class RoomManager {
 
     // 제어 메시지 전송 헬퍼
     sendControlMessage(type: string, data: any) {
-        // [테스트용] 가상 모드일 경우 에코(Loopback) 처리
-        if (SOCKET_URL.includes('localhost:8080')) {
-            console.log(`[Mock Send] ${type}:`, data);
-            // 0.1초 뒤에 내가 보낸 메시지를 그대로 
-            setTimeout(() => {
-                this.handleSocketMessage({ type, ...data, sender: 'me' });
-            }, 100);
-            return;
-        }
-
         if (this.stompClient && this.stompClient.connected) {
+            // [수정] 백엔드 SignalMessage 구조(type, sender, receiver, data)에 맞게 전송
+            const payload = {
+                type: type,
+                sender: this.memberId,
+                data: data // { message: "..." } 형태가 data 필드 들어감
+            };
+
             this.stompClient.publish({
                 destination: `/pub/signal/${this.roomId}`,
-                body: JSON.stringify({ type, ...data }),
+                body: JSON.stringify(payload),
             });
         } else {
             console.warn('[Socket] 연결되지 않아 메시지를 보낼 수 없습니다.');

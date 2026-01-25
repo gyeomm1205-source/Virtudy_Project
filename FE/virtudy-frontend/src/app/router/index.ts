@@ -7,6 +7,7 @@ import UserPage from '@/features/auth/pages/UserPage.vue';
 import OAuthCallbackPage from '@/features/auth/pages/OAuthCallbackPage.vue'; // 콜백 처리를 위한 페이지
 import TermsOfServicePage from '@/features/onboarding/pages/TermsOfServicePage.vue';
 import OnboardingSurveyPage from '@/features/onboarding/pages/OnboardingSurveyView.vue';
+import StudyRoom from '@/components/StudyRoom.vue';
 import IntroductionPage from '@/features/introduction/pages/IntroductionPage.vue';
 import RankingPage from '@/features/ranking/pages/RankingPage.vue';
 import MyPage from '@/features/mypage/pages/MyPage.vue';
@@ -14,6 +15,11 @@ import MyPage from '@/features/mypage/pages/MyPage.vue';
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/study',
+      name: 'study',
+      component: StudyRoom
+    },
     {
       path: '/',
       name: 'home',
