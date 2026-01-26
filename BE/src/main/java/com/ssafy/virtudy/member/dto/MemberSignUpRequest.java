@@ -2,6 +2,7 @@ package com.ssafy.virtudy.member.dto;
 
 import com.ssafy.virtudy.member.domain.ActiveTimeType;
 import com.ssafy.virtudy.member.domain.JobType;
+import com.ssafy.virtudy.member.domain.StudyTimeCategoryType;
 import com.ssafy.virtudy.member.domain.StudyType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -38,11 +39,15 @@ public class MemberSignUpRequest {
     private StudyType studyType;  // "MARATHON", "SPRINTER" 등 (Enum 추천하지만 일단 String)
 
     @NotNull
-    private ActiveTimeType activeTimeType; // 새벽/ 오전/ 오후/ 저녁
+    private ActiveTimeType activeTime; // FE: preferredTimeSlots
 
     @NotNull
-    private JobType jobType;
+    private JobType jobType; // 직업 FE: occupation
 
     @NotNull
-    private int targetHours; // 목표 시간
+    private StudyTimeCategoryType targetHours; // 일일 목표 시간 FE: goalStudyTime
+
+    @NotNull
+    private StudyTimeCategoryType averageHours; // 일일 평균 공부 시간 FE: avgStudyTime
 }
+

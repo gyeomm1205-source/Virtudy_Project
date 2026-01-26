@@ -196,17 +196,18 @@ public class RankService {
             return responseList;
         }
 
-        /**
-         * 티어 계산 함수 추후 변경
-         * @param score
-         * @return
-         */
-        private RankDTO.Tier calculateTier(double score) {
-            if (score >= 1000) return RankDTO.Tier.DIAMOND;
-            if (score >= 500) return RankDTO.Tier.GOLD;
-            if (score >= 100) return RankDTO.Tier.SILVER;
-            return RankDTO.Tier.BRONZE;
-        }
+    /**
+     * 티어 계산 함수 추후 변경
+     * @param score
+     * @return
+     */
+    private RankDTO.Tier calculateTier(double score) {
+        if (score >= 9000) return RankDTO.Tier.DIAMOND;
+        if (score >= 5000) return RankDTO.Tier.PLATINUM; // Platinum 추가 (RankDTO.Tier에 있다면)
+        if (score >= 3000) return RankDTO.Tier.GOLD;
+        if (score >= 1000) return RankDTO.Tier.SILVER;
+        return RankDTO.Tier.BRONZE;
+    }
 
 
         public List<RankDTO.Response> getRankByPage(int page, String type) {

@@ -25,11 +25,18 @@ public class MemberGameStat {
     private Member member; // FK
 
     @Column(nullable = false)
+    @Builder.Default
     private int point = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private int totalStudyTime = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private int tierScore = 0;
+
+    public void updateTierScore(int newScore) {
+        this.tierScore = newScore;
+    }
 }
