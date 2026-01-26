@@ -50,3 +50,7 @@ public class MemberSignUpRequest {
     @NotNull
     private StudyTimeCategoryType averageHours; // 일일 평균 공부 시간 FE: avgStudyTime
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> dad092f (add: 티어 및 리포트 관련 API)

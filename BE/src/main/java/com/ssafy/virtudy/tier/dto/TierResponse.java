@@ -25,6 +25,7 @@ public class TierResponse {
     @Schema(description = "총 누적 공부 시간 (분 단위)", example = "1200")
     private int totalStudyTime;
 }
+<<<<<<< HEAD
 /*
 {
 nickname : "싸피",
@@ -33,3 +34,5 @@ tierRank : "GOLD",
 totalStudyTime: "1200"
 }
  */
+=======
+>>>>>>> dad092f (add: 티어 및 리포트 관련 API)

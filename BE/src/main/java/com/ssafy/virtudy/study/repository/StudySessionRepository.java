@@ -25,10 +25,16 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
     // 세션 ID로 세션 조회
     Optional<StudySession> findBySessionId(String sessionId);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 
     // 특정 기간 동안 종료된 세션 조회 (티어 스코어 갱신용)
     @Query("SELECT ss FROM StudySession ss WHERE ss.endTime BETWEEN :start AND :end")
     List<StudySession> findByEndTimeBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+<<<<<<< HEAD
 =======
 >>>>>>> c0ec20e ([S14P11A703-138] 스터디 로그 C)
+=======
+>>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 }

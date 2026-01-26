@@ -3,9 +3,13 @@ package com.ssafy.virtudy.study.dto;
 import com.ssafy.virtudy.study.domain.StudyEventType;
 import io.swagger.v3.oas.annotations.media.Schema;
 <<<<<<< HEAD
+<<<<<<< HEAD
 import lombok.AccessLevel;
 =======
 >>>>>>> c0ec20e ([S14P11A703-138] 스터디 로그 C)
+=======
+import lombok.AccessLevel;
+>>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -13,10 +17,14 @@ import java.time.LocalDateTime;
 
 @Getter
 <<<<<<< HEAD
+<<<<<<< HEAD
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 =======
 @NoArgsConstructor
 >>>>>>> c0ec20e ([S14P11A703-138] 스터디 로그 C)
+=======
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+>>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 @Schema(description = "스터디 로그 저장 요청 DTO")
 public class StudyLogRequest {
 
@@ -27,9 +35,13 @@ public class StudyLogRequest {
     private StudyEventType eventType;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     @Schema(description = "이벤트 감지 시간 (ISO-8601 형식)", example = "2024-01-24T10:00:00", requiredMode = Schema.RequiredMode.REQUIRED)
 =======
     @Schema(description = "감지된 시각", requiredMode = Schema.RequiredMode.REQUIRED)
 >>>>>>> c0ec20e ([S14P11A703-138] 스터디 로그 C)
+=======
+    @Schema(description = "이벤트 감지 시간 (ISO-8601 형식)", example = "2024-01-24T10:00:00", requiredMode = Schema.RequiredMode.REQUIRED)
+>>>>>>> dad092f (add: 티어 및 리포트 관련 API)
     private LocalDateTime detectedAt;
 }
