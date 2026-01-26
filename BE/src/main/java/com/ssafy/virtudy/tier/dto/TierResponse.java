@@ -26,6 +26,9 @@ public class TierResponse {
     private int totalStudyTime;
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5ee6548 (add: 티어 조회/갱신 API TDD)
 /*
 {
 nickname : "싸피",
@@ -34,5 +37,8 @@ tierRank : "GOLD",
 totalStudyTime: "1200"
 }
  */
+<<<<<<< HEAD
 =======
 >>>>>>> dad092f (add: 티어 및 리포트 관련 API)
+=======
+>>>>>>> 5ee6548 (add: 티어 조회/갱신 API TDD)

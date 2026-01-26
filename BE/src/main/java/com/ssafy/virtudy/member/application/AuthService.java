@@ -11,9 +11,13 @@ import com.ssafy.virtudy.member.dto.MemberKakaoLoginResponse;
 import com.ssafy.virtudy.member.dto.MemberSignUpRequest;
 import com.ssafy.virtudy.member.dto.TokenResponse;
 <<<<<<< HEAD
+<<<<<<< HEAD
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
 =======
 >>>>>>> dad092f (add: 티어 및 리포트 관련 API)
+=======
+import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
+>>>>>>> 5ee6548 (add: 티어 조회/갱신 API TDD)
 import com.ssafy.virtudy.member.repository.MemberPreferenceRepository;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
@@ -36,9 +40,13 @@ public class AuthService {
     private final MemberPreferenceRepository memberPreferenceRepository;
     private final StringRedisTemplate redisTemplate; // [RTR 로직 구현] Redis Template 주입
 <<<<<<< HEAD
+<<<<<<< HEAD
     private final MemberGameStatRepository memberGameStatRepository;
 =======
 >>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
+=======
+    private final MemberGameStatRepository memberGameStatRepository;
+>>>>>>> 5ee6548 (add: 티어 조회/갱신 API TDD)
 
     /**
      * [카카오 로그인] 인증 및 로그인 로직

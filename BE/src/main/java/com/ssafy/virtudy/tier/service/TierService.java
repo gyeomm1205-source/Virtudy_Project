@@ -1,10 +1,7 @@
 package com.ssafy.virtudy.tier.service;
 
-<<<<<<< HEAD
 import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
 import com.ssafy.virtudy.global.event.exception.BaseException;
-=======
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.domain.MemberGameStat;
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
@@ -40,7 +37,6 @@ public class TierService {
     private final RedisTemplate<String, String> redisTemplate;
 
     private static final String REDIS_TIER_KEY = "tier_ranking";
-<<<<<<< HEAD
     private static final String DIAMOND = "DIAMOND";
     private static final String PLATINUM = "PLATINUM";
     private static final String GOLD = "GOLD";
@@ -48,10 +44,8 @@ public class TierService {
     private static final String BRONZE = "BRONZE";
 
 
-=======
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 
-    // TODO 1시간 주기로 종료된 세션만 조회하고 있는데, 세션에서 로그를 언제 남기냐에 따라 달라질 듯 
+    // TODO 1시간 주기로 종료된 세션만 조회하고 있는데, 세션에서 로그를 언제 남기냐에 따라 달라질 듯
     /**
      * 1시간마다 실행되는 티어 점수 갱신 스케줄러.
      * 1. 최근 1시간 동안 종료된 세션들을 조회합니다.
@@ -119,7 +113,7 @@ public class TierService {
                 - (sleepCount * 50)
                 - (phoneCount * 30)
                 - (awayCount * 20);
-        
+
         // 감점이 많아서 음수가 될 수도 있음 (점수 깎임)
         return score;
     }
@@ -130,86 +124,48 @@ public class TierService {
      */
     private void updateMemberTierScore(Member member, int newScore) {
         MemberGameStat stat = memberGameStatRepository.findByMemberId(member.getId())
-<<<<<<< HEAD
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_GAME_STAT_NOT_FOUND_ERROR));
-=======
-                .orElseGet(() -> MemberGameStat.builder()
-                        .member(member)
-                        .statId(UUID.randomUUID().toString())
-                        .point(0)
-                        .totalStudyTime(0) 
-                        .tierScore(0)
-                        .build());
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 
         // 기존 점수에 누적 (accumulate)
         int currentScore = stat.getTierScore();
         int updatedScore = currentScore + newScore;
-        
+
         // 0점 미만 방지 (선택사항, 기획에 따라 다름. 일단 0점 보정)
         if (updatedScore < 0) updatedScore = 0;
-<<<<<<< HEAD
 
         // TODO 저장 2번하고 있는건가
-=======
-        
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
         stat.updateTierScore(updatedScore);
         memberGameStatRepository.save(stat);
 
         // Redis 랭킹 점수 즉시 업데이트 (RankService와 키 공유)
         // 주의: RankService에서는 userId(String UUID)를 Key로 사용하므로 여기서도 getMemberId()를 사용해야 함
-<<<<<<< HEAD
         // TODO 여기서 랭킹 업데이트가 필요한 게 맞나?
-=======
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
         try {
             redisTemplate.opsForZSet().add("rank:private:season:1", member.getMemberId(), (double) updatedScore);
         } catch (Exception e) {
             log.error("Redis 티어 점수 업데이트 실패: memberId={}, score={}", member.getMemberId(), updatedScore, e);
         }
     }
-<<<<<<< HEAD
 
 
-=======
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
     // --- 조회 로직 ---
 
     /**
      * 내 티어 정보를 조회합니다.
      *
      * @param memberId 조회할 회원의 ID (UUID String)
-<<<<<<< HEAD
      * @return 닉네임, 점수, 티어 등급이 포함된 응답 DTO TierReponse
      * @throws BaseErrorCode.MEMBER_NOT_FOUND_ERROR 회원이 존재하지 않을 경우
-=======
-     * @return 닉네임, 점수, 티어 등급이 포함된 응답 DTO
-     * @throws IllegalArgumentException 회원이 존재하지 않을 경우
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
      */
     @Transactional(readOnly = true)
     public TierResponse getMyTier(String memberId) {
 
         Member member = memberRepository.findByMemberId(memberId)
-<<<<<<< HEAD
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
 
         // DB에서 최신 게임 스탯 조회 (없으면 0점으로 간주)
         MemberGameStat stat = memberGameStatRepository.findByMemberId(member.getId())
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_GAME_STAT_NOT_FOUND_ERROR));
-=======
-                .orElseThrow(() -> new IllegalArgumentException("Member not found: " + memberId));
-
-        // DB에서 최신 게임 스탯 조회 (없으면 0점으로 간주)
-        MemberGameStat stat = memberGameStatRepository.findByMemberId(member.getId())
-                .orElseGet(() -> MemberGameStat.builder()
-                        .member(member)
-                        .point(0)
-                        .tierScore(0)
-                        .totalStudyTime(0)
-                        .build());
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 
         return TierResponse.builder()
                 .nickname(member.getNickName())
@@ -223,18 +179,10 @@ public class TierService {
      * 점수에 따른 티어 등급을 계산합니다.
      */
     private String calculateTierRank(int score) {
-<<<<<<< HEAD
-        if (score >= 100000) return DIAMOND; 
+        if (score >= 100000) return DIAMOND;
         if (score >= 70000) return PLATINUM;
         if (score >= 40000) return GOLD;
         if (score >= 20000) return SILVER;
         return BRONZE;
-=======
-        if (score >= 9000) return "DIAMOND"; // 누적 점수이므로 기준 상향 조정 필요 예상 (일단 유지)
-        if (score >= 5000) return "PLATINUM";
-        if (score >= 3000) return "GOLD";
-        if (score >= 1000) return "SILVER";
-        return "BRONZE";
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
     }
 }
