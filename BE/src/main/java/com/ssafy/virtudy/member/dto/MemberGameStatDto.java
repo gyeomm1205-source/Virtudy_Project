@@ -13,6 +13,5 @@ public class MemberGameStatDto {
         private String nickName;
         private String email;
         private int tierScore;
-        private String nickName;
     }
 }
