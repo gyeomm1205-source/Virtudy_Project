@@ -31,8 +31,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 >>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
 =======
 
-    @Query("SELECT m.memberId, m.avatarImageUrl FROM Member m")
-    List<Object[]> findAllMemberImages();
+    @Query("SELECT m.memberId, m.avatar, m.email, m.nickName FROM Member m")
+    List<MemberDto> findAllMemberImages();
+
 
 >>>>>>> 343743d (fix the conflicts MemberRepository, MemberGameStatDto, RankService and RankDTO에 imageUrl 추가)
     Optional<Member> findByEmail(String email);

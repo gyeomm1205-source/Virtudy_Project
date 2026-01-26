@@ -17,6 +17,7 @@ public class RankDTO {
         private String id;
         private String nickName;
 <<<<<<< HEAD
+<<<<<<< HEAD
         private String email;
 =======
 >>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
@@ -27,6 +28,12 @@ public class RankDTO {
 =======
         private String avatarImageUrl;
 >>>>>>> 343743d (fix the conflicts MemberRepository, MemberGameStatDto, RankService and RankDTO에 imageUrl 추가)
+=======
+        private String email;
+        private int rank;
+        private int score;
+        private AvatarResponse avatar;
+>>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
         private Tier tier;
     }
 

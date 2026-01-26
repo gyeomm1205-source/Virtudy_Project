@@ -1,7 +1,10 @@
 package com.ssafy.virtudy.rank.service;
 
+<<<<<<< HEAD
 import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
 import com.ssafy.virtudy.global.event.exception.BaseException;
+=======
+>>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
 import com.ssafy.virtudy.member.domain.Avatar;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.domain.MemberGameStat;
@@ -67,12 +70,24 @@ public class RankService {
 
         // 6. 결과 조립
         List<RankDTO.Response> responseList = new ArrayList<>();
+<<<<<<< HEAD
+=======
+
+        List<MemberDto> results = memberRepository.findAllMemberImages();
+
+        Map<String, AvatarResponse> avatarMap = results.stream()
+                .collect(Collectors.toMap(
+                        MemberDto::getMemberId,
+                        memberDto -> AvatarResponse.from(memberDto.getAvatar())));
+
+>>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
         int currentRank = (int) start + 1;
 
         for (ZSetOperations.TypedTuple<String> tuple : tuples) {
             String userId = tuple.getValue();
             Double scoreVal = tuple.getScore();
             int score = (scoreVal != null) ? scoreVal.intValue() : 0;
+<<<<<<< HEAD
 
             // DB에서 가져온 추가 정보 (없을 경우 대비해 null 체크 권장)
             Member member = memberMap.get(userId);
@@ -85,6 +100,18 @@ public class RankService {
                     .email(member.getEmail())       // ✅ 필요한 경우 이메일도 세팅
                     .score(score)
                     .avatar(AvatarResponse.from(member.getAvatar()))
+=======
+            // Map에서 꺼내기 (이미 DTO로 변환되어 있어서 형변환 필요 없음)
+            AvatarResponse avatarDto = avatarMap.get(userId);
+
+            // 3. DTO 빌더 패턴 사용
+            RankDTO.Response dto = RankDTO.Response.builder()
+                    .id(userId)
+                    .rank(currentRank++)
+                    .email(userId)
+                    .score(score)
+                    .avatar(avatarDto)
+>>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
                     .tier(calculateTier(score))
                     .build());
         }
@@ -107,8 +134,12 @@ public class RankService {
             // 최애 팀 깎고 와야됨.
             StudyRoom studyRoom = member.getFavoriteRoom();
             Member owner = memberRepository.findByMemberId(studyRoom.getOwner().getMemberId())
+<<<<<<< HEAD
                     .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
 
+=======
+                    .orElseThrow(() -> new IllegalArgumentException("찾는 아이디가 없습니다."));
+>>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_TEAM_KEY, studyRoom.getRoomId());
             scoreVal = redisTemplate.opsForZSet().score(RANK_TEAM_KEY, studyRoom.getRoomId());
             avatarDto = AvatarResponse.from(owner.getAvatar());
@@ -201,7 +232,11 @@ public class RankService {
             }
         }
         if (responseList.isEmpty()) {
+<<<<<<< HEAD
             throw new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR);
+=======
+            throw new IllegalArgumentException("검색한 아이디가 없습니다.");
+>>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
         }
         // 4. 결과 리턴
         return responseList;

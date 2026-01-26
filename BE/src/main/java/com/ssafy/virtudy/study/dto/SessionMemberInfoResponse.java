@@ -28,14 +28,18 @@ public class SessionMemberInfoResponse {
         this.avatar = AvatarResponse.from(member.getAvatar());
 =======
     private final String nickName;
-    private final String avatarImageUrl;
+    private final Avatar avatar;
     private final String liveKitToken;
 
     public SessionMemberInfoResponse(Member member, String liveKitToken) {
         this.memberId = member.getMemberId();
         this.nickName = member.getNickName();
+<<<<<<< HEAD
         this.avatarImageUrl = member.getAvatarImageUrl();
 >>>>>>> b9a6bab ([S14P11A703-119-websocket-livekit] Livekit 설정)
+=======
+        this.avatar = member.getAvatar();
+>>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
         this.liveKitToken = liveKitToken;
     }
 }

@@ -100,6 +100,11 @@ public class Member extends BaseTimeEntity {
     public void updateStatus(MemberStatType status) {
         this.status = status;
     }
+
+    public void setAvatar(Avatar avatar) {
+        this.avatar = avatar;
+    }
+
     // [추가] 회원 상태 변경 편의 메서드 (탈퇴/복구 시 사용)
     public void updateStatus(MemberStatType status) {
         this.status = status;

@@ -42,10 +42,14 @@ public class JwtUtil {
                         "email", member.getEmail(),
                         "userName", member.getNickName(),
 <<<<<<< HEAD
+<<<<<<< HEAD
                         "userProfileImgUrl", member.getAvatar()
 =======
                         "userProfileImgUrl", member.getAvatarImageUrl()
 >>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
+=======
+                        "userProfileImgUrl", member.getAvatar()
+>>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
                 ));
     }
 

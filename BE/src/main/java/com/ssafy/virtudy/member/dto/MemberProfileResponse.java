@@ -16,6 +16,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class MemberProfileResponse {
+<<<<<<< HEAD
+=======
+    private Avatar avatar;
+    private String email;
+    private String nickName;
+    private JobType jobType;
+    private String tier;
+    private String miniReport;
+>>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
 
     @Schema(description = "회원 아바타")
     private AvatarResponse avatar;
@@ -46,7 +55,11 @@ public class MemberProfileResponse {
 
     public static MemberProfileResponse from(Member member, Report todayReport, int tierScore, String tier) {
         return MemberProfileResponse.builder()
+<<<<<<< HEAD
                 .avatar(AvatarResponse.from(member.getAvatar()))
+=======
+                .avatar(member.getAvatar())
+>>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
                 .email(member.getEmail())
                 .nickName(member.getNickName())
                 .jobType(member.getJobType())
