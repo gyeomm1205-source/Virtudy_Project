@@ -53,30 +53,23 @@ public class DummyDataInit implements CommandLineRunner {
             log.info("ℹ️ DB에 데이터가 존재하여 생성을 건너뜁니다.");
             return;
         }
-
         log.info("🚀 더미 데이터 생성을 시작합니다...");
-
         List<Member> savedMembers = new ArrayList<>(); // 저장된 멤버 리스트
 
         // 3. 회원 생성 루프
         for (int i = 0; i < 100; i++) {
             Member member = createMember(i);
-
-
             // 여기서 아바타 생성할거임.
             Avatar avatar = createAvater(i, member);
-
             member.setAvatar(avatar);
 
             // ⭐ [핵심 수정] save()가 반환한 객체(savedMember)를 받아야 ID가 들어있습니다!
             Member savedMember = memberRepository.save(member);
-
             savedMembers.add(savedMember);
 
             // ⭐ [핵심 수정] savedMember를 넘겨야 ID가 null이 아닙니다.
             createAndSaveGameStat(savedMember, RANK_PRIVATE_KEY);
         }
-
         // 4. 스터디룸 생성
         for (int i = 0; i < 20; i++) {
             // 저장된 멤버 목록에서 랜덤으로 주인을 뽑음
@@ -84,10 +77,7 @@ public class DummyDataInit implements CommandLineRunner {
             StudyRoom room = createStudyRoom(owner);
             studyRoomRepository.save(room);
         }
-
         List<Member> members = memberRepository.findAll();
-
-
         int index = 0;
         for (Member member: members) {
             Long studyIndex = (long) ((index++ % 20) + 1);
@@ -95,10 +85,7 @@ public class DummyDataInit implements CommandLineRunner {
             StudyRoom room = studyRoomRepository.getReferenceById(studyIndex);
             member.setFavoriteRoom(room);
             memberRepository.save(member);
-
-
         }
-
         log.info("✅ 더미 데이터 생성 완료! (Member: 100, Room: 20)");
     }
 
@@ -111,7 +98,6 @@ public class DummyDataInit implements CommandLineRunner {
                 "hair_front_short",
                 "hair_front_side_part"
         };
-
         String[] hairBacks = {
                 "hair_back_bob",
                 "hair_back_long_curly",
@@ -119,22 +105,18 @@ public class DummyDataInit implements CommandLineRunner {
                 "hair_back_long_lowtail",
                 "hair_back_short"
         };
-
         String[] eyesList = {
                 "eyes_cat",
                 "eyes_droopy",
                 "eyes_round"
         };
-
         // 안경은 있을 수도 있고 없을 수도 있음 (확률적으로 처리하거나 번갈아가며)
         String[] glassesList = {"accessory_glasses", "none", "none", "none"};
-
         String[] outfits = {
                 "outfit_knit",
                 "outfit_round_neck",
                 "outfit_shirt"
         };
-
         // 색상 팔레트
         String[] hairColors = {"#111111", "#3B3024", "#825336", "#9A7248", "#8C8C8C"};
         String[] clothesColors = {"#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#000000"};
@@ -163,9 +145,7 @@ public class DummyDataInit implements CommandLineRunner {
     }
 
     private Member createMember(int index) {
-
         String uniqueEmail = index + "_" + faker.internet().emailAddress();
-
         String uuid = UUID.randomUUID().toString();
         return Member.builder()
                 .memberId(uuid)
@@ -195,7 +175,6 @@ public class DummyDataInit implements CommandLineRunner {
                 .build();
 
         memberGameStatRepository.save(stat);
-
         // Redis에 저장
         // member.getMemberId() (예: "user0") 또는 member.getId() (PK) 사용
         // 여기서는 memberId("user0")를 사용한다고 가정
