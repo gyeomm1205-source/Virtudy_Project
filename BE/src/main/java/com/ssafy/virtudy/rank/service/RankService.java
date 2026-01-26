@@ -1,7 +1,10 @@
 package com.ssafy.virtudy.rank.service;
 
+import com.ssafy.virtudy.member.domain.Avatar;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.domain.MemberGameStat;
+import com.ssafy.virtudy.member.dto.AvatarResponse;
+import com.ssafy.virtudy.member.dto.MemberDto;
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.rank.dto.RankDTO;
@@ -12,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -52,12 +56,12 @@ public class RankService {
 
         List<RankDTO.Response> responseList = new ArrayList<>();
 
-        List<Object[]> results = memberRepository.findAllMemberImages();
+        List<MemberDto> results = memberRepository.findAllMemberImages();
 
-        Map<String, String> memberMap = results.stream()
+        Map<String, AvatarResponse> avatarMap = results.stream()
                 .collect(Collectors.toMap(
-                        row -> (String) row[0], // key: memberId
-                        row -> (String) row[1] // value : avatarImageUrl
+                        MemberDto::getMemberId,
+                        memberDto -> AvatarResponse.from(memberDto.getAvatar())
                 ));
 
         int currentRank = (int) start + 1;
@@ -67,12 +71,15 @@ public class RankService {
             String userId = tuple.getValue();
             Double scoreVal = tuple.getScore();
             int score = (scoreVal != null) ? scoreVal.intValue() : 0;
+            // Map에서 꺼내기 (이미 DTO로 변환되어 있어서 형변환 필요 없음)
+            AvatarResponse avatarDto = avatarMap.get(userId);
             // 3. DTO 빌더 패턴 사용
             RankDTO.Response dto = RankDTO.Response.builder()
                     .id(userId)
                     .rank(currentRank++)
+                    .email(userId)
                     .score(score)
-                    .avatarImageUrl(memberMap.get(userId))
+                    .avatar(avatarDto)
                     .tier(calculateTier(score))
                     .build();
 
@@ -86,16 +93,20 @@ public class RankService {
                 .orElseThrow(() -> new IllegalArgumentException("찾는 아이디가 없습니다."));
         String nickName = null;
         Long rankIndex;
+        AvatarResponse avatarDto = null;
         Double scoreVal;
-        String imageUrl = "";
         if (type.equals(ROOMTYPE_PRIVATE)) {
             nickName = member.getNickName();
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_PRIATE_KEY, userId);
             scoreVal = redisTemplate.opsForZSet().score(RANK_PRIATE_KEY, userId);
-            imageUrl = member.getAvatarImageUrl();
+            avatarDto = AvatarResponse.from(member.getAvatar());
         } else {
             // 최애 팀 깎고 와야됨.
             StudyRoom studyRoom = member.getFavoriteRoom();
+            Member owner = memberRepository.findByMemberId(studyRoom.getOwner().getMemberId())
+                    .orElseThrow(() -> new IllegalArgumentException("찾는 아이디가 없습니다."));
+
+            avatarDto = AvatarResponse.from(owner.getAvatar());
             nickName = studyRoom.getTitle();
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_TEAM_KEY, studyRoom.getRoomId());
             scoreVal = redisTemplate.opsForZSet().score(RANK_TEAM_KEY, studyRoom.getRoomId());
@@ -111,9 +122,11 @@ public class RankService {
                 .nickName(nickName)
                 .rank(rankIndex.intValue() + 1)
                 .score(scoreVal.intValue())
-                .avatarImageUrl(imageUrl)
+                .avatar(avatarDto)
                 .tier(calculateTier(scoreVal))
                 .build();
+
+
 
     }
 
@@ -130,6 +143,7 @@ public class RankService {
             Double scoreVal = 0.0;
             String nickName = null;
             String userId = null;
+            AvatarResponse avatarDto = null;
             List<RankDTO.Response> responseList = new ArrayList<>();
             if (type.equals(ROOMTYPE_PRIVATE)) {
                 List<Member> memberList = memberRepository.findByNickName(name);
@@ -149,13 +163,15 @@ public class RankService {
 
                     nickName = name;
 
+                    avatarDto = AvatarResponse.from(tempMember.getAvatar());
                     responseList.add(
                             RankDTO.Response.builder()
                                     .id(userId)
                                     .nickName(nickName)
+                                    .email(tempMember.getEmail())
                                     .rank(rankIndex.intValue() + 1)
                                     .score(scoreVal.intValue())
-                                    .avatarImageUrl(tempMember.getAvatarImageUrl())
+                                    .avatar(avatarDto)
                                     .tier(calculateTier(scoreVal))
                                     .build()
                     );
@@ -177,10 +193,13 @@ public class RankService {
                         continue;
                     }
                     scoreVal = redisTemplate.opsForZSet().score(RANK_TEAM_KEY, userId);
+                    avatarDto = AvatarResponse.from(tempStudyRoom.getOwner().getAvatar());
                     responseList.add(
                             RankDTO.Response.builder()
                                     .id(userId)
                                     .nickName(nickName)
+                                    .email(tempStudyRoom.getOwner().getEmail())
+                                    .avatar(avatarDto)
                                     .rank(rankIndex.intValue() + 1)
                                     .score(scoreVal.intValue())
                                     .tier(calculateTier(scoreVal))
