@@ -43,10 +43,16 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { useMainRanking } from '@/features/ranking/logic/useMainRanking';
 
-// 로직 훅 실행! (API 호출이 자동으로 시작됨)
-const { privateTop5, teamTop5, isLoading } = useMainRanking();
+// 로직 훅 실행. 이제 훅 자체는 API를 호출하지 않습니다.
+const { privateTop5, teamTop5, isLoading, fetchTopRanks } = useMainRanking();
+
+// onMounted 훅을 사용해, 컴포넌트가 완전히 준비된 후 API를 호출합니다.
+onMounted(() => {
+  fetchTopRanks();
+});
 </script>
 
 <style scoped>
