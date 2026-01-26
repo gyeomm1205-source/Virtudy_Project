@@ -10,6 +10,7 @@ import com.ssafy.virtudy.member.dto.MemberDto;
 import com.ssafy.virtudy.member.dto.MemberKakaoLoginResponse;
 import com.ssafy.virtudy.member.dto.MemberSignUpRequest;
 import com.ssafy.virtudy.member.dto.TokenResponse;
+import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
 import com.ssafy.virtudy.member.repository.MemberPreferenceRepository;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
@@ -31,6 +32,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final MemberPreferenceRepository memberPreferenceRepository;
     private final StringRedisTemplate redisTemplate; // [RTR 로직 구현] Redis Template 주입
+    private final MemberGameStatRepository memberGameStatRepository;
 
     /**
      * [카카오 로그인] 인증 및 로그인 로직
@@ -129,6 +131,17 @@ public class AuthService {
                 .build();
 
         memberPreferenceRepository.save(memberPreference);
+
+        // TODO MemberGameStat 도 여기서 초기화해줘야 함
+        MemberGameStat memberGameStat = MemberGameStat.builder()
+                .member(newMember)
+                .point(0)
+                .totalStudyTime(0)
+                .tierScore(0)
+                .build();
+
+        memberGameStatRepository.save(memberGameStat);
+
 
         // 가입 완료 후 토큰 발급
         String accessToken = jwtUtil.createAccessToken(MemberDto.from(newMember));
