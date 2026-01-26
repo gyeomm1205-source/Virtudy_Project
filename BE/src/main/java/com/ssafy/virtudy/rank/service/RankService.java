@@ -124,7 +124,7 @@ public class RankService {
          * @param type
          * @return
          */
-        public List<RankDTO.Response> getUserRankByNickName (String name, String type){
+        public List<RankDTO.Response> getUserRankByNickName(String name, String type) {
 
             Long rankIndex = null;
             Double scoreVal = 0.0;
@@ -201,7 +201,7 @@ public class RankService {
          * @param score
          * @return
          */
-        private RankDTO.Tier calculateTier ( double score){
+        private RankDTO.Tier calculateTier(double score) {
             if (score >= 1000) return RankDTO.Tier.DIAMOND;
             if (score >= 500) return RankDTO.Tier.GOLD;
             if (score >= 100) return RankDTO.Tier.SILVER;
@@ -209,13 +209,13 @@ public class RankService {
         }
 
 
-        public List<RankDTO.Response> getRankByPage ( int page, String type){
+        public List<RankDTO.Response> getRankByPage(int page, String type) {
             long start = (long) page * PAGE_SIZE;
             long end = start + PAGE_SIZE - 1;
             return getRankRange(start, end, type);
         }
 
-        public List<RankDTO.Response> getTop5Rank (String type){
+        public List<RankDTO.Response> getTop5Rank(String type) {
             return getRankRange(0, 4, type);
         }
 
@@ -223,7 +223,7 @@ public class RankService {
          * 랭킹 업데이트 하는 스케줄러 함수 본체
          */
         @Transactional
-        public void updateRankingBatch () {
+        public void updateRankingBatch() {
             // 랭킹 업데이트하는 함수.
             // 싹 다 밀고 가 ?
             String tempTeamKey = "rank:team:season:1:temp";
