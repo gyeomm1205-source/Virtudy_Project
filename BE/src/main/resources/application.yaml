@@ -2,6 +2,10 @@ spring:
   application:
     name: virtudy
 
+  config:
+    activate:
+      on-profile: local
+
   jpa:
     open-in-view: true
     hibernate:
