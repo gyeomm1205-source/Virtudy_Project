@@ -1,25 +1,24 @@
 package com.ssafy.virtudy.study.service;
 
 import com.ssafy.virtudy.global.config.LiveKitConfig;
+import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
+import com.ssafy.virtudy.global.event.exception.BaseException;
 import com.ssafy.virtudy.group.domain.RoomMember;
 import com.ssafy.virtudy.group.repository.RoomMemberRepository;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
-import com.ssafy.virtudy.study.domain.StudyLog;
 import com.ssafy.virtudy.study.domain.StudyRoom;
 import com.ssafy.virtudy.study.domain.StudySession;
 import com.ssafy.virtudy.study.dto.SessionMemberInfoResponse;
-import com.ssafy.virtudy.study.dto.StudyLogRequest;
-import com.ssafy.virtudy.study.repository.StudyLogRepository;
 import com.ssafy.virtudy.study.repository.StudyRoomRepository;
 import com.ssafy.virtudy.study.repository.StudySessionRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import io.livekit.server.AccessToken;
 import io.livekit.server.RoomJoin;
 import io.livekit.server.RoomName;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,24 +36,18 @@ public class StudySessionService {
     private final StudyRoomRepository studyRoomRepository;
     private final MemberRepository memberRepository;
     private final RoomMemberRepository roomMemberRepository;
-    private final StudyLogRepository studyLogRepository;
     private final LiveKitConfig liveKitConfig;
 
-    public SessionMemberInfoResponse enterRoom(String memberId, String roomId) {
-        Member member = memberRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
-
+    public SessionMemberInfoResponse enterRoom(Member member, String roomId) {
         StudyRoom room = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
-                .orElseThrow(() -> new IllegalArgumentException("종료되었거나 존재하지 않는 방입니다."));
+                .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));
 
-        studySessionRepository.findByMemberAndEndTimeIsNull(member).ifPresent(session -> {
-            // [Fix] Ghost Session Logic: 기존 세션이 있다면 강제 종료 후 재입장 허용
-            session.close();
-        });
+        // [Fix] Ghost Session Logic: 기존 세션이 있다면 강제 종료 후 재입장 허용
+        studySessionRepository.findByMemberAndEndTimeIsNull(member).ifPresent(StudySession::close);
 
         int currentUsers = studySessionRepository.findByRoomAndEndTimeIsNull(room).size();
         if (currentUsers >= MAX_USER) {
-            throw new IllegalStateException("방이 가득 찼습니다.");
+            throw new BaseException(BaseErrorCode.ROOM_FULL_ERROR);
         }
 
         if (!roomMemberRepository.existsByMemberAndRoom(member, room)) {
@@ -75,16 +68,16 @@ public class StudySessionService {
         // LiveKit 토큰 생성
         AccessToken token = new AccessToken(liveKitConfig.getLiveKitApiKey(), liveKitConfig.getLiveKitApiSecret());
         token.setName(member.getNickName());
-        token.setIdentity(memberId);
+        token.setIdentity(member.getMemberId());
         token.addGrants(new RoomJoin(true), new RoomName(roomId));
 
         return new SessionMemberInfoResponse(member, token.toJwt());
     }
 
-    public SessionMemberInfoResponse enterRandomRoom(String memberId) {
+    public SessionMemberInfoResponse enterRandomRoom(Member member) {
         List<StudyRoom> openRooms = studyRoomRepository.findAllByStatus(RoomStatType.OPEN);
         if (openRooms.isEmpty()) {
-            throw new IllegalStateException("입장 가능한 방이 없습니다.");
+            throw new BaseException(BaseErrorCode.ROOM_NOT_AVAILABLE_ERROR);
         }
 
         List<StudyRoom> availableRooms = openRooms.stream()
@@ -92,42 +85,22 @@ public class StudySessionService {
                 .toList();
 
         if (availableRooms.isEmpty()) {
-            throw new IllegalStateException("입장 가능한 방이 없습니다.");
+            throw new BaseException(BaseErrorCode.ROOM_NOT_AVAILABLE_ERROR);
         }
 
+        // TODO : 초개인화 방향으로 RANDOM 로직 수정
         StudyRoom randomRoom = availableRooms.get(ThreadLocalRandom.current().nextInt(availableRooms.size()));
 
-        return enterRoom(memberId, randomRoom.getRoomId());
+        return enterRoom(member, randomRoom.getRoomId());
     }
 
     public void exitRoom(String memberId) {
         Member member = memberRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
+                .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
 
         StudySession session = studySessionRepository.findByMemberAndEndTimeIsNull(member)
-                .orElseThrow(() -> new IllegalStateException("현재 참여중인 방이 없습니다."));
+                .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_PARTICIPATE_ERROR));
 
         session.close();
-    }
-
-    public void saveStudyLog(String memberId, StudyLogRequest request) {
-        Member member = memberRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
-
-        StudySession session = studySessionRepository.findBySessionId(request.getSessionId())
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 세션입니다."));
-
-        if (!session.getMember().getId().equals(member.getId())) {
-            throw new IllegalArgumentException("해당 세션의 사용자가 아닙니다.");
-        }
-
-        StudyLog studyLog = StudyLog.builder()
-                .session(session)
-                .member(member)
-                .eventType(request.getEventType())
-                .detectedAt(request.getDetectedAt())
-                .build();
-
-        studyLogRepository.save(studyLog);
     }
 }
