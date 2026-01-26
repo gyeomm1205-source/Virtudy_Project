@@ -16,6 +16,7 @@ public class RankDTO {
         private String nickName;
         private int rank;
         private int score;
+        private String avatarImageUrl;
         private Tier tier;
     }
 

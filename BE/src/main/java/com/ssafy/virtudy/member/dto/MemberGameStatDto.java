@@ -10,6 +10,7 @@ public class MemberGameStatDto {
     @Getter
     public static class RedisResponse {
         private String id; // 밖으로 도는 거 ㄱㄱ UUID
+        private String nickName;
         private int tierScore;
     }
 }
