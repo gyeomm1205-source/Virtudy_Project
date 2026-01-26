@@ -48,6 +48,7 @@ public enum BaseErrorCode {
     MEMBER_STATUS_NOT_VALID_ERROR(HttpStatus.NOT_FOUND, "MEMBER_002", "이미 삭제된 회원입니다"),
     JOB_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "MEMBER_003", "존재하지 않는 직업입니다."),
     DUPLICATED_MEMBER(HttpStatus.CONFLICT, "MEMBER_004", "이미 존재하는 사용자입니다."),
+    MEMBER_GAME_STAT_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "MEMBER_005", "사용자의 게임 상태가 존재하지 않습니다."),
 
     // Report
     REPORT_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "REPORT_001", "존재하지 않는 리포트입니다."),

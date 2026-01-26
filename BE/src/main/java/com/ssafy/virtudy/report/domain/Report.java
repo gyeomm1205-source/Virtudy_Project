@@ -13,7 +13,7 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA 필수: 기본 생성자
 public class Report {
-
+    // TODO 집중도는 퍼센트로 계산되고 있음.
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // mysql의 auto_inc 사용하기 위함
     private Long id; // PK
