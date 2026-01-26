@@ -54,20 +54,20 @@
         ]
     },
     "eyes" : {
-        "eye_cat" : [
-            "eye_cat_base.png",
-            "eye_cat_line.png"
+        "eyes_cat" : [
+            "eyes_cat_base.png",
+            "eyes_cat_line.png"
         ],
-        "eye_droopy" : [
-            "eye_droopy_base.png",
-            "eye_droopy_line.png"
+        "eyes_droopy" : [
+            "eyes_droopy_base.png",
+            "eyes_droopy_line.png"
         ],
-        "eye_round" : [
-            "eye_round_base.png",
-            "eye_round_line.png"
+        "eyes_round" : [
+            "eyes_round_base.png",
+            "eyes_round_line.png"
         ]
     },
-    "glasses" : {
+    "accessory_glasses" : {
         "accessory_glasses" : [
             "accessory_glasses_default.png"
         ]
@@ -81,6 +81,13 @@
         ],
         "outfit_shirt" : [
             "outfit_shirt_line.png"
+        ]
+    },
+    "face_shape" : {
+        "face_shape_default": [
+            "face_shape_default_base.png",
+            "face_shape_default_line.png",
+            "face_shape_default_shadow.png"
         ]
     }
     

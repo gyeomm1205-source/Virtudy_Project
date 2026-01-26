@@ -6,6 +6,8 @@ import base64
 import io
 from PIL import Image
 from pydantic import BaseModel
+from sqlalchemy import create_engine, Column, integer, String 
+from sq.orm import sessionmaker, 
 import os
 
 app = FastAPI()
@@ -13,101 +15,6 @@ app = FastAPI()
 
 # constant 설정. 
 BASE_PATH = "./assets"
-
-ASSETS = {
-    "hair_front": {
-        "bang": [
-            "hair_front_bangs_base.png",
-            "hair_front_bangs_line.png",
-            "hair_front_bangs_shadow.png"
-        ],
-        "center_part": [
-            "hair_front_center_part_base.png",
-            "hair_front_center_part_line.png",
-            "hair_front_center_part_shadow.png"
-        ],
-        "hair_front_none" : [
-            "hair_front_none_base.png",
-            "hair_front_none_line.png",
-            "hair_front_none_shadow.png"
-        ],
-        "hair_front_short" : [
-            "hair_front_short_line.png",
-            "hair_front_short_base.png",
-            "hair_front_short_shadow.png"
-        ],
-        "hair_front_side_part": [
-            "hair_front_side_part_base.png",
-            "hair_front_side_part_line.png",
-            "hair_front_side_part_shadow.png"
-        ]
-    },
-    "hair_back" : {
-        "hair_back_bob" : [
-            "hair_back_bob_base.png",
-            "hair_back_bob_line.png",
-            "hair_back_bob_shadow.png"
-        ],
-        "hair_back_long_curly": [
-            "hair_back_long_curly_base.png",
-            "hair_back_long_curly_line.png",
-            "hair_back_long_curly_shadow.png"
-        ],
-        "hair_back_long_straight" : [
-            "hair_back_long_straight_base.png",
-            "hair_back_long_straight_line.png",
-            "hair_back_long_straight_shadow.png"
-        ],
-        "hair_back_long_lowtail" : [
-            "hair_back_long_lowtail_line.png",
-            "hair_back_long_lowtail_shadow.png",
-            "hair_back_long_lowtail_base.png"
-        ],
-        "hair_back_short" : [
-            "hair_back_short_base.png",
-            "hair_back_short_line.png",
-            "hair_back_short_shadow.png"
-        ]
-    },
-    "eyes" : {
-        "eyes_cat" : [
-            "eyes_cat_base.png",
-            "eyes_cat_line.png"
-        ],
-        "eyes_droopy" : [
-            "eyes_droopy_base.png",
-            "eyes_droopy_line.png"
-        ],
-        "eyes_round" : [
-            "eyes_round_base.png",
-            "eyes_round_line.png"
-        ]
-    },
-    "accessory_glasses" : {
-        "accessory_glasses" : [
-            "accessory_glasses_default.png"
-        ]
-    },
-    "outfit" : {
-        "outfit_knit": [
-            "outfit_knit_line.png"
-        ],
-        "outfit_round_neck": [
-            "outfit_round_neck_line.png"
-        ],
-        "outfit_shirt" : [
-            "outfit_shirt_line.png"
-        ]
-    },
-    "face_shape" : {
-        "face_shape_default": [
-            "face_shape_default_base.png",
-            "face_shape_default_line.png",
-            "face_shape_default_shadow.png"
-        ]
-    }
-    
-}
 
 LAYER_ORDER = [
     "hair_back",   # 가장 뒤
@@ -166,9 +73,11 @@ async def make_avatar(file:UploadFile = File(...)):
     # 3. AI 호출 
     result = await call_gpt_vision(base64_image)
 
-    img = await create_character(result)
+    # 4. 데이터베이스에 저장하는 코드 
+    save_to_database(result)
+
     return result 
-    
+
 async def call_gpt_vision(base64_image: str): 
     # 시스템 프롬프트: 규칙과 팔레트 정의
     system_prompt = """
@@ -233,70 +142,61 @@ async def call_gpt_vision(base64_image: str):
         print(f"GPT 호출 중 오류: {e}")
         raise HTTPException(status_code=500, detail="AI 분석 실패")
     
-async def create_character(response:str):
-    """
-    데이터(JSON)을 받아서 이미지를 조립하는 메인 함수
-    """
+async def save_to_database(result):
+    SQLURL = os.environ('SQLALCHEMY_DATABASE_URL') 
+    engine = create_engine(SQLURL)
 
-    canvas_size = (200,200)
-    canvas = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
-    # 앞머리 
+    # SessionFactory 생성
+    SessionLocal = sessionMaker(autocommit )
+# async def create_character(response:str):
+#     """
+#     데이터(JSON)을 받아서 이미지를 조립하는 메인 함수
+#     """
 
-    # --- 핵심 로직 : 정의된 순서대로 레이어 쌓기 ---
-    for layer_name in LAYER_ORDER:
-        item_name = response.get(layer_name)
-        if not item_name or item_name in ["없음", "무"]:
-            continue
+#     canvas_size = (200,200)
+#     canvas = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
+#     # 앞머리 
+
+#     # --- 핵심 로직 : 정의된 순서대로 레이어 쌓기 ---
+#     for layer_name in LAYER_ORDER:
+#         item_name = response.get(layer_name)
+#         if not item_name or item_name in ["없음", "무"]:
+#             continue
         
-        layer_info = ASSETS[layer_name]
-        if not layer_info : continue 
-        print("asdfasdfasdf", layer_info )
-        # 3. 파일 경로 생성 
-        for layer_path in ASSETS[layer_name][item_name] : 
-            print(layer_path)
-            file_path = os.path.join(BASE_PATH, layer_name,layer_path)
+#         layer_info = ASSETS[layer_name]
+#         if not layer_info : continue 
+#         print("asdfasdfasdf", layer_info )
+#         # 3. 파일 경로 생성 
+#         for layer_path in ASSETS[layer_name][item_name] : 
+#             print(layer_path)
+#             file_path = os.path.join(BASE_PATH, layer_name,layer_path)
         
-            if not os.path.exists(file_path) : 
-                print(f"[Skip] 파일을 찾을 수 없음: {file_path}")
-                continue
+#             if not os.path.exists(file_path) : 
+#                 print(f"[Skip] 파일을 찾을 수 없음: {file_path}")
+#                 continue
             
-            try : 
-                with Image.open(file_path) as img: 
-                    img = img.convert("RGBA")
+#             try : 
+#                 with Image.open(file_path) as img: 
+#                     img = img.convert("RGBA")
 
-                    # 리사이징 필요 시 
-                    if img.size != canvas_size:
-                        img = img.resize(canvas_size, Image.LANCZOS)
+#                     # 리사이징 필요 시 
+#                     if img.size != canvas_size:
+#                         img = img.resize(canvas_size, Image.LANCZOS)
 
-                    # # 4. 색상 적용 로직 
-                    # if color_key and col
+#                     # # 4. 색상 적용 로직 
+#                     # if color_key and col
 
-                    # 5. 캔버스에 붙이기 
-                    canvas.paste(img, (0, 0), mask=img)
-                    print(f"[Layer] {layer_name} 병합 완료 ({item_name})")
-            except Exception as e : 
-                print(f"[Error] {layer_name} 처리 중 오류 : {e}")
+#                     # 5. 캔버스에 붙이기 
+#                     canvas.paste(img, (0, 0), mask=img)
+#                     print(f"[Layer] {layer_name} 병합 완료 ({item_name})")
+#             except Exception as e : 
+#                 print(f"[Error] {layer_name} 처리 중 오류 : {e}")
 
-    # 최종 저장 
-    output_path = "completed_character.png"
-    canvas.save(output_path, format="PNG")
-    print(f"\n[Success] 저장 완료: {output_path}")
-    return output_path
-    
-    # imagePath. 
-    print(ASSETS['hair_front'][response['hair_front']])
-
-    # 뒷머리 
-    print(ASSETS['hair_back'][response['hair_back']])
-
-    # 눈 
-    print(ASSETS['eyes'][response['eyes']])
-
-    # 안경
-    print(ASSETS['glasses'][response['glasses']])
-
-    # 외형
-    print(ASSETS['outfit'][response['outfit']])
+#     # 최종 저장 
+#     output_path = "completed_character.png"
+#     canvas.save(output_path, format="PNG")
+#     print(f"\n[Success] 저장 완료: {output_path}")
+#     return output_path
 
 if __name__ == "__main__":
     import uvicorn
