@@ -5,14 +5,16 @@
       <div class="header-content">
         <h1>랭킹</h1>
         <p class="info-text">※ 랭킹은 매일 자정(00:00)에 갱신됩니다.</p>
+        
         <div class="my-rank-info" v-if="myRankInfo">
            <div class="avatar-circle">
-             <img v-if="myRankInfo.profileImg" :src="myRankInfo.profileImg" />
-             <span v-else>Me</span>
+             <span>Me</span>
            </div>
            <div class="text-info">
-             <p v-if="myRankInfo">{{ myRankInfo.nickName }}{{ rankType === 'private' ? '님의 순위' : '팀의 순위' }} </p>
-             <p v-else></p>
+             <p>
+               <span class="highlight">{{ myRankInfo.nickName }}</span>
+               {{ rankType === 'private' ? '님의 순위' : '팀의 순위' }}
+             </p>
              <p class="rank-number">{{ myRankInfo.rank }}위</p>
            </div>
         </div>
@@ -33,12 +35,24 @@
     <div class="ranking-board">
       <div v-if="isLoading">Loading...</div>
       <div v-else class="rank-list">
-        <div v-for="item in rankList" :key="item.id" class="rank-item">
+        
+        <div 
+          v-for="item in rankList" 
+          :key="item.email" 
+          class="rank-item"
+          :class="{ 'is-me': isMyself(item) }"
+        >
           <span class="col-rank">{{ item.rank }}</span>
-          <span class="col-name">{{ item.nickName }}</span>
+          
+          <span class="col-name">
+            {{ item.nickName }}
+            <span v-if="isMyself(item)" class="me-badge">(나)</span>
+          </span>
+          
           <span class="col-score">{{ item.score }}p</span>
           <span class="col-tier">{{ item.tier }}</span>
         </div>
+
       </div>
     </div>
 
@@ -89,23 +103,29 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '../../../stores/authStore';
-// 로직 파일만 import하면 끝!
 import { useRanking } from '../logic/useRanking';
 import { useRouter } from 'vue-router';
+// [수정] 타입 임포트 추가
+import type { RankItem } from '../types/ranking.types';
 
 const authStore = useAuthStore();
 const router = useRouter();
 
-// logic 폴더에 짜둔 코드를 그대로 불러오기
 const { 
   rankType, searchKeyword, rankList, myRankInfo, isLoading,
   currentPage, visiblePages, totalPages,
   changeType, changePage, handleSearch 
 } = useRanking();
 
-// 뒤로 가기 함수
 const goBack = () => {
   router.push({ name: 'user' }); 
+};
+
+// [수정] 본인 확인 함수 구현
+// 리스트 아이템의 이메일과 로그인한 유저의 이메일을 비교합니다.
+const isMyself = (item: RankItem) => {
+  if (!authStore.userInfo?.email) return false;
+  return item.email === authStore.userInfo.email;
 };
 </script>
 
@@ -231,6 +251,25 @@ const goBack = () => {
 
 .rank-item:nth-child(odd) {
   background-color: #634E3A; /* 줄무늬 효과 */
+}
+
+/* [수정] 본인일 경우 강조 스타일 */
+.rank-item.is-me {
+  background-color: #5A4632; /* 배경 진하게 */
+  border: 2px solid #FFD700; /* 금색 테두리 */
+}
+
+.rank-item.is-me .col-name {
+  font-weight: 900;           /* 글씨 두껍게 */
+  color: #FFD700;             /* 글씨 금색 */
+  text-decoration: underline; /* 밑줄 */
+}
+
+.me-badge {
+  font-size: 0.8rem;
+  color: #FF6B6B;
+  margin-left: 5px;
+  text-decoration: none;
 }
 
 /* 1,2,3위 강조 */
