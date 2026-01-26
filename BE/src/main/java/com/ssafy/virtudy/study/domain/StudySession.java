@@ -13,6 +13,7 @@ import java.util.UUID;
 
 @Entity
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StudySession extends BaseTimeEntity {
 
@@ -32,13 +33,14 @@ public class StudySession extends BaseTimeEntity {
     private StudyRoom room; // FK
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime startTime;    // 세션 시작시각
+    private LocalDateTime startTime; // 세션 시작시각
 
     @Column(nullable = false)
+    @Builder.Default
     private int sessionRealStudyTime = 0;
 
     @Column
-    private LocalDateTime endTime;      // 세션 종료시각
+    private LocalDateTime endTime; // 세션 종료시각
 
     @Builder
     private StudySession(Member member, StudyRoom room) {

@@ -21,6 +21,6 @@ public class RankDTO {
     }
 
     public enum Tier {
-        BRONZE, SILVER, GOLD, DIAMOND
+        BRONZE, SILVER, GOLD, PLATINUM, DIAMOND
     }
 }

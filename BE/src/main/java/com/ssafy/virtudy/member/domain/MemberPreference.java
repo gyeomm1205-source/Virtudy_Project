@@ -3,9 +3,11 @@ package com.ssafy.virtudy.member.domain;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -25,11 +27,10 @@ public class MemberPreference {
     /**
      * 학습 성향
     */
-    @Column(nullable = false)
-    private int targetHours = 0; // 1일 목표 공부시간 (분 단위)
 
     @Column(nullable = false)
-    private int averageHours = 0; // 1일 평균 공부시간
+    @Enumerated(EnumType.STRING)
+    private StudyType studyType; // MARATHON, SPRINTER
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -37,6 +38,13 @@ public class MemberPreference {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private StudyType studyType; // MARATHON, SPRINTER
+    private JobType jobType;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private StudyTimeCategoryType targetHours; // 1일 목표 공부시간 
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private StudyTimeCategoryType averageHours; // 1일 평균 공부시간
 }
