@@ -14,7 +14,6 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
     Optional<StudyRoom> findByRoomIdAndStatus(String roomId, RoomStatType status);
     int countByOwnerIdAndStatus(Long ownerId, RoomStatType status);
     List<StudyRoom> findAllByOwnerId(Long ownerId);
-    Optional<StudyRoom> findByRoomId(String roomId);
 
     List<StudyRoom> findByTitle(String title);
 }

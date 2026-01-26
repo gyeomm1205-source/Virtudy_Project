@@ -1,9 +1,10 @@
 package com.ssafy.virtudy.study.service;
 
+import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
+import com.ssafy.virtudy.global.event.exception.BaseException;
 import com.ssafy.virtudy.group.domain.RoomMember;
 import com.ssafy.virtudy.group.repository.RoomMemberRepository;
 import com.ssafy.virtudy.member.domain.Member;
-import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
 import com.ssafy.virtudy.study.domain.RoomType;
 import com.ssafy.virtudy.study.domain.StudyRoom;
@@ -22,35 +23,28 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/*
- * TODO : Throw 형식 수정
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StudyRoomService {
 
     private final StudyRoomRepository studyRoomRepository;
-    private final MemberRepository memberRepository;
     private final RoomMemberRepository roomMemberRepository;
 
     @Transactional
-    public StudyRoomResponse createRoom(String memberId, StudyRoomSaveRequest request) {
-        Member owner = memberRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
-
+    public StudyRoomResponse createRoom(Member owner, StudyRoomSaveRequest request) {
         if (studyRoomRepository.countByOwnerIdAndStatus(owner.getId(), RoomStatType.OPEN) >= 3) {
-            throw new IllegalStateException("방은 최대 3개까지 생성할 수 있습니다.");
+            throw new BaseException(BaseErrorCode.ROOM_MAX_REACHED_ERROR);
         }
 
         boolean hasPassword = request.getPassword() != null && !request.getPassword().isBlank();
 
         if (request.getType() == RoomType.PRIVATE && !hasPassword) {
-            throw new IllegalArgumentException("비공개 방은 비밀번호가 필수입니다.");
+            throw new BaseException(BaseErrorCode.ROOM_PRIVATE_EMPTY_PASSWORD_ERROR);
         }
 
         if (request.getType() == RoomType.PUBLIC && hasPassword) {
-            throw new IllegalArgumentException("공개 방은 비밀번호가 존재하지 않아야 합니다.");
+            throw new BaseException(BaseErrorCode.ROOM_PUBLIC_FILLED_PASSWORD_ERROR);
         }
 
         StudyRoom studyRoom = studyRoomRepository.save(request.toEntity(owner));
@@ -72,10 +66,7 @@ public class StudyRoomService {
                 .collect(Collectors.toList());
     }
 
-    public List<StudyRoomListResponse> findMyRooms(String memberId) {
-        Member member = memberRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
-
+    public List<StudyRoomListResponse> findMyRooms(Member member) {
         List<StudyRoom> ownedRooms = studyRoomRepository.findAllByOwnerId(member.getId());
         List<StudyRoom> joinedRooms = roomMemberRepository.findAllByMember(member).stream()
                 .map(RoomMember::getRoom)
@@ -95,56 +86,42 @@ public class StudyRoomService {
 
     public StudyRoomResponse findRoomByCode(String roomId) {
         StudyRoom studyRoom = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
-                .orElseThrow(() -> new IllegalArgumentException("종료되었거나 존재하지 않는 방입니다."));
+                .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));
         int currentUser = roomMemberRepository.countByRoom(studyRoom);
         return new StudyRoomResponse(studyRoom, currentUser);
     }
 
     @Transactional
-    public void updateRoom(String memberId, String roomId, StudyRoomUpdateRequest request) {
-        Member member = memberRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
-        StudyRoom studyRoom = studyRoomRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방입니다."));
-
-        if (studyRoom.getStatus() == RoomStatType.CLOSED) {
-            throw new IllegalStateException("종료된 방입니다.");
-        }
+    public void updateRoom(Member member, String roomId, StudyRoomUpdateRequest request) {
+        StudyRoom studyRoom = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
+                .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));
 
         if (!studyRoom.getOwner().getId().equals(member.getId())) {
-            throw new IllegalStateException("방장만 수정할 수 있습니다.");
+            throw new BaseException(BaseErrorCode.ROOM_NOT_OWNER_ERROR);
         }
 
         studyRoom.update(request.getTitle(), request.getPassword(), request.getDescription());
     }
 
     @Transactional
-    public void deleteRoom(String memberId, String roomId) {
-        Member member = memberRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
-        StudyRoom studyRoom = studyRoomRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방입니다."));
-
-        if (studyRoom.getStatus() == RoomStatType.CLOSED) {
-            throw new IllegalStateException("이미 종료된 방입니다.");
-        }
+    public void deleteRoom(Member member, String roomId) {
+        StudyRoom studyRoom = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
+                .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));
 
         if (!studyRoom.getOwner().getId().equals(member.getId())) {
-            throw new IllegalStateException("방장만 삭제할 수 있습니다.");
+            throw new BaseException(BaseErrorCode.ROOM_NOT_OWNER_ERROR);
         }
 
         studyRoom.close();
     }
 
     @Transactional
-    public void setFavoriteRoom(String memberId, String roomId) {
-        Member member = memberRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
-        StudyRoom studyRoom = studyRoomRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방입니다."));
+    public void setFavoriteRoom(Member member, String roomId) {
+        StudyRoom studyRoom = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
+                .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));
 
         if (!roomMemberRepository.existsByMemberAndRoom(member, studyRoom)) {
-            throw new IllegalStateException("방에 참여하고 있지 않습니다.");
+            throw new BaseException(BaseErrorCode.ROOM_NOT_PARTICIPATE_ERROR);
         }
 
         member.setFavoriteRoom(studyRoom);
