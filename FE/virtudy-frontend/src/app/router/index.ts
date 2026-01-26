@@ -11,6 +11,7 @@ import StudyRoom from '@/components/StudyRoom.vue';
 import IntroductionPage from '@/features/introduction/pages/IntroductionPage.vue';
 import RankingPage from '@/features/ranking/pages/RankingPage.vue';
 import MyPage from '@/features/mypage/pages/MyPage.vue';
+import LobbyPage from '@/features/lobby/pages/LobbyPage.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -128,6 +129,11 @@ const router = createRouter({
           return { name: 'guest' };
         }
       }
+    },
+    {
+      path: '/lobby',
+      name: 'lobby',
+      component: LobbyPage
     }
   ]
 });

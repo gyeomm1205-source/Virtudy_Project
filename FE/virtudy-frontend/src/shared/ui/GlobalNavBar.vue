@@ -1,16 +1,47 @@
 <template>
-  <nav class="nav-container">
-    <div class="nav-left">
-      <router-link :to="logoLink" class="logo">Virtudy</router-link>
-      <router-link to="/introduction" class="nav-link">소개하기</router-link>
+  <nav class="bg-[var(--color-cream2)] h-[75px] absolute top-0 left-0 right-0 flex items-center justify-between px-[78px] py-[28px] overflow-clip">
+    <div class="flex items-center gap-[var(--spacing-m)]">
+      <router-link 
+        :to="logoLink" 
+        class="text-[var(--color-syrup)] text-[36px] font-['Ram'] font-medium leading-none"
+      >
+        버터디
+      </router-link>
+      <router-link 
+        to="/introduction" 
+        class="text-[var(--color-choco)] text-[24px] font-['PF_Stardust_S'] font-normal leading-none hover:opacity-80 transition-opacity"
+      >
+        버터디 소개
+      </router-link>
     </div>
-    <div class="nav-right">
-      <router-link to="/ranking" class="nav-link">랭킹</router-link>
-      <router-link v-if="isLoggedIn" to="/mypage" class="nav-link">마이페이지</router-link>
-      <button v-if="!isLoggedIn" @click="kakaoLogin" class="login-button">
-        카카오로 시작하기
+    <div class="flex items-center gap-[var(--spacing-m)]">
+      <router-link 
+        to="/ranking" 
+        class="text-[var(--color-choco)] text-[24px] font-['PF_Stardust_S'] font-normal leading-none hover:opacity-80 transition-opacity"
+      >
+        랭킹
+      </router-link>
+      <router-link 
+        v-if="isLoggedIn" 
+        to="/mypage" 
+        class="text-[var(--color-choco)] text-[24px] font-['PF_Stardust_S'] font-normal leading-none hover:opacity-80 transition-opacity"
+      >
+        마이페이지
+      </router-link>
+      <button 
+        v-if="!isLoggedIn" 
+        @click="kakaoLogin" 
+        class="text-[var(--color-choco)] text-[24px] font-['PF_Stardust_S'] font-normal leading-none hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer"
+      >
+        로그인
       </button>
-      <button v-else @click="logout" class="login-button">로그아웃</button>
+      <button 
+        v-else 
+        @click="logout" 
+        class="text-[var(--color-choco)] text-[24px] font-['PF_Stardust_S'] font-normal leading-none hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer"
+      >
+        로그아웃
+      </button>
     </div>
   </nav>
 </template>
@@ -39,49 +70,4 @@ const logout = () => {
 };
 </script>
 
-<style scoped>
-.nav-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: #fff;
-  border-bottom: 1px solid #eee;
-}
 
-.nav-left,
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.logo {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #333;
-  text-decoration: none;
-}
-
-.nav-link {
-  font-size: 1rem;
-  color: #555;
-  text-decoration: none;
-  transition: color 0.3s;
-}
-
-.nav-link:hover {
-  color: #007bff;
-}
-
-.login-button {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  background-color: #ffeb00;
-  color: #3c1e1e;
-}
-</style>

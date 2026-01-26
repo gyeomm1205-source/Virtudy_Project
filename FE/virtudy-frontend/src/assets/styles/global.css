@@ -1,4 +1,68 @@
 /* src/app/styles/global.css */
+/* 여기에 전역 폰트나 reset css 등을 추가 */
+
 @import "tailwindcss";
 
-/* 여기에 전역 폰트나 reset css 등을 추가 */
+/* Figma Design Variables */
+:root {
+  --color-butter: #ffd966;
+  --color-cream: #fff2cc;
+  --color-cream2: #fff8e5;
+  --color-pancake: #ffc497;
+  --color-syrup: #dfa67b;
+  --color-choco: #805143;
+  --color-butter2: #ffeaac;
+  --color-jam: #d70654;
+  --color-melon: #b8d576;
+  --spacing-m: 48px;
+}
+
+@font-face {
+    font-family: 'Ram';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2307-1@1.1/Ramche.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
+
+@font-face {
+    font-family: 'PfStardust30S';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/PFStardustS.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PfStardust30S';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/PFStardustSBold.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PfStardust30S';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/PFStardustSExtraBold.woff2') format('woff2');
+    font-weight: 800;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Xcu';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/exqt.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
+/* Reusable Components */
+.butter-btn {
+  @apply bg-[var(--color-butter)] border-2 border-[var(--color-choco)] border-solid;
+  @apply flex items-center justify-center px-[32px] py-[20px] rounded-[2px];
+  @apply transition-transform hover:scale-105 active:scale-95;
+  @apply cursor-pointer;
+  box-shadow: 4px 4px 0px 0px var(--color-choco);
+}
+
+.butter-btn-text {
+  @apply text-[var(--color-choco)] text-[24px] font-['PfStardust30S'] font-normal leading-none;
+}
+

@@ -1,13 +1,43 @@
 <template>
-  <div>
-    <h1>Virtudy 로그인</h1>
-    <button @click="kakaoLogin">
-      카카오로 로그인하기
-    </button>
+  <div class="bg-[var(--color-cream2)] relative w-full h-screen">
+    <!-- Navigation -->
+    <GlobalNavBar />
+    
+    <!-- Footer -->
+    <GlobalFooter />
+    
+    <!-- Main Content -->
+    <div class="absolute flex flex-col gap-[80px] h-[419px] items-center justify-center left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[844px]">
+      <!-- Page Title -->
+      <div class="flex flex-col gap-[24px] items-center justify-center text-center w-full">
+        <h1 
+          class="text-[var(--color-butter)] text-[128px] font-['Ram'] font-medium leading-[48px] tracking-[-2.56px] w-[658px] h-[108px] relative"
+          style="text-shadow: 4px 4px 0px var(--color-choco);"
+        >
+          Virtudy
+        </h1>
+        <p class="text-[var(--color-cream2)] text-[28px] font-['Xcu'] font-medium leading-none">
+          아바타 캠스터디
+        </p>
+      </div>
+      
+      <!-- Login Button -->
+      <button 
+        @click="kakaoLogin"
+        class="butter-btn"
+      >
+        <span class="butter-btn-text">
+          카카오로 시작하기
+        </span>
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
+import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
+
 const kakaoLogin = () => {
   const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID;
   const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI;
@@ -17,20 +47,3 @@ const kakaoLogin = () => {
   window.location.href = kakaoAuthUrl;
 };
 </script>
-
-<style scoped>
-div {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  text-align: center;
-}
-button {
-  border: none;
-  background: none;
-  cursor: pointer;
-  padding: 0;
-}
-</style>
