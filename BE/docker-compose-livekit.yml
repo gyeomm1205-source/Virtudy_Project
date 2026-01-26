@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # LiveKit Server
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: livekit-server
+    command: --dev --bind 0.0.0.0 --node-ip 127.0.0.1
+    restart: unless-stopped
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    environment:
+      - "LIVEKIT_KEYS=${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-secret}"
+    networks:
+      - virtudy-network
+
+  # Redis for LiveKit (and potential other uses)
+  redis:
+    image: redis:alpine
+    container_name: virtudy-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - virtudy-network
+
+networks:
+  virtudy-network:
+    driver: bridge

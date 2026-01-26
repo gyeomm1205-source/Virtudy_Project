@@ -1,0 +1,45 @@
+websocket:
+  port: ${SOCKET_PORT}
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  data:
+    redis:
+      host: host.docker.internal
+      port: ${REDIS_PORT}
+      password: ${DEV_REDIS_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DEV_DB_HOST}:${DEV_DB_PORT}/${DEV_DB_NAME}?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: ${DEV_DB_USER}
+    password: ${DEV_DB_PASSWORD}
+
+server:
+  port: ${SERVER_PORT}
+
+kakao:
+  client-id: ${KAKAO_CLIENT_ID}
+  client-secret-id: ${KAKAO_CLIENT_SECRET_ID}
+  redirect-uri: "http://localhost:3030/login/callback/kakao"
+  token-uri: "https://kauth.kakao.com/oauth/token"
+  user-info-uri: "https://kapi.kakao.com/v2/user/me"
+
+jwt:
+  secret_key: ${JWT_SECRET_KEY}
+  access-expmin: ${JWT_ACCESS_EXPMIN}
+  refresh-expmin: ${JWT_REFRESH_EXPMIN}
+
+livekit:
+  url: ${LIVEKIT_URL}
+  api:
+    key: ${LIVEKIT_API_KEY}
+    secret: ${LIVEKIT_API_SECRET}
