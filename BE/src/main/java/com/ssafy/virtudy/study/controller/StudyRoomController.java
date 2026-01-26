@@ -1,7 +1,10 @@
 package com.ssafy.virtudy.study.controller;
 
 import com.ssafy.virtudy.global.auth.annotation.CurrentMember;
+<<<<<<< HEAD
 import com.ssafy.virtudy.global.event.dto.ErrorResponse;
+=======
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.study.dto.StudyRoomListResponse;
 import com.ssafy.virtudy.study.dto.StudyRoomResponse;
@@ -46,8 +49,13 @@ public class StudyRoomController {
     })
     @PostMapping
     public ResponseEntity<StudyRoomResponse> createRoom(
+<<<<<<< HEAD
             @Parameter(hidden = true) @CurrentMember Member member,
             @Valid @RequestBody StudyRoomSaveRequest request
+=======
+            @CurrentMember Member member,
+            @RequestBody StudyRoomSaveRequest request
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
     ) {
         StudyRoomResponse response = studyRoomService.createRoom(member, request);
         return ResponseEntity.ok(response);
@@ -76,7 +84,11 @@ public class StudyRoomController {
     })
     @GetMapping("/my")
     public ResponseEntity<List<StudyRoomListResponse>> getMyRooms(
+<<<<<<< HEAD
             @Parameter(hidden = true) @CurrentMember Member member
+=======
+            @CurrentMember Member member
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
     ) {
         List<StudyRoomListResponse> responses = studyRoomService.findMyRooms(member);
         return ResponseEntity.ok(responses);
@@ -110,7 +122,11 @@ public class StudyRoomController {
     })
     @PatchMapping("/{roomId}")
     public ResponseEntity<Void> updateRoom(
+<<<<<<< HEAD
             @Parameter(hidden = true) @CurrentMember Member member,
+=======
+            @CurrentMember Member member,
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
             @Parameter(description = "스터디방 고유 코드(UUID)", required = true) @PathVariable String roomId,
             @RequestBody StudyRoomUpdateRequest request
     ) {
@@ -130,7 +146,11 @@ public class StudyRoomController {
     })
     @DeleteMapping("/{roomId}")
     public ResponseEntity<Void> deleteRoom(
+<<<<<<< HEAD
             @Parameter(hidden = true) @CurrentMember Member member,
+=======
+            @CurrentMember Member member,
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
             @Parameter(description = "스터디방 고유 코드(UUID)", required = true) @PathVariable String roomId
     ) {
         studyRoomService.deleteRoom(member, roomId);
@@ -149,7 +169,11 @@ public class StudyRoomController {
     })
     @PatchMapping("/favorite/{roomId}")
     public ResponseEntity<Void> setFavoriteRoom(
+<<<<<<< HEAD
             @Parameter(hidden = true) @CurrentMember Member member,
+=======
+            @CurrentMember Member member,
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
             @Parameter(description = "스터디방 고유 코드(UUID)", required = true) @PathVariable String roomId
     ) {
         studyRoomService.setFavoriteRoom(member, roomId);

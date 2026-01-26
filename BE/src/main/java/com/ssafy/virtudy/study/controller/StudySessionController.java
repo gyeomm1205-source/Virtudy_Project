@@ -1,10 +1,12 @@
 package com.ssafy.virtudy.study.controller;
 
 import com.ssafy.virtudy.global.auth.annotation.CurrentMember;
+<<<<<<< HEAD
 import com.ssafy.virtudy.global.event.dto.ErrorResponse;
+=======
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.study.dto.SessionMemberInfoResponse;
-import com.ssafy.virtudy.study.dto.StudyLogRequest;
 import com.ssafy.virtudy.study.service.StudySessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,8 +40,12 @@ public class StudySessionController {
     })
     @PostMapping("/enter/{roomId}")
     public ResponseEntity<SessionMemberInfoResponse> enterRoom(
+<<<<<<< HEAD
             @Parameter(hidden = true) @CurrentMember Member member,
 
+=======
+            @CurrentMember Member member,
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
             @Parameter(description = "스터디방 고유 코드(UUID)", required = true) @PathVariable String roomId
     ) {
         SessionMemberInfoResponse response = studySessionService.enterRoom(member, roomId);
@@ -56,19 +62,13 @@ public class StudySessionController {
     })
     @PostMapping("/enter/random")
     public ResponseEntity<SessionMemberInfoResponse> enterRandomRoom(
+<<<<<<< HEAD
             @Parameter(hidden = true) @CurrentMember Member member
+=======
+            @CurrentMember Member member
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
     ) {
         SessionMemberInfoResponse response = studySessionService.enterRandomRoom(member);
         return ResponseEntity.ok(response);
-    }
-
-    @Operation(summary = "스터디 로그 저장", description = "사용자의 상태 변경(FOCUS, SLEEP, PHONE, AWAY) 로그를 저장합니다.")
-    @PostMapping("/log")
-    public ResponseEntity<Void> saveStudyLog(
-            @Parameter(description = "사용자 ID", required = true) @RequestHeader("X-MEMBER-ID") String memberId,
-            @RequestBody StudyLogRequest request
-    ) {
-        studySessionService.saveStudyLog(memberId, request);
-        return ResponseEntity.ok().build();
     }
 }

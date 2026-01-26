@@ -20,6 +20,5 @@ public class MemberGameStatDto {
         private String nickName;
 >>>>>>> 343743d (fix the conflicts MemberRepository, MemberGameStatDto, RankService and RankDTO에 imageUrl 추가)
         private int tierScore;
-        private String nickName;
     }
 }

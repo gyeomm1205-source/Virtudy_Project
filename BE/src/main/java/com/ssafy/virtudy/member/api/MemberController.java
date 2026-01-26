@@ -46,7 +46,11 @@ public class MemberController {
     })
     @GetMapping("/profile")
     public ResponseEntity<MemberProfileResponse> getProfile(
+<<<<<<< HEAD
             @Parameter(hidden = true) @CurrentMember Member member
+=======
+            @CurrentMember Member member
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
     ) {
         MemberProfileResponse response = memberService.getProfile(member);
         return ResponseEntity.ok(response);
@@ -64,8 +68,13 @@ public class MemberController {
     })
     @PatchMapping("/profile")
     public ResponseEntity<Void> updateProfile(
+<<<<<<< HEAD
             @Parameter(hidden = true) @CurrentMember Member member,
             @Valid @RequestBody MemberProfileUpdateRequest request
+=======
+            @CurrentMember Member member,
+            @RequestBody MemberProfileUpdateRequest request
+>>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
     ) {
         memberService.updateProfile(member, request);
         return ResponseEntity.ok().build();

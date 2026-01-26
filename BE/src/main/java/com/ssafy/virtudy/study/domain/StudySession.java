@@ -13,7 +13,6 @@ import java.util.UUID;
 
 @Entity
 @Getter
-@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StudySession extends BaseTimeEntity {
 
@@ -42,7 +41,6 @@ public class StudySession extends BaseTimeEntity {
 >>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 
     @Column(nullable = false)
-    @Builder.Default
     private int sessionRealStudyTime = 0;
 
     @Column
