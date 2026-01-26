@@ -49,8 +49,9 @@ public enum BaseErrorCode {
     JOB_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "MEMBER_003", "존재하지 않는 직업입니다."),
     DUPLICATED_MEMBER(HttpStatus.CONFLICT, "MEMBER_004", "이미 존재하는 사용자입니다."),
 
-    // Notice
-    NOTICE_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "NOTICE_001", "존재하지 않는 공지입니다."),
+    // Report
+    REPORT_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "REPORT_001", "존재하지 않는 리포트입니다."),
+    SESSION_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "SESSION_001", "존재하지 않는 세션입니다."),
 
     // Reminder
     REMINDER_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "REMINDER_001", "존재하지 않는 알림입니다."),

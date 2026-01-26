@@ -16,6 +16,7 @@ public class MemberDto {
     private String avatarImageUrl;
     private String email;
 
+    // TODO 여기에 Member 관련 데이터가 다 들어갈 필요는 없겠지
     // Entity -> Dto 변환 메서드
     public static MemberDto from(Member member) {
         return MemberDto.builder()
