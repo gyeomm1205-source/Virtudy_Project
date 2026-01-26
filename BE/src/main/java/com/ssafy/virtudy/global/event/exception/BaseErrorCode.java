@@ -49,11 +49,22 @@ public enum BaseErrorCode {
     JOB_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "MEMBER_003", "존재하지 않는 직업입니다."),
     DUPLICATED_MEMBER(HttpStatus.CONFLICT, "MEMBER_004", "이미 존재하는 사용자입니다."),
 
-    // Notice
-    NOTICE_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "NOTICE_001", "존재하지 않는 공지입니다."),
+    // Report
+    REPORT_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "REPORT_001", "존재하지 않는 리포트입니다."),
+    SESSION_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "SESSION_001", "존재하지 않는 세션입니다."),
 
     // Reminder
     REMINDER_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "REMINDER_001", "존재하지 않는 알림입니다."),
+
+    // Room
+    ROOM_NOT_FOUND_ERROR(HttpStatus.NOT_FOUND, "ROOM_001","종료되었거나 존재하지 않는 방입니다."),
+    ROOM_FULL_ERROR(HttpStatus.BAD_REQUEST, "ROOM_002","방이 가득 찼습니다"),
+    ROOM_NOT_AVAILABLE_ERROR(HttpStatus.BAD_REQUEST, "ROOM_003","입장 가능한 방이 없습니다."),
+    ROOM_NOT_PARTICIPATE_ERROR(HttpStatus.BAD_REQUEST, "ROOM_004","현재 참여중인 방이 아닙니다."),
+    ROOM_MAX_REACHED_ERROR(HttpStatus.BAD_REQUEST, "ROOM_005","방은 최대 3개까지 생성할 수 있습니다."),
+    ROOM_PRIVATE_EMPTY_PASSWORD_ERROR(HttpStatus.BAD_REQUEST, "ROOM_006","비공개 방은 비밀번호가 필수입니다."),
+    ROOM_PUBLIC_FILLED_PASSWORD_ERROR(HttpStatus.BAD_REQUEST, "ROOM_007","공개 방은 비밀번호가 존재하지 않아야 합니다."),
+    ROOM_NOT_OWNER_ERROR(HttpStatus.BAD_REQUEST, "ROOM_008","방장만 접근할 수 있습니다."),
 
     /**
      * 500 : 응답 실패

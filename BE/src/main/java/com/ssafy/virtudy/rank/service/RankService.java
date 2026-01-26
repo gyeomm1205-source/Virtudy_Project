@@ -61,8 +61,7 @@ public class RankService {
         Map<String, AvatarResponse> avatarMap = results.stream()
                 .collect(Collectors.toMap(
                         MemberDto::getMemberId,
-                        memberDto -> AvatarResponse.from(memberDto.getAvatar())
-                ));
+                        memberDto -> AvatarResponse.from(memberDto.getAvatar())));
 
         int currentRank = (int) start + 1;
 
@@ -73,6 +72,7 @@ public class RankService {
             int score = (scoreVal != null) ? scoreVal.intValue() : 0;
             // Map에서 꺼내기 (이미 DTO로 변환되어 있어서 형변환 필요 없음)
             AvatarResponse avatarDto = avatarMap.get(userId);
+
             // 3. DTO 빌더 패턴 사용
             RankDTO.Response dto = RankDTO.Response.builder()
                     .id(userId)
@@ -105,12 +105,9 @@ public class RankService {
             StudyRoom studyRoom = member.getFavoriteRoom();
             Member owner = memberRepository.findByMemberId(studyRoom.getOwner().getMemberId())
                     .orElseThrow(() -> new IllegalArgumentException("찾는 아이디가 없습니다."));
-
-            avatarDto = AvatarResponse.from(owner.getAvatar());
-            nickName = studyRoom.getTitle();
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_TEAM_KEY, studyRoom.getRoomId());
             scoreVal = redisTemplate.opsForZSet().score(RANK_TEAM_KEY, studyRoom.getRoomId());
-            userId = studyRoom.getRoomId();
+            avatarDto = AvatarResponse.from(owner.getAvatar());
         }
 
         if (rankIndex == null) {
@@ -125,9 +122,6 @@ public class RankService {
                 .avatar(avatarDto)
                 .tier(calculateTier(scoreVal))
                 .build();
-
-
-
     }
 
 
@@ -162,7 +156,6 @@ public class RankService {
                     scoreVal = redisTemplate.opsForZSet().score(RANK_PRIATE_KEY, userId);
 
                     nickName = name;
-
                     avatarDto = AvatarResponse.from(tempMember.getAvatar());
                     responseList.add(
                             RankDTO.Response.builder()
@@ -215,19 +208,6 @@ public class RankService {
             return responseList;
         }
 
-        /**
-         * 티어 계산 함수 추후 변경
-         * @param score
-         * @return
-         */
-        private RankDTO.Tier calculateTier(double score) {
-            if (score >= 1000) return RankDTO.Tier.DIAMOND;
-            if (score >= 500) return RankDTO.Tier.GOLD;
-            if (score >= 100) return RankDTO.Tier.SILVER;
-            return RankDTO.Tier.BRONZE;
-        }
-
-
         public List<RankDTO.Response> getRankByPage(int page, String type) {
             long start = (long) page * PAGE_SIZE;
             long end = start + PAGE_SIZE - 1;
@@ -237,6 +217,20 @@ public class RankService {
         public List<RankDTO.Response> getTop5Rank(String type) {
             return getRankRange(0, 4, type);
         }
+
+    /**
+     * 티어 계산 함수 추후 변경
+     * @param score
+     * @return
+     */
+    private RankDTO.Tier calculateTier(double score) {
+        if (score >= 9000) return RankDTO.Tier.DIAMOND;
+        if (score >= 5000) return RankDTO.Tier.PLATINUM; // Platinum 추가 (RankDTO.Tier에 있다면)
+        if (score >= 3000) return RankDTO.Tier.GOLD;
+        if (score >= 1000) return RankDTO.Tier.SILVER;
+        return RankDTO.Tier.BRONZE;
+    }
+
 
         /**
          * 랭킹 업데이트 하는 스케줄러 함수 본체

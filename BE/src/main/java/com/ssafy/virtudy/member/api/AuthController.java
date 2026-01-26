@@ -5,13 +5,12 @@ import com.ssafy.virtudy.global.event.exception.BaseException;
 import com.ssafy.virtudy.member.application.AuthService;
 import com.ssafy.virtudy.member.dto.MemberKakaoLoginResponse;
 import com.ssafy.virtudy.member.dto.MemberSignUpRequest;
-import jakarta.servlet.http.HttpServlet;
+import com.ssafy.virtudy.member.dto.TokenResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -93,7 +92,7 @@ public class AuthController {
      * AccessToken 만료 시 호출
      */
     @PostMapping("/reissue")
-    public ResponseEntity<MemberKakaoLoginResponse> reissue(
+    public ResponseEntity<TokenResponse> reissue(
             @CookieValue(value = "refreshToken", required = false) String refreshToken,
             HttpServletResponse response) {
 
@@ -103,7 +102,7 @@ public class AuthController {
         }
 
         // 서비스 로직 (Redis 비교 및 교체)
-        MemberKakaoLoginResponse result = authService.reissue(refreshToken);
+        TokenResponse result = authService.reissue(refreshToken);
 
         // 새 토큰 세팅
         setTokenToResponse(response, result.getAccessToken(), result.getRefreshToken());

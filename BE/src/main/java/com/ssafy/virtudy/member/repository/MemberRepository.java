@@ -17,6 +17,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Query("SELECT m.memberId, m.avatar, m.email, m.nickName FROM Member m")
     List<MemberDto> findAllMemberImages();
 
+
     Optional<Member> findByEmail(String email);
 
     boolean existsByMemberId(String memberId);

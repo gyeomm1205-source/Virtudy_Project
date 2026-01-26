@@ -32,13 +32,13 @@ public class StudySession extends BaseTimeEntity {
     private StudyRoom room; // FK
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime startTime;    // 세션 시작시각
+    private LocalDateTime startTime; // 세션 시작시각
 
     @Column(nullable = false)
     private int sessionRealStudyTime = 0;
 
     @Column
-    private LocalDateTime endTime;      // 세션 종료시각
+    private LocalDateTime endTime; // 세션 종료시각
 
     @Builder
     private StudySession(Member member, StudyRoom room) {
