@@ -114,7 +114,7 @@ public class AuthService {
                 // [시스템 기본값 초기화] (NOT NULL 에러 방지)
                 .status(MemberStatType.ACTIVE)      // 가입 즉시 활성 상태
                 .avatarGenCount(0)                  // 아바타 생성 횟수 0회 초기화
-                .avatarImageUrl("")                 // 이미지 URL 빈 값 초기화; TODO 아바타 이미지 생성 url 투입
+                .avatar(null)                // 이미지 URL 빈 값 초기화; TODO 아바타 이미지 생성 url 투입
                 .build();
         memberRepository.save(newMember);
 

@@ -57,8 +57,8 @@ public class Member extends BaseTimeEntity {
     @ColumnDefault("'ACTIVE'")
     private MemberStatType status; // 가입한 상태, 탈퇴한 상태 vs 그냥 지울래 ??
 
-    @Column(nullable = false)
-    private String avatarImageUrl;
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Avatar avatar;
 
     // Member.java 내부에 필드 추가
     @Column(nullable = false)
@@ -90,5 +90,14 @@ public class Member extends BaseTimeEntity {
     public void updateProfile(String nickName, JobType jobType) {
         this.nickName = nickName;
         this.jobType = jobType;
+    }
+
+    public void setAvatar(Avatar avatar) {
+        this.avatar = avatar;
+    }
+
+    // [추가] 회원 상태 변경 편의 메서드 (탈퇴/복구 시 사용)
+    public void updateStatus(MemberStatType status) {
+        this.status = status;
     }
 }
