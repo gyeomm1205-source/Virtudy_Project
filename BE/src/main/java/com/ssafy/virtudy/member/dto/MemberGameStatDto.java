@@ -12,6 +12,5 @@ public class MemberGameStatDto {
         private String id; // 밖으로 도는 거 ㄱㄱ UUID
         private String nickName;
         private int tierScore;
-        private String nickName;
     }
 }

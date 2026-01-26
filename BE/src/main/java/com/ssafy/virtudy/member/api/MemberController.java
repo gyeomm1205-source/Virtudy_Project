@@ -20,7 +20,9 @@ public class MemberController {
     private final MemberService memberService;
 
     @GetMapping("/profile")
-    public ResponseEntity<MemberProfileResponse> getProfile(@CurrentMember Member member) {
+    public ResponseEntity<MemberProfileResponse> getProfile(
+            @CurrentMember Member member
+    ) {
         MemberProfileResponse response = memberService.getProfile(member);
         return ResponseEntity.ok(response);
     }
@@ -28,7 +30,8 @@ public class MemberController {
     @PatchMapping("/profile")
     public ResponseEntity<Void> updateProfile(
             @CurrentMember Member member,
-            @RequestBody MemberProfileUpdateRequest request) {
+            @RequestBody MemberProfileUpdateRequest request
+    ) {
         memberService.updateProfile(member, request);
         return ResponseEntity.ok().build();
     }
