@@ -1,142 +1,194 @@
 <template>
-  <div class="bg-[var(--color-syrup)] relative w-full h-screen">
-    <!-- Navigation -->
-    <GlobalNavBar />
+  <div class="bg-[var(--color-syrup)] w-full min-h-screen flex flex-col relative">
     
-    <!-- Footer -->
-    <GlobalFooter />
-    
-    <!-- 뒤로가기 버튼 -->
-    <div class="absolute left-[76px] top-[119px] w-[54px] h-[54px] cursor-pointer" @click="goBack">
-      <img 
-        src="http://localhost:3845/assets/8b3a74cfd86bc6957d7b678cb811aa5429eb437e.svg" 
-        alt="뒤로가기"
-        class="w-full h-full object-contain"
-      />
+    <div class="flex-none z-50">
+      <GlobalNavBar />
     </div>
     
-    <!-- 방목록 제목 -->
-    <div class="absolute left-[58px] top-[324px] transform -translate-y-1/2">
-      <h1 class="text-[var(--color-pancake)] text-[156px] font-['Ram'] font-medium leading-none tracking-[-18.72px]">
-        방목록
-      </h1>
-    </div>
+    <main class="flex-1 w-full relative min-h-[850px]">
+      
+      <div class="absolute left-[76px] top-[119px] w-[54px] h-[54px] cursor-pointer hover:scale-110 transition-transform" @click="goBack">
+        <svg viewBox="0 0 54 54" class="w-full h-full" fill="var(--color-choco)">
+          <path d="M40 22H18.8L29.4 11.4L27 9L13 23L27 37L29.4 34.6L18.8 24H40V22Z"/>
+        </svg>
+      </div>
+      
+      <div class="absolute left-[58px] top-[324px] transform -translate-y-1/2">
+        <h1 class="text-[var(--color-pancake)] text-[156px] font-['Ram'] font-medium leading-none tracking-[-18.72px]">
+          방목록
+        </h1>
+      </div>
+      
+      <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px]">
+        <div class="absolute left-[54px] top-[83px] w-[146px] h-[146px] rounded-full overflow-hidden border-4 border-[var(--color-choco)]">
+          <img 
+            src="http://localhost:3845/assets/ae7ca0939b29738c16aee5cf86953e893d60c594.svg"
+            alt="프로필 사진"
+            class="w-full h-full object-cover"
+          />
+        </div>
+        
+        <div class="absolute top-[260px] w-full flex flex-col gap-[10px]">
+          <button class="butter-btn bg-[var(--color-butter)] w-full" @click="randomMatch">
+            <span class="text-[var(--color-choco)] text-[28px] font-['Xcu'] font-medium leading-none">
+              랜덤매칭
+            </span>
+          </button>
+          <button class="butter-btn bg-[var(--color-butter2)] w-full" @click="createRoom">
+            <span class="text-[var(--color-choco)] text-[28px] font-['Xcu'] font-medium leading-none">
+              방만들기
+            </span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px]">
+        <RoomList 
+          :rooms="allRooms"
+          @roomClick="onRoomClick"
+          @filterChange="setFilter"
+          @sortChange="setSortBy"
+          @search="onSearchInput"
+        />
+      </div>
+
+    </main>
     
-    <!-- 왼쪽 - 프로필과 메뉴 -->
-    <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px]">
-      <LobbyProfile 
-        :user-profile-image="userProfileImage"
-        @random-match="handleRandomMatch"
-        @create-room="handleCreateRoom"
-      />
+    <div class="flex-none">
+      <GlobalFooter />
     </div>
-    
-    <!-- 오른쪽 - 방 목록 -->
-    <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px]">
-      <RoomList 
-        :rooms="rooms"
-        @room-click="handleRoomClick"
-        @filter-change="handleFilterChange"
-        @sort-change="handleSortChange"
-        @search="handleSearch"
-      />
-    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
-import LobbyProfile from '@/shared/ui/LobbyProfile.vue';
 import RoomList from '@/shared/ui/RoomList.vue';
 
+const MOCK_MEMBER_ID = 'test-member-001';
+
 interface Room {
-  id: number;
+  roomId: string;
   title: string;
-  currentMembers: number;
-  maxMembers: number;
-  createdAt: string;
+  type?: string;
+  currentMembers?: number;
+  maxMembers?: number;
+  createdAt?: string;
 }
+
+const emit = defineEmits<{
+  roomClick: [room: Room];
+}>();
 
 const router = useRouter();
 
-// Reactive state
-const userProfileImage = ref<string | null>(null);
-const rooms = ref<Room[]>([]);
+// State
+const allRooms = ref<Room[]>([]);
+const currentFilter = ref<string>('all');
+const sortBy = ref<string>('popular');
+const searchQuery = ref<string>('');
+const currentPage = ref<number>(1);
+const ITEMS_PER_PAGE = 6;
 
-// 더미 데이터 (추후 API 연동으로 교체)
-const initializeDummyRooms = () => {
-  rooms.value = [
-    {
-      id: 1,
-      title: "알고리즘 스터디",
-      currentMembers: 0,
-      maxMembers: 6,
-      createdAt: "2024-01-26T10:00:00Z"
-    },
-    {
-      id: 2,
-      title: "코딩테스트 준비",
-      currentMembers: 3,
-      maxMembers: 6,
-      createdAt: "2024-01-26T11:00:00Z"
-    },
-    {
-      id: 3,
-      title: "프론트엔드 스터디",
-      currentMembers: 2,
-      maxMembers: 6,
-      createdAt: "2024-01-26T12:00:00Z"
-    },
-    {
-      id: 4,
-      title: "백엔드 개발",
-      currentMembers: 1,
-      maxMembers: 6,
-      createdAt: "2024-01-26T13:00:00Z"
+// Methods
+const goBack = () => router.back();
+
+const fetchRooms = async () => {
+  allRooms.value = [];
+  try {
+    let response;
+    if (currentFilter.value === 'all') {
+      response = await axios.get('/api/study-rooms/');
+    } else {
+      response = await axios.get('/api/study-rooms/my', {
+        headers: { 'X-MEMBER-ID': MOCK_MEMBER_ID }
+      });
     }
-  ];
+    if (response && response.data) {
+      allRooms.value = response.data;
+    }
+  } catch (error) {
+    console.error('방 목록 조회 실패:', error);
+    allRooms.value = [];
+  }
 };
 
-// Event handlers
-const handleRandomMatch = () => {
-  console.log('랜덤매칭 요청');
-  // 랜덤매칭 로직 구현
+const filteredRooms = computed(() => {
+  let filtered = [...allRooms.value];
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(room => 
+      room.title?.toLowerCase().includes(query)
+    );
+  }
+  if (sortBy.value === 'popular') {
+    filtered.sort((a, b) => (b.currentMembers || 0) - (a.currentMembers || 0));
+  } else if (sortBy.value === 'latest') {
+    filtered.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  }
+  return filtered;
+});
+
+const displayedRooms = computed(() => {
+  const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  return filteredRooms.value.slice(start, end);
+});
+
+const totalPages = computed(() => {
+  return Math.max(1, Math.ceil(filteredRooms.value.length / ITEMS_PER_PAGE));
+});
+
+const visiblePages = computed(() => {
+  const pages: number[] = [];
+  const start = Math.max(1, currentPage.value - 2);
+  const end = Math.min(totalPages.value, currentPage.value + 2);
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+  return pages;
+});
+
+const setFilter = (filter: string) => {
+  if (currentFilter.value === filter) return;
+  currentFilter.value = filter;
+  currentPage.value = 1;
+  searchQuery.value = '';
+  fetchRooms();
 };
 
-const handleCreateRoom = () => {
-  console.log('방만들기 요청');
-  // 방만들기 페이지로 이동하거나 모달 열기
+const setSortBy = (sort: string) => {
+  sortBy.value = sort;
+  currentPage.value = 1;
 };
 
-const handleRoomClick = (room: Room) => {
-  console.log('방 클릭:', room);
-  // 방 입장 로직 구현
+const onSearchInput = (query: string) => {
+  searchQuery.value = query;
+  currentPage.value = 1;
 };
 
-const handleFilterChange = (filter: string) => {
-  console.log('필터 변경:', filter);
-  // 필터 변경 로직 구현
+const onRoomClick = (room: Room) => {
+  emit('roomClick', room);
+  router.push(`/study-room/${room.roomId}`);
 };
 
-const handleSortChange = (sortBy: string) => {
-  console.log('정렬 변경:', sortBy);
-  // 정렬 변경 로직 구현
+const randomMatch = () => {
+  console.log('랜덤매칭 시작');
 };
 
-const handleSearch = (query: string) => {
-  console.log('검색:', query);
-  // 검색 로직 구현
+const createRoom = () => {
+  router.push('/create-room');
 };
 
-const goBack = () => {
-  router.back();
-};
-
-// Lifecycle
 onMounted(() => {
-  initializeDummyRooms();
+  fetchRooms();
 });
 </script>

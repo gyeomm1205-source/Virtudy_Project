@@ -66,3 +66,19 @@
   @apply text-[var(--color-choco)] text-[24px] font-['PfStardust30S'] font-normal leading-none;
 }
 
+/* Filter Button Styles */
+.filter-btn {
+  @apply border-2 border-[var(--color-choco)] border-solid px-[32px] py-[20px];
+  @apply rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px];
+  @apply transition-colors;
+  box-shadow: 4px 4px 0px 0px var(--color-choco);
+}
+
+.filter-btn.active {
+  @apply bg-[var(--color-butter)];
+}
+
+.filter-btn.inactive {
+  @apply bg-[var(--color-cream)];
+}
+

@@ -1,14 +1,25 @@
 export type RankType = 'private' | 'team';
 
+// [수정] 백엔드 Avatar 명세에 맞춘 인터페이스
+export interface AvatarConfig {
+  hairFront: string;
+  hairBack: string;
+  hairColor: string;
+  eyes: string;
+  glasses: string;
+  outfit: string;
+  clothesColor: string;
+}
+
 export interface RankItem {
-  id: string;      // 유저 ID 또는 팀 ID
-  nickName: string;// 유저 닉네임 또는 팀 이름
+  id: string;          // [추가] 고유 ID (User_1 등)
+  nickName: string; // [중요] 이제 이게 식별자 역할 겸 표시 이름
   rank: number;
   score: number;
+  email: string;    // 본인 확인용 (유니크 키로 사용 가능)
+  avatar: AvatarConfig; 
   tier: string;
-  profileImg?: string;
 }
 
 export interface MyRankInfo extends RankItem {
-  // 내 정보에만 있는 추가 필드가 있다면 여기에 작성
 }
