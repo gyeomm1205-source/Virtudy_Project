@@ -1,5 +1,6 @@
 package com.ssafy.virtudy.member.application;
 
+import com.ssafy.virtudy.member.domain.JobType;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.dto.MemberProfileResponse;
 import com.ssafy.virtudy.member.dto.MemberProfileUpdateRequest;
@@ -18,6 +19,7 @@ public class MemberService {
 
     @Transactional
     public void updateProfile(Member member, MemberProfileUpdateRequest request) {
-        member.updateProfile(request.getNickName(), request.getJobType());
+        JobType jobType = request.getJobType() != null ? JobType.valueOf(request.getJobType()) : null;
+        member.updateProfile(request.getNickName(), jobType);
     }
 }

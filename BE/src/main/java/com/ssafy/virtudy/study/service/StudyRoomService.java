@@ -39,11 +39,11 @@ public class StudyRoomService {
 
         boolean hasPassword = request.getPassword() != null && !request.getPassword().isBlank();
 
-        if (request.getType() == RoomType.PRIVATE && !hasPassword) {
+        if (RoomType.valueOf(request.getType()) == RoomType.PRIVATE && !hasPassword) {
             throw new BaseException(BaseErrorCode.ROOM_PRIVATE_EMPTY_PASSWORD_ERROR);
         }
 
-        if (request.getType() == RoomType.PUBLIC && hasPassword) {
+        if (RoomType.valueOf(request.getType()) == RoomType.PUBLIC && hasPassword) {
             throw new BaseException(BaseErrorCode.ROOM_PUBLIC_FILLED_PASSWORD_ERROR);
         }
 
@@ -67,13 +67,12 @@ public class StudyRoomService {
     }
 
     public List<StudyRoomListResponse> findMyRooms(Member member) {
-        List<StudyRoom> ownedRooms = studyRoomRepository.findAllByOwnerId(member.getId());
-        List<StudyRoom> joinedRooms = roomMemberRepository.findAllByMember(member).stream()
+        List<StudyRoom> joinedRooms = roomMemberRepository.findAllByMemberAndRoomStatusOpen(member.getId()).stream()
                 .map(RoomMember::getRoom)
                 .toList();
 
         // TODO : 이렇게 만들면 추가 쿼리가 10번 나간다..
-        return Stream.concat(ownedRooms.stream(), joinedRooms.stream())
+        return joinedRooms.stream()
                 .distinct()
                 .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
                 .limit(10)

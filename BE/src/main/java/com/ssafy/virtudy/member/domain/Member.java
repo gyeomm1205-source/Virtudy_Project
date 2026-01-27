@@ -88,8 +88,8 @@ public class Member extends BaseTimeEntity {
     }
 
     public void updateProfile(String nickName, JobType jobType) {
-        this.nickName = nickName;
-        this.jobType = jobType;
+        if (nickName != null) this.nickName = nickName;
+        if (jobType != null) this.jobType = jobType;
     }
 
     public void setAvatar(Avatar avatar) {
