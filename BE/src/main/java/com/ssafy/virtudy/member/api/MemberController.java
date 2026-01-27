@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 @Tag(name = "회원 정보 API", description = "마이페이지에 필요한 회원 상세정보 API")
 =======
 /*
@@ -33,6 +34,9 @@ import org.springframework.web.bind.annotation.*;
 =======
 @Tag(name = "Member", description = "회원 정보 API")
 >>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
+=======
+@Tag(name = "회원 정보 API", description = "마이페이지에 필요한 회원 상세정보 API")
+>>>>>>> b4ca56a ([S14P11A703-118] 조회 API 응답 필드 추가)
 @RestController
 @RequestMapping("/api/members")
 @RequiredArgsConstructor
@@ -62,7 +66,8 @@ public class MemberController {
 =======
             @ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
+            @ApiResponse(responseCode = "404", description = "게임 스탯 정보를 찾을 수 없음 (MEMBER_005)")
     })
     @GetMapping("/profile")
     public ResponseEntity<MemberProfileResponse> getProfile(

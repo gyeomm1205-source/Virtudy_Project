@@ -1,10 +1,15 @@
 package com.ssafy.virtudy.member.application;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
 import com.ssafy.virtudy.global.event.exception.BaseException;
 =======
 >>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
+=======
+import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
+import com.ssafy.virtudy.global.event.exception.BaseException;
+>>>>>>> b4ca56a ([S14P11A703-118] 조회 API 응답 필드 추가)
 import com.ssafy.virtudy.member.domain.JobType;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.domain.MemberGameStat;
