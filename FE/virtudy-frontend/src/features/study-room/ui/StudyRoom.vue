@@ -1,7 +1,9 @@
+<!-- 화상 채팅 메인 화면 -->
+
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useStudyRoom } from '../composables/useStudyRoom';
-import { RoomManager } from '../utils/RoomManager';
+import { useStudyRoom } from '../logic/useStudyRoom';
+import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
 
 const roomIdInput = ref('room-1');
