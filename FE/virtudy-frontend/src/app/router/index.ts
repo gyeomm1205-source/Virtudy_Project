@@ -27,31 +27,38 @@ const router = createRouter({
       // 로그인 상태에 따라 GuestPage 또는 UserPage로 리다이렉트
       redirect: () => {
         const authStore = useAuthStore();
-        return authStore.isLoggedIn ? { name: 'user' } : { name: 'guest' };
+        // 로그인 상태면 UserPage('/user')로, 아니면 GuestPage('/guest')로 보냄
+        if (authStore.isLoggedIn) {
+          return { name: 'user' }; 
+        } else {
+          return { name: 'guest' }; 
+        }
       }
     },
     {
       path: '/guest',
       name: 'guest',
       component: GuestPage,
-      beforeEnter: () => {
+      beforeEnter: (to, from, next) => {
         const authStore = useAuthStore();
+        // 이미 로그인한 유저가 /guest로 오면 /user로 보냄
         if (authStore.isLoggedIn) {
-          // 이미 로그인했다면 UserPage로
-          return { name: 'user' };
+          return next({ name: 'user' });
         }
+        return next();
       }
     },
     {
       path: '/user',
       name: 'user',
       component: UserPage,
-      beforeEnter: () => {
+      beforeEnter: (to, from, next) => {
         const authStore = useAuthStore();
+        // 로그인 안 한 유저가 /user로 오면 /guest로 보냄
         if (!authStore.isLoggedIn) {
-          // 로그인을 안했다면 GuestPage로
-          return { name: 'guest' };
+          return next({ name: 'guest' });
         }
+        return next();
       }
     },
     {
