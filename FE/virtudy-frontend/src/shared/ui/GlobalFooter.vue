@@ -1,7 +1,3 @@
 <template>
-  <footer class="bg-[var(--color-pancake)] w-full h-[128px]" />
+  <footer class="bg-[var(--color-pancake)] w-full h-[8rem]" />
 </template>
-
-<script setup lang="ts">
-// Footer 컴포넌트
-</script>
