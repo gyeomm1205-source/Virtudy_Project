@@ -4,10 +4,10 @@ export interface UserProfileResponse {
   nickName: string;
   tier: string;
   jobType: string;
-  // 백엔드 미구현 필드 (임시)
-  cumulativeScore?: number; // 누적 점수
-  favoriteStudyRoom?: string; //최애 스터디룸
-  miniReport?: string; //미니 리포트
+  tierScore?: number; // 티어 점수
+  favoriteRoomTitle?: string; //최애 스터디방 제목
+  pureStudyTime?: number; // 일일 순공부시간 (분)
+  focusDepth?: number; // 집중도 (%)
 }
 
 export interface ProfileUpdateRequest {
