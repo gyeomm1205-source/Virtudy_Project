@@ -2,9 +2,13 @@ package com.ssafy.virtudy.study.controller;
 
 import com.ssafy.virtudy.global.auth.annotation.CurrentMember;
 <<<<<<< HEAD
+<<<<<<< HEAD
 import com.ssafy.virtudy.global.event.dto.ErrorResponse;
 =======
 >>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
+=======
+import com.ssafy.virtudy.global.event.dto.ErrorResponse;
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.study.dto.StudyRoomListResponse;
 import com.ssafy.virtudy.study.dto.StudyRoomResponse;
@@ -15,9 +19,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 <<<<<<< HEAD
+<<<<<<< HEAD
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 =======
 >>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
+=======
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -41,6 +49,9 @@ public class StudyRoomController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "스터디방 생성 성공", content = @Content(schema = @Schema(implementation = StudyRoomResponse.class))),
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
             @ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = {
                             @ExampleObject(name = "유효성 검사 실패", value = "{\"status\": 400, \"error\": \"BAD_REQUEST\", \"code\": \"REQUEST_ERROR_001\", \"message\": \"잘못된 요청입니다.\", \"timestamp\": \"2024-01-01T00:00:00\"}"),
@@ -50,6 +61,7 @@ public class StudyRoomController {
                     })),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 401, \"error\": \"UNAUTHORIZED\", \"code\": \"REQUEST_ERROR_003\", \"message\": \"로그인 후 이용해주세요.\", \"timestamp\": \"2024-01-01T00:00:00\"}")))
+<<<<<<< HEAD
     })
     @PostMapping
     public ResponseEntity<StudyRoomResponse> createRoom(
@@ -66,6 +78,8 @@ public class StudyRoomController {
             @ApiResponse(responseCode = "400", description = "비공개 방 비밀번호 누락 (ROOM_006)", content = @Content(schema = @Schema(hidden = true))),
             @ApiResponse(responseCode = "400", description = "공개 방 비밀번호 존재 (ROOM_007)", content = @Content(schema = @Schema(hidden = true))),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(hidden = true)))
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
     })
     @PostMapping
     public ResponseEntity<StudyRoomResponse> createRoom(
@@ -81,13 +95,19 @@ public class StudyRoomController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "목록 조회 성공", content = @Content(schema = @Schema(implementation = StudyRoomListResponse.class))),
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 401, \"error\": \"UNAUTHORIZED\", \"code\": \"REQUEST_ERROR_003\", \"message\": \"로그인 후 이용해주세요.\", \"timestamp\": \"2024-01-01T00:00:00\"}"))),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 500, \"error\": \"INTERNAL_SERVER_ERROR\", \"code\": \"RESPONSE_ERROR_001\", \"message\": \"서버와의 연결에 실패했습니다.\", \"timestamp\": \"2024-01-01T00:00:00\"}")))
+<<<<<<< HEAD
 =======
             @ApiResponse(responseCode = "500", description = "서버 내부 오류", content = @Content(schema = @Schema(hidden = true)))
 >>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
     })
     @GetMapping
     public ResponseEntity<List<StudyRoomListResponse>> getAllOpenRooms(
@@ -99,6 +119,7 @@ public class StudyRoomController {
     @Operation(summary = "내 스터디방 목록 조회", description = "내가 속한 (방장이거나 참여중인) 스터디방 목록을 최신순으로 10개까지 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "목록 조회 성공", content = @Content(schema = @Schema(implementation = StudyRoomListResponse.class))),
+<<<<<<< HEAD
 <<<<<<< HEAD
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 401, \"error\": \"UNAUTHORIZED\", \"code\": \"REQUEST_ERROR_003\", \"message\": \"로그인 후 이용해주세요.\", \"timestamp\": \"2024-01-01T00:00:00\"}")))
@@ -112,6 +133,10 @@ public class StudyRoomController {
 >>>>>>> 7e431b7 ([S14P11A703-105] API에 사용자 로직 추가 및 사용자 정의 Error Code 작성)
 =======
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(hidden = true)))
+=======
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                    examples = @ExampleObject(value = "{\"status\": 401, \"error\": \"UNAUTHORIZED\", \"code\": \"REQUEST_ERROR_003\", \"message\": \"로그인 후 이용해주세요.\", \"timestamp\": \"2024-01-01T00:00:00\"}")))
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
     })
     @GetMapping("/my")
     public ResponseEntity<List<StudyRoomListResponse>> getMyRooms(
@@ -126,13 +151,19 @@ public class StudyRoomController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "스터디방 조회 성공", content = @Content(schema = @Schema(implementation = StudyRoomResponse.class))),
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 401, \"error\": \"UNAUTHORIZED\", \"code\": \"REQUEST_ERROR_003\", \"message\": \"로그인 후 이용해주세요.\", \"timestamp\": \"2024-01-01T00:00:00\"}"))),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 스터디방 (ROOM_001)", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 404, \"error\": \"NOT_FOUND\", \"code\": \"ROOM_001\", \"message\": \"종료되었거나 존재하지 않는 방입니다.\", \"timestamp\": \"2024-01-01T00:00:00\"}")))
+<<<<<<< HEAD
 =======
             @ApiResponse(responseCode = "404", description = "존재하지 않는 스터디방 (ROOM_001)", content = @Content(schema = @Schema(hidden = true)))
 >>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
     })
     @GetMapping("/{roomId}")
     public ResponseEntity<StudyRoomResponse> getRoomByCode(
@@ -146,12 +177,16 @@ public class StudyRoomController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "스터디방 수정 성공"),
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
             @ApiResponse(responseCode = "400", description = "방장이 아님 (ROOM_008)", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 400, \"error\": \"BAD_REQUEST\", \"code\": \"ROOM_008\", \"message\": \"방장만 접근할 수 있습니다.\", \"timestamp\": \"2024-01-01T00:00:00\"}"))),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 401, \"error\": \"UNAUTHORIZED\", \"code\": \"REQUEST_ERROR_003\", \"message\": \"로그인 후 이용해주세요.\", \"timestamp\": \"2024-01-01T00:00:00\"}"))),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 스터디방 (ROOM_001)", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 404, \"error\": \"NOT_FOUND\", \"code\": \"ROOM_001\", \"message\": \"종료되었거나 존재하지 않는 방입니다.\", \"timestamp\": \"2024-01-01T00:00:00\"}")))
+<<<<<<< HEAD
     })
     @PatchMapping("/{roomId}")
     public ResponseEntity<Void> updateRoom(
@@ -164,6 +199,8 @@ public class StudyRoomController {
             @ApiResponse(responseCode = "400", description = "방장이 아님 (ROOM_008)", content = @Content(schema = @Schema(hidden = true))),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(hidden = true))),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 스터디방 (ROOM_001)", content = @Content(schema = @Schema(hidden = true)))
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
     })
     @PatchMapping("/{roomId}")
     public ResponseEntity<Void> updateRoom(
@@ -179,6 +216,9 @@ public class StudyRoomController {
     @Operation(summary = "스터디방 삭제 (종료)", description = "방장이 스터디방을 논리적으로 삭제(상태를 CLOSED로 변경)합니다.")
     @ApiResponses(value = {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
             @ApiResponse(responseCode = "204", description = "스터디방 삭제 성공 (No Content)"),
             @ApiResponse(responseCode = "400", description = "방장이 아님 (ROOM_008)", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 400, \"error\": \"BAD_REQUEST\", \"code\": \"ROOM_008\", \"message\": \"방장만 접근할 수 있습니다.\", \"timestamp\": \"2024-01-01T00:00:00\"}"))),
@@ -186,6 +226,7 @@ public class StudyRoomController {
                     examples = @ExampleObject(value = "{\"status\": 401, \"error\": \"UNAUTHORIZED\", \"code\": \"REQUEST_ERROR_003\", \"message\": \"로그인 후 이용해주세요.\", \"timestamp\": \"2024-01-01T00:00:00\"}"))),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 스터디방 (ROOM_001)", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 404, \"error\": \"NOT_FOUND\", \"code\": \"ROOM_001\", \"message\": \"종료되었거나 존재하지 않는 방입니다.\", \"timestamp\": \"2024-01-01T00:00:00\"}")))
+<<<<<<< HEAD
     })
     @DeleteMapping("/{roomId}")
     public ResponseEntity<Void> deleteRoom(
@@ -199,6 +240,8 @@ public class StudyRoomController {
             @ApiResponse(responseCode = "400", description = "방장이 아님 (ROOM_008)", content = @Content(schema = @Schema(hidden = true))),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(hidden = true))),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 스터디방 (ROOM_001)", content = @Content(schema = @Schema(hidden = true)))
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
     })
     @DeleteMapping("/{roomId}")
     public ResponseEntity<Void> deleteRoom(
@@ -214,12 +257,16 @@ public class StudyRoomController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "최애 스터디방 설정 성공"),
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
             @ApiResponse(responseCode = "400", description = "참여하지 않은 방 (ROOM_004)", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 400, \"error\": \"BAD_REQUEST\", \"code\": \"ROOM_004\", \"message\": \"현재 참여중인 방이 아닙니다.\", \"timestamp\": \"2024-01-01T00:00:00\"}"))),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 401, \"error\": \"UNAUTHORIZED\", \"code\": \"REQUEST_ERROR_003\", \"message\": \"로그인 후 이용해주세요.\", \"timestamp\": \"2024-01-01T00:00:00\"}"))),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 스터디방 (ROOM_001)", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                     examples = @ExampleObject(value = "{\"status\": 404, \"error\": \"NOT_FOUND\", \"code\": \"ROOM_001\", \"message\": \"종료되었거나 존재하지 않는 방입니다.\", \"timestamp\": \"2024-01-01T00:00:00\"}")))
+<<<<<<< HEAD
     })
     @PatchMapping("/favorite/{roomId}")
     public ResponseEntity<Void> setFavoriteRoom(
@@ -232,6 +279,8 @@ public class StudyRoomController {
             @ApiResponse(responseCode = "400", description = "참여하지 않은 방 (ROOM_004)", content = @Content(schema = @Schema(hidden = true))),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(hidden = true))),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 스터디방 (ROOM_001)", content = @Content(schema = @Schema(hidden = true)))
+=======
+>>>>>>> 86802ac ([S14P11A703-172] API 명세서 누락 값 추가)
     })
     @PatchMapping("/favorite/{roomId}")
     public ResponseEntity<Void> setFavoriteRoom(
