@@ -1,5 +1,7 @@
 package com.ssafy.virtudy.rank.service;
 
+import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
+import com.ssafy.virtudy.global.event.exception.BaseException;
 import com.ssafy.virtudy.member.domain.Avatar;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.domain.MemberGameStat;
@@ -18,6 +20,7 @@ import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,43 +54,48 @@ public class RankService {
 
         if (tuples == null || tuples.isEmpty()) return List.of();
 
+// 3. 필요한 사용자 ID 목록 추출 (Redis 결과에서 ID만 뽑기)
+        List<String> userIds = tuples.stream()
+                .map(ZSetOperations.TypedTuple::getValue)
+                .toList();
+
+        // 4. DB에서 '필요한 회원 정보만' 조회 (성능 최적화 핵심 ✨)
+        List<Member> members = memberRepository.findByMemberIdIn(userIds);
+
+        // 5. 조회를 편하게 하기 위해 Map으로 변환 (Key: memberId, Value: Member)
+        Map<String, Member> memberMap = members.stream()
+                .collect(Collectors.toMap(Member::getMemberId, Function.identity()));
+
+        // 6. 결과 조립
         List<RankDTO.Response> responseList = new ArrayList<>();
-
-        List<MemberDto> results = memberRepository.findAllMemberImages();
-
-        Map<String, AvatarResponse> avatarMap = results.stream()
-                .collect(Collectors.toMap(
-                        MemberDto::getMemberId,
-                        memberDto -> AvatarResponse.from(memberDto.getAvatar())));
-
         int currentRank = (int) start + 1;
 
-        // 2. 반복문 돌면서 DTO로 변환
         for (ZSetOperations.TypedTuple<String> tuple : tuples) {
             String userId = tuple.getValue();
             Double scoreVal = tuple.getScore();
             int score = (scoreVal != null) ? scoreVal.intValue() : 0;
-            // Map에서 꺼내기 (이미 DTO로 변환되어 있어서 형변환 필요 없음)
-            AvatarResponse avatarDto = avatarMap.get(userId);
 
-            // 3. DTO 빌더 패턴 사용
-            RankDTO.Response dto = RankDTO.Response.builder()
+            // DB에서 가져온 추가 정보 (없을 경우 대비해 null 체크 권장)
+            Member member = memberMap.get(userId);
+            if (member == null) continue; // 혹은 기본값 처리
+
+            responseList.add(RankDTO.Response.builder()
                     .id(userId)
                     .rank(currentRank++)
-                    .email(userId)
+                    .nickName(member.getNickName()) // ✅ DB에서 가져온 닉네임 세팅
+                    .email(member.getEmail())       // ✅ 필요한 경우 이메일도 세팅
                     .score(score)
-                    .avatar(avatarDto)
+                    .avatar(AvatarResponse.from(member.getAvatar()))
                     .tier(calculateTier(score))
-                    .build();
-
-            responseList.add(dto);
+                    .build());
         }
         return responseList;
     }
 
     public RankDTO.Response getUserRankById(String userId, String type) {
         Member member = memberRepository.findByMemberId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("찾는 아이디가 없습니다."));
+                .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
+
         String nickName = null;
         Long rankIndex;
         AvatarResponse avatarDto = null;
@@ -101,7 +109,8 @@ public class RankService {
             // 최애 팀 깎고 와야됨.
             StudyRoom studyRoom = member.getFavoriteRoom();
             Member owner = memberRepository.findByMemberId(studyRoom.getOwner().getMemberId())
-                    .orElseThrow(() -> new IllegalArgumentException("찾는 아이디가 없습니다."));
+                    .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
+
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_TEAM_KEY, studyRoom.getRoomId());
             scoreVal = redisTemplate.opsForZSet().score(RANK_TEAM_KEY, studyRoom.getRoomId());
             avatarDto = AvatarResponse.from(owner.getAvatar());
@@ -194,7 +203,7 @@ public class RankService {
             }
         }
         if (responseList.isEmpty()) {
-            throw new IllegalArgumentException("검색한 아이디가 없습니다.");
+            throw new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR);
         }
         // 4. 결과 리턴
         return responseList;
@@ -215,7 +224,7 @@ public class RankService {
      * @param score
      * @return
      */
-    private RankDTO.Tier calculateTier(double score) {
+    public RankDTO.Tier calculateTier(double score) {
         if (score >= 9000) return RankDTO.Tier.DIAMOND;
         if (score >= 5000) return RankDTO.Tier.PLATINUM; // Platinum 추가 (RankDTO.Tier에 있다면)
         if (score >= 3000) return RankDTO.Tier.GOLD;

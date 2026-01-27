@@ -14,9 +14,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     List<Member> findByNickName(String nickName);
 
-    @Query("SELECT m.memberId, m.avatar, m.email, m.nickName FROM Member m")
-    List<MemberDto> findAllMemberImages();
-
+    // 기존 findAllMemberImages() 대신 사용
+    // SELECT * FROM member WHERE member_id IN ('user1', 'user2', ...)
+    List<Member> findByMemberIdIn(List<String> memberIds);
 
     Optional<Member> findByEmail(String email);
 

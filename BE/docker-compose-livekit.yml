@@ -16,6 +16,7 @@ services:
     networks:
       - virtudy-network
 
+<<<<<<< HEAD
   # Redis for LiveKit (and potential other uses)
   redis:
     image: redis:alpine
@@ -28,3 +29,20 @@ services:
 networks:
   virtudy-network:
     driver: bridge
+=======
+
+#  # Redis for LiveKit (and potential other uses)
+#  redis:
+#    image: redis:alpine
+#    container_name: virtudy-redis
+#    ports:
+#      - "6379:6379"
+#    networks:
+#      - virtudy-network
+#      - virtudy-network
+#
+#networks:
+#  virtudy-network:
+#    driver: bridge
+
+>>>>>>> 5efabf5a9a51f3fef5f623b76902d9aec3216118
