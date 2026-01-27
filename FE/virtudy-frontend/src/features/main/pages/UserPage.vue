@@ -88,7 +88,7 @@ onMounted(async () => {
   try {
     const data = await getMyProfile();
     console.log('내 정보 전체:', data); 
-    console.log('닉네임 필드 확인:', data.nickName, data.nickName);
+    console.log('닉네임 필드 확인:', data.nickName);
     userInfo.value = data; 
     
     if (authStore.userInfo) {
