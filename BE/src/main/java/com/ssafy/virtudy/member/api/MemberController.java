@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "Member", description = "회원 정보 API")
+@Tag(name = "회원 정보 API", description = "마이페이지에 필요한 회원 상세정보 API")
 @RestController
 @RequestMapping("/api/members")
 @RequiredArgsConstructor
@@ -27,7 +27,8 @@ public class MemberController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
+            @ApiResponse(responseCode = "404", description = "게임 스탯 정보를 찾을 수 없음 (MEMBER_005)")
     })
     @GetMapping("/profile")
     public ResponseEntity<MemberProfileResponse> getProfile(

@@ -228,7 +228,7 @@ public class RankService {
      * @param score
      * @return
      */
-    private RankDTO.Tier calculateTier(double score) {
+    public RankDTO.Tier calculateTier(double score) {
         if (score >= 9000) return RankDTO.Tier.DIAMOND;
         if (score >= 5000) return RankDTO.Tier.PLATINUM; // Platinum 추가 (RankDTO.Tier에 있다면)
         if (score >= 3000) return RankDTO.Tier.GOLD;
