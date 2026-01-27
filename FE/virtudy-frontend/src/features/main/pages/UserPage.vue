@@ -65,12 +65,11 @@ const userInfo = ref({
 });
 
 // 랭킹 데이터 가져오기
-const { privateTop5, teamTop5, isLoading } = useMainRanking();
-import { onMounted } from 'vue';
-import { useMainRanking } from '@/features/ranking/logic/useMainRanking';
+
 
 // 로직 훅 실행. 이제 훅 자체는 API를 호출하지 않습니다.
 const { privateTop5, teamTop5, isLoading, fetchTopRanks } = useMainRanking();
+import { onMounted } from 'vue';
 
 // onMounted 훅을 사용해, 컴포넌트가 완전히 준비된 후 API를 호출합니다.
 onMounted(() => {

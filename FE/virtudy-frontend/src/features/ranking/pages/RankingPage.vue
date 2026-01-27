@@ -76,9 +76,7 @@ import { useRanking } from '../logic/useRanking';
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RankingSection from '@/shared/ui/RankingSection.vue';
-import { useAuthStore } from '../../../stores/authStore';
-import { useRanking } from '../logic/useRanking';
-import { useRouter } from 'vue-router';
+
 // [수정] 타입 임포트 추가
 import type { RankItem } from '../types/ranking.types';
 
