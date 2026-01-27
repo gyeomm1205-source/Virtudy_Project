@@ -4,7 +4,10 @@ import api from '@/shared/api/axios.config'; // 설정된 axios 인스턴스
 
 interface User {
   nickName: string;
-  // Add other user-related fields here if needed
+  email: string;       
+  avatarImageUrl: string; 
+  jobType: string;        
+  tier: string;           
 }
 
 export const useAuthStore = defineStore('auth', () => {

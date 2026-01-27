@@ -1,40 +1,34 @@
 <template>
   <div class="user-page-container">
-    <section class="left-section">
-      <div class="profile-placeholder">
-        <h2>내 프로필 영역</h2>
-      </div>
-    </section>
-
     <section class="right-section">
       
       <div class="ranking-box">
         <h3 class="box-title">개인 랭킹</h3>
-        
         <div v-if="isLoading" class="loading-text">랭킹 불러오는 중...</div>
-        
         <ul v-else class="rank-list">
-          <li v-for="(item, index) in privateTop5" :key="item.id" class="rank-item">
+          
+          <li v-for="(item, index) in privateTop5" :key="item.email" class="rank-item">
             <span class="rank-badge" :class="'rank-' + (index + 1)">{{ index + 1 }}</span>
             <span class="rank-name">{{ item.nickName }}</span>
             <span class="rank-score">{{ item.score }}p</span>
             <span class="crown-icon" v-if="index < 3">👑</span>
           </li>
+
         </ul>
       </div>
 
       <div class="ranking-box mt-20">
         <h3 class="box-title">팀 랭킹</h3>
-        
         <div v-if="isLoading" class="loading-text">랭킹 불러오는 중...</div>
-        
         <ul v-else class="rank-list">
-          <li v-for="(item, index) in teamTop5" :key="item.id" class="rank-item">
+          
+          <li v-for="(item, index) in teamTop5" :key="item.rank" class="rank-item">
             <span class="rank-badge" :class="'rank-' + (index + 1)">{{ index + 1 }}</span>
             <span class="rank-name">{{ item.nickName }}</span>
             <span class="rank-score">{{ item.score }}p</span>
             <span class="crown-icon" v-if="index < 3">👑</span>
           </li>
+
         </ul>
       </div>
 
