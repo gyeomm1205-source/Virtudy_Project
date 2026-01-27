@@ -26,7 +26,7 @@ export default defineConfig({
       },
       // [추가] WebSocket 요청도 백엔드로 프록시 (CORS 해결)
       '/ws': {
-        target: 'http://i14a703.p.ssafy.io:8081', 
+        target: 'http://i14a703.p.ssafy.io:8080', // Interceptor가 8081을 요구하므로 8081로 연결
         changeOrigin: true,
         ws: true,
         secure: false
