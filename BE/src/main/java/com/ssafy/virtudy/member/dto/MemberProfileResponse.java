@@ -16,7 +16,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class MemberProfileResponse {
-
     private Avatar avatar;
 
     @Schema(description = "이메일", example = "user@example.com")

@@ -53,48 +53,41 @@ public class RankService {
         }
 
         if (tuples == null || tuples.isEmpty()) return List.of();
-
-        // 2. 조회된 랭커들의 ID 목록 추출 (DB 조회용)
-        List<String> rankerIds = tuples.stream()
+// 3. 필요한 사용자 ID 목록 추출 (Redis 결과에서 ID만 뽑기)
+        List<String> userIds = tuples.stream()
                 .map(ZSetOperations.TypedTuple::getValue)
                 .toList();
 
-        // 3. [핵심] DB에서 랭커들의 정보(닉네임, 아바타)만 한 번에 조회 (IN Query)
-        //    findAll() 대신 필요한 ID만 넘겨서 조회하는 메서드를 만들어야 합니다.
-        List<MemberDto> members = memberRepository.findMemberInfoByIdIn(rankerIds);
+        // 4. DB에서 '필요한 회원 정보만' 조회 (성능 최적화 핵심 ✨)
+        List<Member> members = memberRepository.findByMemberIdIn(userIds);
 
-        // 4. 조회된 정보를 Map으로 변환 (Key: userId, Value: MemberDto)
-        //    닉네임과 아바타 정보를 모두 사용하기 위해 DTO 자체를 값으로 둡니다.
-        Map<String, MemberDto> memberMap = members.stream()
-                .collect(Collectors.toMap(MemberDto::getMemberId, Function.identity()));
+        // 5. 조회를 편하게 하기 위해 Map으로 변환 (Key: memberId, Value: Member)
+        Map<String, Member> memberMap = members.stream()
+                .collect(Collectors.toMap(Member::getMemberId, Function.identity()));
 
+        // 6. 결과 조립
         List<RankDTO.Response> responseList = new ArrayList<>();
         int currentRank = (int) start + 1;
 
-        // 5. Redis 순서대로 응답 DTO 생성
         for (ZSetOperations.TypedTuple<String> tuple : tuples) {
             String userId = tuple.getValue();
             Double scoreVal = tuple.getScore();
             int score = (scoreVal != null) ? scoreVal.intValue() : 0;
 
-            // Map에서 유저 정보 꺼내기 (DB에 없는 유저 방어 로직 포함)
-            MemberDto memberInfo = memberMap.get(userId);
-            String nickName = (memberInfo != null) ? memberInfo.getNickName() : "Unknown"; // 닉네임 처리
-            AvatarResponse avatarDto = (memberInfo != null) ? AvatarResponse.from(memberInfo.getAvatar()) : null;
+            // DB에서 가져온 추가 정보 (없을 경우 대비해 null 체크 권장)
+            Member member = memberMap.get(userId);
+            if (member == null) continue; // 혹은 기본값 처리
 
-            RankDTO.Response dto = RankDTO.Response.builder()
+            responseList.add(RankDTO.Response.builder()
                     .id(userId)
-                    .nickName(nickName) // 여기서 Map 값을 넣어줌
                     .rank(currentRank++)
-                    .email(userId)
+                    .nickName(member.getNickName()) // ✅ DB에서 가져온 닉네임 세팅
+                    .email(member.getEmail())       // ✅ 필요한 경우 이메일도 세팅
                     .score(score)
-                    .avatar(avatarDto)
+                    .avatar(AvatarResponse.from(member.getAvatar()))
                     .tier(calculateTier(score))
-                    .build();
-
-            responseList.add(dto);
+                    .build());
         }
-
         return responseList;
     }
 
@@ -114,7 +107,8 @@ public class RankService {
             // 최애 팀 깎고 와야됨.
             StudyRoom studyRoom = member.getFavoriteRoom();
             Member owner = memberRepository.findByMemberId(studyRoom.getOwner().getMemberId())
-                    .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));
+                    .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
+
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_TEAM_KEY, studyRoom.getRoomId());
             scoreVal = redisTemplate.opsForZSet().score(RANK_TEAM_KEY, studyRoom.getRoomId());
             avatarDto = AvatarResponse.from(owner.getAvatar());
