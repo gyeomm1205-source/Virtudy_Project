@@ -66,41 +66,15 @@ const userInfo = ref({
 
 // 랭킹 데이터 가져오기
 const { privateTop5, teamTop5, isLoading } = useMainRanking();
+import { onMounted } from 'vue';
+import { useMainRanking } from '@/features/ranking/logic/useMainRanking';
 
-// 개인 랭킹 데이터 변환 - 더미 데이터 사용
-const personalRanking = computed(() => {
-  return [
-    { rank: 1, nickname: "피그마는너무어려워", score: "2450" },
-    { rank: 2, nickname: "그래도할만해요", score: "2398" },
-    { rank: 3, nickname: "3팀화이팅", score: "2267" },
-    { rank: 4, nickname: "아니진짜어렵다니깐", score: "2156" },
-    { rank: 5, nickname: "오늘처음써봐요", score: "2089" },
-  ];
+// 로직 훅 실행. 이제 훅 자체는 API를 호출하지 않습니다.
+const { privateTop5, teamTop5, isLoading, fetchTopRanks } = useMainRanking();
+
+// onMounted 훅을 사용해, 컴포넌트가 완전히 준비된 후 API를 호출합니다.
+onMounted(() => {
+  fetchTopRanks();
 });
-
-// 팀 랭킹 데이터 변환 - 더미 데이터 사용
-const teamRanking = computed(() => {
-  return [
-    { rank: 1, teamName: "3팀알고리즘", score: "8950" },
-    { rank: 2, teamName: "3팀자료구조", score: "8756" },
-    { rank: 3, teamName: "3팀컴퓨터사이언스", score: "8623" },
-    { rank: 4, teamName: "5J1P", score: "8489" },
-    { rank: 5, teamName: "버터디스터디", score: "8356" },
-  ];
-});
-
-// StudyMenu 이벤트 핸들러
-const handleRandomMatch = () => {
-  console.log('랜덤 매칭 요청');
-  // 랜덤 매칭 로직 구현
-};
-
-const handleCreateRoom = () => {
-  console.log('방 만들기 요청');
-  // 방 만들기 페이지로 이동하거나 모달 열기
-};
-
-const handleShowRoomList = () => {
-  router.push('/lobby');
-};
 </script>
+

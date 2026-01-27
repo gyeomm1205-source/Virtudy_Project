@@ -76,6 +76,9 @@ import { useRanking } from '../logic/useRanking';
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RankingSection from '@/shared/ui/RankingSection.vue';
+import { useAuthStore } from '../../../stores/authStore';
+import { useRanking } from '../logic/useRanking';
+import { useRouter } from 'vue-router';
 // [수정] 타입 임포트 추가
 import type { RankItem } from '../types/ranking.types';
 
@@ -87,50 +90,6 @@ const {
   currentPage, visiblePages, totalPages,
   changeType, changePage, handleSearch 
 } = useRanking();
-
-// Computed for current user email
-const currentUserEmail = computed(() => authStore.userInfo?.email || '');
-
-// Transform ranking data for RankingSection component - using dummy data for now
-const personalRankingData = computed(() => {
-  return [
-    { rank: 1, nickname: "스터디킹", score: "2450", email: "user1@example.com" },
-    { rank: 2, nickname: "집중력마스터", score: "2398", email: "user2@example.com" },
-    { rank: 3, nickname: "공부하는곰", score: "2267", email: "user3@example.com" },
-    { rank: 4, nickname: "알고리즘러버", score: "2156", email: "user4@example.com" },
-    { rank: 5, nickname: "백준킬러", score: "2089", email: "user5@example.com" },
-    { rank: 6, nickname: "코딩천재", score: "1998", email: "user6@example.com" },
-    { rank: 7, nickname: "디버깅마스터", score: "1967", email: "user7@example.com" },
-    { rank: 8, nickname: "스프링부트", score: "1945", email: "user8@example.com" },
-    { rank: 9, nickname: "리액트마스터", score: "1893", email: "user9@example.com" },
-    { rank: 10, nickname: "자바의신", score: "1845", email: "user10@example.com" },
-    { rank: 11, nickname: "파이썬짱", score: "1789", email: "user11@example.com" },
-    { rank: 12, nickname: "노드제이에스", score: "1756", email: "user12@example.com" },
-    { rank: 13, nickname: "타입스크립트", score: "1723", email: "user13@example.com" },
-    { rank: 14, nickname: "데이터베이스", score: "1698", email: "user14@example.com" },
-    { rank: 15, nickname: "네트워크킹", score: "1645", email: "user15@example.com" },
-    { rank: 16, nickname: "클라우드마스터", score: "1612", email: "user16@example.com" },
-    { rank: 17, nickname: "도커왕", score: "1589", email: "user17@example.com" },
-    { rank: 18, nickname: "쿠버네티스", score: "1567", email: "user18@example.com" },
-    { rank: 19, nickname: "마이크로서비스", score: "1534", email: "user19@example.com" },
-    { rank: 20, nickname: "빅데이터분석가", score: "1512", email: "user20@example.com" },
-  ];
-});
-
-const teamRankingData = computed(() => {
-  return [
-    { rank: 1, teamName: "알고리즘마스터즈", score: "8950", email: "team1@example.com" },
-    { rank: 2, teamName: "코딩엘리트", score: "8756", email: "team2@example.com" },
-    { rank: 3, teamName: "스터디킹덤", score: "8623", email: "team3@example.com" },
-    { rank: 4, teamName: "백엔드크루", score: "8489", email: "team4@example.com" },
-    { rank: 5, teamName: "프론트엔드팀", score: "8356", email: "team5@example.com" },
-    { rank: 6, teamName: "풀스택개발자", score: "8234", email: "team6@example.com" },
-    { rank: 7, teamName: "데이터사이언티스트", score: "8123", email: "team7@example.com" },
-    { rank: 8, teamName: "머신러닝팀", score: "7998", email: "team8@example.com" },
-    { rank: 9, teamName: "클라우드팀", score: "7876", email: "team9@example.com" },
-    { rank: 10, teamName: "데브옵스크루", score: "7756", email: "team10@example.com" },
-  ];
-});
 
 const goBack = () => {
   router.push({ name: 'user' }); 

@@ -4,7 +4,7 @@ import axios from '@/shared/api/axios.config';
 export const authAPI = {
   // 카카오 OAuth 콜백 처리
   //수정 전: json bobdy로 보내던 것을 수정
-  //수정 후: 쿼리 스트링으로 보내도록 수정(백엔드 @RequestParam 대응ㅇ)
+  //수정 후: 쿼리 스트링으로 보내도록 수정(백엔드 @RequestParam 대응)
   kakaoCallback: (code: string) => {
     return axios.post('/auth/kakao/callback', null,{params: {code} });
   },
