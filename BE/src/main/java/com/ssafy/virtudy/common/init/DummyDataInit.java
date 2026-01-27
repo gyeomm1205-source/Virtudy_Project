@@ -1,20 +1,8 @@
 package com.ssafy.virtudy.common.init;
 
 import com.ssafy.virtudy.group.repository.RoomMemberRepository;
-<<<<<<< HEAD
-<<<<<<< HEAD
 import com.ssafy.virtudy.member.domain.*;
 import com.ssafy.virtudy.member.repository.AvatarRepository;
-=======
-import com.ssafy.virtudy.member.domain.JobType;
-import com.ssafy.virtudy.member.domain.Member;
-import com.ssafy.virtudy.member.domain.MemberGameStat;
-import com.ssafy.virtudy.member.domain.MemberStatType;
->>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
-=======
-import com.ssafy.virtudy.member.domain.*;
-import com.ssafy.virtudy.member.repository.AvatarRepository;
->>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
@@ -42,32 +30,14 @@ public class DummyDataInit implements CommandLineRunner {
 
     private final MemberRepository memberRepository;
     private final StudyRoomRepository studyRoomRepository;
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-    private final RoomMemberRepository roomMemberRepository;
->>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
     private final MemberGameStatRepository memberGameStatRepository;
     private final AvatarRepository avatarRepository;
-<<<<<<< HEAD
-=======
-    private final MemberGameStatRepository memberGameStatRepository;
->>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
-=======
->>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
 
     private final Faker faker = new Faker(new Locale("en"));
     private final Random random = new Random();
     private final RedisTemplate<String, Object> redisTemplate;
-<<<<<<< HEAD
-
     private static final String RANK_PRIVATE_KEY = "rank:private:season:1";
     private static final String RANK_TEAM_KEY = "rank:team:season:1";
-
-=======
-    private static final String RANK_PRIVATE_KEY = "rank:private:season:1";
-    private static final String RANK_TEAM_KEY = "rank:team:season:1";
->>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
     @Override
     // @Transactional // 필요시 주석 해제 (Lazy Loading 문제 발생 시)
     public void run(String... args) throws Exception {
@@ -83,33 +53,15 @@ public class DummyDataInit implements CommandLineRunner {
             log.info("ℹ️ DB에 데이터가 존재하여 생성을 건너뜁니다.");
             return;
         }
-<<<<<<< HEAD
-        log.info("🚀 더미 데이터 생성을 시작합니다...");
-        List<Member> savedMembers = new ArrayList<>(); // 저장된 멤버 리스트
-
-<<<<<<< HEAD
-        // 3. 회원 생성 루프
-        for (int i = 0; i < 100; i++) {
-            Member member = createMember(i);
-            // 여기서 아바타 생성할거임.
-            Avatar avatar = createAvater(i, member);
-            member.setAvatar(avatar);
-=======
-=======
->>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
         log.info("🚀 더미 데이터 생성을 시작합니다...");
         List<Member> savedMembers = new ArrayList<>(); // 저장된 멤버 리스트
 
         // 3. 회원 생성 루프
         for (int i = 0; i < 100; i++) {
             Member member = createMember(i);
-<<<<<<< HEAD
->>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
-=======
             // 여기서 아바타 생성할거임.
             Avatar avatar = createAvater(i, member);
             member.setAvatar(avatar);
->>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
 
             // ⭐ [핵심 수정] save()가 반환한 객체(savedMember)를 받아야 ID가 들어있습니다!
             Member savedMember = memberRepository.save(member);
@@ -118,126 +70,13 @@ public class DummyDataInit implements CommandLineRunner {
             // ⭐ [핵심 수정] savedMember를 넘겨야 ID가 null이 아닙니다.
             createAndSaveGameStat(savedMember, RANK_PRIVATE_KEY);
         }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
         // 4. 스터디룸 생성
-=======
-
-<<<<<<< HEAD
-        // 2. 스터디룸(StudyRoom) 생성
->>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
-=======
-        // 4. 스터디룸 생성
->>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
         for (int i = 0; i < 20; i++) {
             // 저장된 멤버 목록에서 랜덤으로 주인을 뽑음
             Member owner = savedMembers.get(random.nextInt(savedMembers.size()));
             StudyRoom room = createStudyRoom(owner);
             studyRoomRepository.save(room);
         }
-<<<<<<< HEAD
-        List<Member> members = memberRepository.findAll();
-        int index = 0;
-        for (Member member: members) {
-            Long studyIndex = (long) ((index++ % 20) + 1);
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-            StudyRoom room = studyRoomRepository.getReferenceById(studyIndex);
-            member.setFavoriteRoom(room);
-            memberRepository.save(member);
-        }
-        log.info("✅ 더미 데이터 생성 완료! (Member: 100, Room: 20)");
-    }
-
-    private Avatar createAvater(int i, Member member) {
-        // 1. 더미 데이터 재료 준비 (배열)
-        String[] hairFronts = {
-                "bang",
-                "center_part",
-                "hair_front_none",
-                "hair_front_short",
-                "hair_front_side_part"
-        };
-        String[] hairBacks = {
-                "hair_back_bob",
-                "hair_back_long_curly",
-                "hair_back_long_straight",
-                "hair_back_long_lowtail",
-                "hair_back_short"
-        };
-        String[] eyesList = {
-                "eyes_cat",
-                "eyes_droopy",
-                "eyes_round"
-        };
-        // 안경은 있을 수도 있고 없을 수도 있음 (확률적으로 처리하거나 번갈아가며)
-        String[] glassesList = {"accessory_glasses", "none", "none", "none"};
-        String[] outfits = {
-                "outfit_knit",
-                "outfit_round_neck",
-                "outfit_shirt"
-        };
-        // 색상 팔레트
-        String[] hairColors = {"#111111", "#3B3024", "#825336", "#9A7248", "#8C8C8C"};
-        String[] clothesColors = {"#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#000000"};
-
-        // 2. 인덱스(i)를 이용해 순서대로 선택
-        String hairFront = hairFronts[i % hairFronts.length];
-        String hairBack = hairBacks[i % hairBacks.length];
-        String eyes = eyesList[i % eyesList.length];
-        String glasses = glassesList[i % glassesList.length];
-        String outfit = outfits[i % outfits.length];
-
-        String hairColor = hairColors[i % hairColors.length];
-        String clothesColor = clothesColors[i % clothesColors.length];
-
-        // 3. 빌더 반환
-        return Avatar.builder()
-                .member(member)
-                .hairFront(hairFront)       // 예: "bang"
-                .hairBack(hairBack)         // 예: "hair_back_bob"
-                .hairColor(hairColor)       // 예: "#3B3024"
-                .eyes(eyes)                 // 예: "eyes_cat"
-                .glasses(glasses)           // 예: "accessory_glasses" 또는 "none"
-                .clothes(outfit)            // 예: "outfit_knit"
-                .clothesColor(clothesColor) // 예: "#FF0000"
-                .build();
-=======
-        log.info("✅ 더미 데이터 생성이 완료되었습니다. (Member: 100명, Room: 20개)");
->>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
-    }
-
-    private Member createMember(int index) {
-        String uniqueEmail = index + "_" + faker.internet().emailAddress();
-        String uuid = UUID.randomUUID().toString();
-        return Member.builder()
-<<<<<<< HEAD
-                .memberId(uuid)
-                .password("{noop}1234")
-                .email(uniqueEmail)
-                .isVideoAgreed(true)
-                .isServiceAgreed(true)
-                .isPersonalAgreed(true)
-                .nickName(faker.name().name())
-                .jobType(JobType.values()[random.nextInt(JobType.values().length)])
-=======
-                .memberId("user" + index)
-                .password("{noop}1234") // 테스트용 암호화 안 된 비번
-                .email(faker.internet().emailAddress())
-                .isVideoAgreed(true)
-                .isServiceAgreed(true)
-                .isPersonalAgreed(true)
-                .nickName(faker.name().fullName()) // "김철수", "이영희" 등 생성
-                .jobType(JobType.values()[random.nextInt(JobType.values().length)]) // Enum 랜덤
->>>>>>> eb6376f (fix: 약관 동의 필드 변경; 3개로 나눔)
-                .status(MemberStatType.ACTIVE)
-                // avatarImage fk로 생성.
-=======
-=======
->>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
         List<Member> members = memberRepository.findAll();
         int index = 0;
         for (Member member: members) {
@@ -318,12 +157,7 @@ public class DummyDataInit implements CommandLineRunner {
                 .nickName(faker.name().name())
                 .jobType(JobType.values()[random.nextInt(JobType.values().length)])
                 .status(MemberStatType.ACTIVE)
-<<<<<<< HEAD
-                .avatarImageUrl("https://api.dicebear.com/7.x/avataaars/svg?seed=" + index)
->>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
-=======
                 // avatarImage fk로 생성.
->>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
                 .avatarGenCount(0)
                 .build();
     }
@@ -341,10 +175,6 @@ public class DummyDataInit implements CommandLineRunner {
                 .build();
 
         memberGameStatRepository.save(stat);
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 188a259 (fix(rankservice) - avatar response에 추가, conflict 해결)
         // Redis에 저장
         // member.getMemberId() (예: "user0") 또는 member.getId() (PK) 사용
         // 여기서는 memberId("user0")를 사용한다고 가정
@@ -353,23 +183,6 @@ public class DummyDataInit implements CommandLineRunner {
         } else {
             log.warn("⚠️ Member ID is null for member: {}", member);
         }
-=======
-
-<<<<<<< HEAD
-        // ⭐ [중요] Redis 랭킹에도 동기화 (바로 테스트 가능하도록)
-        String rankingKey = "rank:season:1";
-        redisTemplate.opsForZSet().add(rankingKey, String.valueOf(member.getId()), score);
->>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
-=======
-        // Redis에 저장
-        // member.getMemberId() (예: "user0") 또는 member.getId() (PK) 사용
-        // 여기서는 memberId("user0")를 사용한다고 가정
-        if (member.getMemberId() != null) {
-            redisTemplate.opsForZSet().add(rankingKey, member.getMemberId(), score);
-        } else {
-            log.warn("⚠️ Member ID is null for member: {}", member);
-        }
->>>>>>> 1538475 (feature: 랭킹 서비스 추가, (개인, 팀) 랭킹 조회, (개인, 팀) 랭킹 검색, 상위 5명 랭킹 조회, (개인, 최애팀) 랭킹 조회)
     }
 
     private StudyRoom createStudyRoom(Member owner) {

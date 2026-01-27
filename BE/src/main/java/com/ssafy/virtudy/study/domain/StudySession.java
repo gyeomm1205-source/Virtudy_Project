@@ -33,12 +33,6 @@ public class StudySession extends BaseTimeEntity {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime startTime; // 세션 시작시각
-<<<<<<< HEAD
-
-    @Column(nullable = false)
-    private int sessionRealStudyTime = 0;
-=======
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 
     @Column(nullable = false)
     private int sessionRealStudyTime = 0;

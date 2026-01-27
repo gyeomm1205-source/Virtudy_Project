@@ -5,15 +5,7 @@ import com.ssafy.virtudy.global.event.exception.BaseException;
 import com.ssafy.virtudy.member.application.AuthService;
 import com.ssafy.virtudy.member.dto.MemberKakaoLoginResponse;
 import com.ssafy.virtudy.member.dto.MemberSignUpRequest;
-<<<<<<< HEAD
-<<<<<<< HEAD
 import com.ssafy.virtudy.member.dto.TokenResponse;
-=======
-import jakarta.servlet.http.HttpServlet;
->>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
-=======
-import com.ssafy.virtudy.member.dto.TokenResponse;
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,10 +16,6 @@ import org.springframework.web.bind.annotation.*;
 /**
  *  http://localhost:3030/login/callback/kakao
  */
-<<<<<<< HEAD
-
-=======
->>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
 // TODO: 회원가입, 로그인, 로그아웃, 회원탈퇴 api 모두 존재해야 함
 @RestController
 @RequestMapping("/api/auth")
@@ -104,15 +92,7 @@ public class AuthController {
      * AccessToken 만료 시 호출
      */
     @PostMapping("/reissue")
-<<<<<<< HEAD
-<<<<<<< HEAD
     public ResponseEntity<TokenResponse> reissue(
-=======
-    public ResponseEntity<MemberKakaoLoginResponse> reissue(
->>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
-=======
-    public ResponseEntity<TokenResponse> reissue(
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
             @CookieValue(value = "refreshToken", required = false) String refreshToken,
             HttpServletResponse response) {
 
@@ -122,15 +102,7 @@ public class AuthController {
         }
 
         // 서비스 로직 (Redis 비교 및 교체)
-<<<<<<< HEAD
-<<<<<<< HEAD
         TokenResponse result = authService.reissue(refreshToken);
-=======
-        MemberKakaoLoginResponse result = authService.reissue(refreshToken);
->>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
-=======
-        TokenResponse result = authService.reissue(refreshToken);
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 
         // 새 토큰 세팅
         setTokenToResponse(response, result.getAccessToken(), result.getRefreshToken());

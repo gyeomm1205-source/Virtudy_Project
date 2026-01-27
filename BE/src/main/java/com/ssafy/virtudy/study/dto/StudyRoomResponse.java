@@ -14,8 +14,6 @@ public class StudyRoomResponse {
 
     @Schema(description = "스터디방 제목", example = "알고리즘 스터디")
     private final String title;
-<<<<<<< HEAD
-<<<<<<< HEAD
 
     @Schema(description = "스터디방 설명", example = "매주 알고리즘 문제 풀이")
     private final String description;
@@ -24,21 +22,6 @@ public class StudyRoomResponse {
     private final RoomType type;
 
     @Schema(description = "현재 참여 인원 수", example = "5")
-=======
-=======
-
-    @Schema(description = "스터디방 설명", example = "매주 알고리즘 문제 풀이")
->>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
-    private final String description;
-
-    @Schema(description = "스터디방 공개 여부 (PUBLIC, PRIVATE)", example = "PUBLIC")
-    private final RoomType type;
-<<<<<<< HEAD
->>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
-=======
-
-    @Schema(description = "현재 참여 인원 수", example = "5")
->>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
     private final int currentUser;
 
     public StudyRoomResponse(StudyRoom studyRoom, int currentUser) {

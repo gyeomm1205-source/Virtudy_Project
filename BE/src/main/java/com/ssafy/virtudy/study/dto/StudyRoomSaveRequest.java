@@ -22,8 +22,6 @@ public class StudyRoomSaveRequest {
 
     @Schema(description = "스터디방 비밀번호 (비공개방일 경우 필수)", example = "1234")
     private String password;
-<<<<<<< HEAD
-<<<<<<< HEAD
 
     @Schema(description = "스터디방 설명", example = "매주 알고리즘 문제 풀이")
     private String description;
@@ -31,19 +29,6 @@ public class StudyRoomSaveRequest {
     @Schema(description = "스터디방 공개 여부 (PUBLIC, PRIVATE)", example = "PRIVATE")
     @EnumPattern(enumClass = RoomType.class, message = "방 공개 여부가 올바르지 않습니다.")
     private String type;
-=======
-    private String description;
-    private RoomType type;
->>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
-=======
-
-    @Schema(description = "스터디방 설명", example = "매주 알고리즘 문제 풀이")
-    private String description;
-
-    @Schema(description = "스터디방 공개 여부 (PUBLIC, PRIVATE)", example = "PRIVATE")
-    @EnumPattern(enumClass = RoomType.class, message = "방 공개 여부가 올바르지 않습니다.")
-    private String type;
->>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
 
     public StudyRoom toEntity(Member owner) {
         return StudyRoom.builder()
@@ -52,15 +37,7 @@ public class StudyRoomSaveRequest {
                 .title(title)
                 .password(password)
                 .description(description)
-<<<<<<< HEAD
-<<<<<<< HEAD
                 .type(RoomType.valueOf(type))
-=======
-                .type(type)
->>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
-=======
-                .type(RoomType.valueOf(type))
->>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
                 .build();
     }
 }

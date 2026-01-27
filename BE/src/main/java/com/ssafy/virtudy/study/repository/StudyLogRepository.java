@@ -2,28 +2,15 @@ package com.ssafy.virtudy.study.repository;
 
 import com.ssafy.virtudy.study.domain.StudyLog;
 import org.springframework.data.jpa.repository.JpaRepository;
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
-<<<<<<< HEAD
-=======
->>>>>>> c0ec20e ([S14P11A703-138] 스터디 로그 C)
-=======
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface StudyLogRepository extends JpaRepository<StudyLog, Long> {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
 
     /**
      * 특정 세션에 속한 모든 학습 로그를 조회합니다.
@@ -43,11 +30,6 @@ public interface StudyLogRepository extends JpaRepository<StudyLog, Long> {
      */
     @Query("SELECT sl FROM StudyLog sl WHERE sl.member.id = :memberId AND sl.detectedAt BETWEEN :start AND :end")
     List<StudyLog> findByMemberIdAndDateRange(@Param("memberId") Long memberId,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end);
-<<<<<<< HEAD
-=======
->>>>>>> c0ec20e ([S14P11A703-138] 스터디 로그 C)
-=======
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
+                                              @Param("start") LocalDateTime start,
+                                              @Param("end") LocalDateTime end);
 }

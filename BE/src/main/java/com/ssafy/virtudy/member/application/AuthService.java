@@ -10,14 +10,7 @@ import com.ssafy.virtudy.member.dto.MemberDto;
 import com.ssafy.virtudy.member.dto.MemberKakaoLoginResponse;
 import com.ssafy.virtudy.member.dto.MemberSignUpRequest;
 import com.ssafy.virtudy.member.dto.TokenResponse;
-<<<<<<< HEAD
-<<<<<<< HEAD
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
-=======
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
-=======
-import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
->>>>>>> 5ee6548 (add: 티어 조회/갱신 API TDD)
 import com.ssafy.virtudy.member.repository.MemberPreferenceRepository;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
@@ -39,14 +32,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final MemberPreferenceRepository memberPreferenceRepository;
     private final StringRedisTemplate redisTemplate; // [RTR 로직 구현] Redis Template 주입
-<<<<<<< HEAD
-<<<<<<< HEAD
     private final MemberGameStatRepository memberGameStatRepository;
-=======
->>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
-=======
-    private final MemberGameStatRepository memberGameStatRepository;
->>>>>>> 5ee6548 (add: 티어 조회/갱신 API TDD)
 
     /**
      * [카카오 로그인] 인증 및 로그인 로직
@@ -114,16 +100,7 @@ public class AuthService {
 
         Member newMember = Member.builder()
                 // [식별자 & 기본 정보]
-<<<<<<< HEAD
-<<<<<<< HEAD
-
                 .memberId(java.util.UUID.randomUUID().toString())
-=======
-                .memberId(java.util.UUID.randomUUID().toString())       // TODO 이메일을 식별자(ID)로 사용
->>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
-=======
-                .memberId(java.util.UUID.randomUUID().toString())
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
                 .email(request.getEmail())          // 실제 이메일 데이터
                 .nickName(request.getNickname())    // 사용자 입력 닉네임
                 .password("")                       // 소셜 로그인은 비밀번호 없음 (빈 값)
@@ -241,15 +218,7 @@ public class AuthService {
      * @param oldRefreshToken 과거에 사용자가 들고 있던 RT
      * @return RT 검증 통과 시 유저 정보 조회 & RT 재발급 실행
      */
-<<<<<<< HEAD
-<<<<<<< HEAD
     public TokenResponse reissue(String oldRefreshToken) {
-=======
-    public MemberKakaoLoginResponse reissue(String oldRefreshToken) {
->>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
-=======
-    public TokenResponse reissue(String oldRefreshToken) {
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
         // 1. Refresh Token 검증
         if (!jwtUtil.validateToken(oldRefreshToken)) {
             throw new BaseException(BaseErrorCode.TOKEN_EXPIRED); // 혹은 INVALID_TOKEN
@@ -279,15 +248,7 @@ public class AuthService {
         // 6. Redis 업데이트 (Rotation) - 기존 키 덮어쓰기
         saveRefreshToken(email, newRefreshToken);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         return TokenResponse.builder()
-=======
-        return MemberKakaoLoginResponse.builder()
->>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
-=======
-        return TokenResponse.builder()
->>>>>>> dad092f (add: 티어 및 리포트 관련 API)
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .build();
