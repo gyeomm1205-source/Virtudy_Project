@@ -52,6 +52,7 @@ public class StudyRoom extends BaseTimeEntity {
 
     public void update(String title, String password, String description) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (title != null) this.title = title;
         if (password != null) this.password = password;
         if (description != null) this.description = description;
@@ -60,6 +61,11 @@ public class StudyRoom extends BaseTimeEntity {
         this.password = password;
         this.description = description;
 >>>>>>> e788f78 ([S14P11A703-136] 엔티티 최신화)
+=======
+        if (title != null) this.title = title;
+        if (password != null) this.password = password;
+        if (description != null) this.description = description;
+>>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
     }
 
     public void close() {

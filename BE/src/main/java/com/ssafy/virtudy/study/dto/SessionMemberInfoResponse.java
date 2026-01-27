@@ -2,6 +2,7 @@ package com.ssafy.virtudy.study.dto;
 
 import com.ssafy.virtudy.member.domain.Avatar;
 import com.ssafy.virtudy.member.domain.Member;
+<<<<<<< HEAD
 import com.ssafy.virtudy.member.dto.AvatarResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
@@ -27,8 +28,27 @@ public class SessionMemberInfoResponse {
         this.nickName = member.getNickName();
         this.avatar = AvatarResponse.from(member.getAvatar());
 =======
+=======
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+
+/*
+ *  TODO: 아바타 이미지 URL 형식 변경
+ */
+@Schema(description = "스터디 세션 입장 응답 DTO (사용자 정보 및 LiveKit 토큰)")
+@Getter
+public class SessionMemberInfoResponse {
+
+    @Schema(description = "회원 고유 ID (UUID)", example = "550e8400-e29b-41d4-a716-446655440000")
+    private final String memberId;
+
+    @Schema(description = "회원 닉네임", example = "싸피최고")
+>>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
     private final String nickName;
+
     private final Avatar avatar;
+
+    @Schema(description = "LiveKit 접속 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
     private final String liveKitToken;
 
     public SessionMemberInfoResponse(Member member, String liveKitToken) {

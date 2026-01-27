@@ -51,6 +51,9 @@ public class SecurityConfig {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
                         .anyRequest().permitAll()); // TODO : 추후 정상 인증 로직 아래 버전으로 수정 필요
 //                        .requestMatchers(
 //                                            "/swagger-ui.html",
@@ -62,6 +65,7 @@ public class SecurityConfig {
 //                ).permitAll()
 //                .anyRequest().authenticated())
 //                .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
+<<<<<<< HEAD
 //                UsernamePasswordAuthenticationFilter.class)
 =======
                         .requestMatchers(
@@ -104,6 +108,9 @@ public class SecurityConfig {
         // .addFilterBefore(new JwtAuthFilter(...),
         // UsernamePasswordAuthenticationFilter.class);
 >>>>>>> 3bd5cb7 (fix: 유령 세션 문제 해결 및 로컬 FE CORS 허용)
+=======
+//                UsernamePasswordAuthenticationFilter.class);
+>>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
 
         return http.build();
     }
