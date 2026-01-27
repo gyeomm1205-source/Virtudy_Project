@@ -23,11 +23,13 @@ export const useMyPage = () => {
     isLoading.value = true;
     try {
       const data = await getMyProfile();
-      // 백엔드 미구현 데이터 임시 주입
+      // 백엔드가 준 이름으로 변경
       userInfo.value = {
         ...data,
-        cumulativeScore: 0, // 임시 점수
-        favoriteStudyRoom: '최애스터디룸(미구현)', // 임시 방이름
+        tierScore: 1250, // 임시 점수
+        favoriteRoomTitle: '최애스터디룸', // 임시 방이름
+        pureStudyTime: 180, // 일일 순공부시간
+        focusDepth: 85, // 임시 집중도 (%)
       };
       
       // 스토어 정보도 최신화 (헤더 등 전역 반영을 위해)
