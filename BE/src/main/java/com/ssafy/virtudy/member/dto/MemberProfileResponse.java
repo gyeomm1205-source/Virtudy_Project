@@ -1,6 +1,5 @@
 package com.ssafy.virtudy.member.dto;
 
-import com.ssafy.virtudy.member.domain.Avatar;
 import com.ssafy.virtudy.member.domain.JobType;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.report.domain.Report;
@@ -16,7 +15,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class MemberProfileResponse {
-    private Avatar avatar;
+
+    @Schema(description = "회원 아바타")
+    private AvatarResponse avatar;
 
     @Schema(description = "이메일", example = "user@example.com")
     private String email;
@@ -44,7 +45,7 @@ public class MemberProfileResponse {
 
     public static MemberProfileResponse from(Member member, Report todayReport, int tierScore, String tier) {
         return MemberProfileResponse.builder()
-                .avatar(member.getAvatar())
+                .avatar(AvatarResponse.from(member.getAvatar()))
                 .email(member.getEmail())
                 .nickName(member.getNickName())
                 .jobType(member.getJobType())
