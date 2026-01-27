@@ -17,9 +17,12 @@ services:
       - virtudy-network
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> cbb5055 (fix(rank)-랭크 서비스 정상화)
+=======
+>>>>>>> f53f28d (fix(all): 오류 해결 및 공백 제거)
 #  # Redis for LiveKit (and potential other uses)
 #  redis:
 #    image: redis:alpine
@@ -36,5 +39,8 @@ services:
 #    driver: bridge
 =======
 #    driver: bridge
+<<<<<<< HEAD
 
 >>>>>>> cbb5055 (fix(rank)-랭크 서비스 정상화)
+=======
+>>>>>>> f53f28d (fix(all): 오류 해결 및 공백 제거)

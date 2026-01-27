@@ -28,7 +28,7 @@ public class Member extends BaseTimeEntity {
 
 //    @Enumerated(EnumType.STRING)
 //    @Column(nullable = false)
-//    private AgreedType isAgreed
+//    private AgreedType isAgreed;
 
     @Column(nullable = false)
     private boolean isServiceAgreed;
@@ -90,18 +90,6 @@ public class Member extends BaseTimeEntity {
     public void updateProfile(String nickName, JobType jobType) {
         if (nickName != null) this.nickName = nickName;
         if (jobType != null) this.jobType = jobType;
-<<<<<<< HEAD
-    }
-
-    public void setAvatar(Avatar avatar) {
-        this.avatar = avatar;
-    }
-
-    // [추가] 회원 상태 변경 편의 메서드 (탈퇴/복구 시 사용)
-    public void updateStatus(MemberStatType status) {
-        this.status = status;
-=======
->>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
     }
 
     public void setAvatar(Avatar avatar) {
