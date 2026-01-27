@@ -11,4 +11,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+<<<<<<< HEAD
         dialect: org.hibernate.dialect.MySQLDialect
+=======
+        dialect: org.hibernate.dialect.MySQLDialect
+>>>>>>> cbb5055 (fix(rank)-랭크 서비스 정상화)

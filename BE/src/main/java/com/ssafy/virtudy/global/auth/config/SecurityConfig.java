@@ -66,6 +66,7 @@ public class SecurityConfig {
 //                .anyRequest().authenticated())
 //                .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
 <<<<<<< HEAD
+<<<<<<< HEAD
 //                UsernamePasswordAuthenticationFilter.class)
 =======
                         .requestMatchers(
@@ -111,6 +112,9 @@ public class SecurityConfig {
 =======
 //                UsernamePasswordAuthenticationFilter.class);
 >>>>>>> 6e9e953 ([S14P11A703-106] API 명세서 구체화)
+=======
+//                UsernamePasswordAuthenticationFilter.class)
+>>>>>>> cbb5055 (fix(rank)-랭크 서비스 정상화)
 
         return http.build();
     }

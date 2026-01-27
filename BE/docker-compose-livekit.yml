@@ -16,6 +16,10 @@ services:
     networks:
       - virtudy-network
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> cbb5055 (fix(rank)-랭크 서비스 정상화)
 #  # Redis for LiveKit (and potential other uses)
 #  redis:
 #    image: redis:alpine
@@ -28,4 +32,9 @@ services:
 #
 #networks:
 #  virtudy-network:
+<<<<<<< HEAD
 #    driver: bridge
+=======
+#    driver: bridge
+
+>>>>>>> cbb5055 (fix(rank)-랭크 서비스 정상화)
