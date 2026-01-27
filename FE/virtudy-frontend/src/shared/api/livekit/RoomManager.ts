@@ -33,7 +33,7 @@ export class RoomManager {
 
         try {
             // [수정] 프론트엔드 로컬 토큰 생성기 사용 (백엔드 미구현 대응)
-            const { LocalTokenGenerator } = await import('./LocalTokenGenerator');
+            const { LocalTokenGenerator } = await import('../../lib/LocalTokenGenerator');
             const liveKitToken = await LocalTokenGenerator.generateToken(roomId, memberId);
 
             if (!liveKitToken) {
