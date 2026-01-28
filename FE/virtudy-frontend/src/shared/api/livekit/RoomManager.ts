@@ -11,7 +11,7 @@ export class RoomManager {
     private room: Room | null = null;
     private stompClient: Client | null = null;
     private roomId: string = '';
-    private memberId: string = ''; // [추가] 멤버 ID 저장
+    private userId: string = ''; // [추가] userId 저장
 
     private constructor() { }
 
@@ -27,14 +27,14 @@ export class RoomManager {
     }
 
     // 1. 통합 연결 함수 (입장 API -> LiveKit 연결 -> 소켓 연결)
-    async joinStudyRoom(roomId: string, memberId: string) {
+    async joinStudyRoom(roomId: string, userId: string) {
         this.roomId = roomId;
-        this.memberId = memberId; // [추가] 멤버 ID 저장
+        this.userId = userId; // [추가] 멤버 ID 저장
 
         try {
             // [수정] 프론트엔드 로컬 토큰 생성기 사용 (백엔드 미구현 대응)
             const { LocalTokenGenerator } = await import('../../lib/LocalTokenGenerator');
-            const liveKitToken = await LocalTokenGenerator.generateToken(roomId, memberId);
+            const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
 
             if (!liveKitToken) {
                 throw new Error('LiveKit 토큰을 생성하지 못했습니다.');
@@ -190,7 +190,7 @@ export class RoomManager {
             // [수정] 백엔드 SignalMessage 구조(type, sender, receiver, data)에 맞게 전송
             const payload = {
                 type: type,
-                sender: this.memberId,
+                sender: this.userId,
                 data: data // { message: "..." } 형태가 data 필드 들어감
             };
 
