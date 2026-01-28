@@ -53,7 +53,7 @@ public class StudyRoomController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "전체 스터디방 목록 조회", description = "현재 참여 가능한 모든 스터디방 목록을 조회합니다.")
+    @Operation(summary = "전체 스터디방 목록 조회", description = "현재 참여 가능한 모든 스터디방 목록을 인원 많은 순/최근 생성 순으로 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "목록 조회 성공", content = @Content(schema = @Schema(implementation = StudyRoomListResponse.class))),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
@@ -63,12 +63,13 @@ public class StudyRoomController {
     })
     @GetMapping
     public ResponseEntity<List<StudyRoomListResponse>> getAllOpenRooms(
+            @Parameter(hidden = true) @CurrentMember Member member
     ) {
-        List<StudyRoomListResponse> responses = studyRoomService.findAllOpenRooms();
+        List<StudyRoomListResponse> responses = studyRoomService.findAllOpenRooms(member);
         return ResponseEntity.ok(responses);
     }
 
-    @Operation(summary = "내 스터디방 목록 조회", description = "내가 속한 (방장이거나 참여중인) 스터디방 목록을 최신순으로 10개까지 조회합니다.")
+    @Operation(summary = "내 스터디방 목록 조회", description = "내가 속한 (방장이거나 참여중인) 스터디방 목록을 방장인 방/최애방/최근 참여 순으로 10개까지 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "목록 조회 성공", content = @Content(schema = @Schema(implementation = StudyRoomListResponse.class))),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(implementation = ErrorResponse.class),
