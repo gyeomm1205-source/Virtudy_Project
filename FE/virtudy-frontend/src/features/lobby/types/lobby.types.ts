@@ -1,3 +1,5 @@
+import type { AvatarConfig } from '@/shared/types/common.types'; // 아바타 데이터 가져옴
+
 /**
  * 📝 Lobby Feature 타입 정의
  * - 기준: Virtudy API 명세서 v1.1.0
@@ -6,17 +8,6 @@
 // ==========================================
 // 1. 공통 서브 타입 (Sub Interfaces)
 // ==========================================
-
-/** 아바타 정보 (입장 시 반환됨) */
-export interface AvatarData {
-  hairFront: string;
-  hairBack: string;
-  hairColor: string;
-  eyes: string;
-  glasses: string;
-  outfit: string;
-  clothesColor: string;
-}
 
 /** 공통 에러 응답 양식 */
 export interface ApiErrorResponse {
@@ -89,6 +80,6 @@ export interface EnterRoomReq {
 export interface EnterSessionRes {
   memberId: string;
   nickName: string;
-  avatar: AvatarData;
+  avatar: AvatarConfig;
   liveKitToken: string;
 }
