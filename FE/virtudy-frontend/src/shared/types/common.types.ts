@@ -13,6 +13,7 @@ export interface AvatarConfig {
 
 // 유저 정보
 export interface User {
+  userId: string;
   nickName: string;
   email: string;       
   jobType: string;        
