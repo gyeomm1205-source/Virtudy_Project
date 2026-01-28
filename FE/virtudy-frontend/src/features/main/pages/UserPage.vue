@@ -57,6 +57,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const userInfo = ref<UserProfileResponse>({
+  userId: "",
   nickName: "닉네임",
   email: "",
   jobType: "",

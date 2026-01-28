@@ -82,7 +82,7 @@
             <p class="text-[2.25rem] font-['PfStardust30S'] mb-2 leading-tight">총 공부시간</p>
             
             <p class="text-[3rem] font-bold font-['Ram'] leading-none">
-              {{ formatStudyTime(reportData?.avgStudyTime) }}
+              {{ formatStudyTime(reportData?.totalStudyTime) }}
             </p>
           </div>
           
