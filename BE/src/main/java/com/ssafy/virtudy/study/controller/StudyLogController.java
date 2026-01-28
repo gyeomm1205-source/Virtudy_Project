@@ -24,11 +24,13 @@ public class StudyLogController {
      * <p>
      * AI 모델이 감지한 졸음, 핸드폰 사용, 자리 비움 등의 이벤트를 서버로 전송할 때 사용합니다.
      * </p>
+     * @deprecated AI 서버가 Redis Queue에 직접 적재하는 방식으로 변경되었습니다. (RedisLogService 참고)
      *
      * @param request 학습 로그 요청 데이터 (세션ID, 이벤트타입, 감지시간)
      * @return 저장된 로그의 ID (Long)
      */
-    @Operation(summary = "학습 로그 저장", description = "AI 모델 혹은 클라이언트로부터 학습 이벤트 로그를 수신합니다.")
+    @Deprecated
+    @Operation(summary = "학습 로그 저장 (Deprecated)", description = "AI 모델 혹은 클라이언트로부터 학습 이벤트 로그를 수신합니다. 현재는 Redis Queue 방식을 권장합니다.")
     @PostMapping
     public ResponseEntity<Long> saveLog(@RequestBody StudyLogRequest request) {
         Long logId = studyLogService.saveLog(request);

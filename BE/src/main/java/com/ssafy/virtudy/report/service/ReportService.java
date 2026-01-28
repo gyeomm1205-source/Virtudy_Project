@@ -36,24 +36,7 @@ public class ReportService {
     private final MemberRepository memberRepository;
     private final AiAnalysisService aiAnalysisService;
 
-    /**
-     * 일간 리포트 조회 (API 호출용)
-     * 회원의 ID와 날짜를 기반으로 생성된 리포트를 조회하여 반환합니다.
-     *
-     * @param memberId 조회할 회원의 식별자 (로그인 ID 아님, PK 아님, MemberId UUID)
-     * @param date     조회할 날짜 (YYYY-MM-DD)
-     * @return ReportResponse 리포트 상세 데이터 DTO
-     * @throws BaseException MEMBER_NOT_FOUND_ERROR, REPORT_NOT_FOUND_ERROR
-     */
-    public ReportResponse getDailyReport(String memberId, LocalDate date) {
-        Member member = memberRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
-        
-        Report report = reportRepository.findByMemberAndReportDate(member, date)
-                .orElseThrow(() -> new BaseException(BaseErrorCode.REPORT_NOT_FOUND_ERROR));
 
-        return ReportResponse.from(report);
-    }
 
     /**
      * 주간 리포트 조회 (API 호출용)
@@ -71,6 +54,9 @@ public class ReportService {
         
         List<Report> reports = reportRepository.findByMemberAndReportDateBetween(member, startDate, endDate);
         
+        // TODO startDate랑 endDate 사이의 데이터를 계산하는 로직 추가 필요
+        // TODO 내부적으로 주간 
+
         return reports.stream()
                 .map(ReportResponse::from)
                 .collect(Collectors.toList());
@@ -80,56 +66,70 @@ public class ReportService {
      * 일간 리포트 생성 및 저장 (Batch 시스템에서 호출)
      * 전날의 학습 세션 및 로그 데이터를 분석하여 5가지 핵심 스탯(지구력, 집중력, 안정감, 의지력, 규칙성)을 계산하고
      * AI 분석 코멘트를 생성하여 DB에 저장합니다.
+     * 매일 새벽 4시에 실행됩니다.
      *
      * @param member   리포트 생성 대상 회원
      * @param date     리포트 기준 날짜 (보통 '어제')
      * @param sessions 해당 날짜에 완료된 학습 세션 목록
      */
+    /**
+     * 주간 리포트 생성 및 저장 (Batch 시스템 - ReportPreparationService에서 호출)
+     * 지난주(월~일)의 학습 데이터를 분석하여 스탯을 계산하고, AI 분석 코멘트를 생성하여 DB에 저장합니다.
+     *
+     * @param member    리포트 생성 대상 회원
+     * @param startDate 조회 시작 날짜 (지난주 월요일)
+     * @param endDate   조회 종료 날짜 (지난주 일요일)
+     * @param sessions  해당 기간의 학습 세션 목록
+     */
     @Transactional
-    public void generateAndSaveDailyReport(Member member, LocalDate date, List<StudySession> sessions) {
-        // 중복 생성 방지: 이미 해당 날짜의 리포트가 있다면 스킵
-        if (reportRepository.existsByMemberAndReportDate(member, date)) {
-            log.info("이미 리포트가 존재합니다. memberId={}, date={}", member.getMemberId(), date);
+    public void generateAndSaveWeeklyReport(Member member, LocalDate startDate, LocalDate endDate, List<StudySession> sessions) {
+        // 이미 해당 기간의 주간 리포트(보통 시작일을 기준 날짜로 함)가 존재하면 스킵
+        if (reportRepository.existsByMemberAndReportDate(member, startDate)) {
+            log.info("이미 주간 리포트가 존재합니다. memberId={}, date={}", member.getMemberId(), startDate);
             return;
         }
 
-        // 학습 기록이 아예 없으면 리포트 생성 안 함 (혹은 '0점' 리포트를 만들 수도 있으나 기획에 따름)
-        if (sessions.isEmpty()) {
-            log.info("학습 세션이 없어 리포트를 생성하지 않습니다. memberId={}, date={}", member.getMemberId(), date);
-            return;
-        }
-
-        // 1. 해당 일자의 모든 상세 학습 로그(StudyLog) 조회
-        // 세션 데이터만으로는 '졸음', '핸드폰' 등의 구체적 이벤트 시각과 빈도를 알기 어렵기 때문
-        LocalDateTime startOfDay = date.atStartOfDay();
-        LocalDateTime endOfDay = date.atTime(23, 59, 59);
-        List<StudyLog> logs = studyLogRepository.findByMemberIdAndDateRange(member.getId(), startOfDay, endOfDay);
-        
-        // 로그 시간순 정렬 (분석 정확도를 위해 필수)
+        // 해당 기간 내의 모든 로그 조회 (집중도, 졸음 등 분석용)
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+        List<StudyLog> logs = studyLogRepository.findByMemberIdAndDateRange(member.getId(), startDateTime, endDateTime);
         logs.sort((a, b) -> a.getDetectedAt().compareTo(b.getDetectedAt()));
 
-        // 2. 핵심 스탯 계산 (5대 스탯 + 추가 분석 데이터)
-        int maxFocusTime = calculateMaxFocusTime(sessions, logs);   // 최대 연속 집중 시간 (분)
-        int endurance = calculateEndurance(member, maxFocusTime);   // 지구력 (목표 대비 달성률)
-        int focusDepth = calculateFocusDepth(sessions);             // 집중력 (순공부/총시간)
-        int stability = calculateStability(logs);                   // 안정감 (졸음 빈도 역산)
-        int willPower = calculateWillPower(sessions, logs);         // 의지력 (딴짓 빈도 역산)
-        
-        // 취약 시간대 분석 (예: "14시")
+        // --- 유효성 검증: 실제로 '7일 치' 데이터가 존재하는지 확인 ---
+        long distinctStudyDays = sessions.stream()
+                .map(s -> s.getEndTime().toLocalDate())
+                .filter(d -> !d.isBefore(startDate) && !d.isAfter(endDate))
+                .distinct()
+                .count();
+
+        // 7일 개수가 안 차면 '0점 리포트' 생성 (기본값)
+        if (distinctStudyDays < 7) {
+            log.info("데이터 부족으로 기본 리포트 생성 (학습일수: {}/7). memberId={}", distinctStudyDays, member.getMemberId());
+            saveDefaultReport(member, startDate);
+            return;
+        }
+
+        // --- 통계 계산 시작 ---
+        int maxFocusTime = calculateMaxFocusTime(sessions, logs);
+        int endurance = calculateEndurance(member, maxFocusTime);
+        int focusDepth = calculateFocusDepth(sessions);
+        int stability = calculateStability(logs);
+        int willPower = calculateWillPower(sessions, logs);
+        int avgStudyTime = calculateAvgStudyTime(sessions, 7); // 7일 평균
+        int focusDepthPercentage = calculateFocusDepthPercentage(focusDepth, maxFocusTime);
+
         String sleepVulnerableTime = analyzeSleepPattern(logs);
         String distractionPatternTime = analyzeDistractionPattern(logs);
-
-        // 3. AI 코멘트 생성 (Mock -> 추후 GenAI 연동)
-        // 계산된 스탯을 바탕으로 사용자에게 맞춤형 피드백 제공
         String aiComment = aiAnalysisService.generateFeedback(endurance, focusDepth, stability, willPower, sleepVulnerableTime);
 
-        // 4. 리포트 엔티티 생성 및 저장
         Report report = Report.builder()
                 .member(member)
-                .reportDate(date)
+                .reportDate(startDate)
+                .focusDepthPercentage(focusDepthPercentage)
+                .avgStudyTime(avgStudyTime)
                 .endurance(endurance)
                 .focusDepth(focusDepth)
-                .regularity(0) // 일간 리포트에서는 규칙성 계산 제외 (주간 단위 데이터가 필요하므로 0 처리)
+                .regularity(0)
                 .stability(stability)
                 .willPower(willPower)
                 .maxFocusTime(maxFocusTime)
@@ -139,7 +139,48 @@ public class ReportService {
                 .build();
 
         reportRepository.save(report);
-        log.info("일간 리포트 생성 완료: memberId={}, date={}", member.getMemberId(), date);
+        log.info("주간 리포트 생성 완료: memberId={}, weekStart={}", member.getMemberId(), startDate);
+    }
+
+    private void saveDefaultReport(Member member, LocalDate startDate) {
+        Report report = Report.builder()
+                .member(member)
+                .reportDate(startDate)
+                .focusDepthPercentage(0)
+                .avgStudyTime(0)
+                .endurance(0)
+                .focusDepth(0)
+                .regularity(0)
+                .stability(0)
+                .willPower(0)
+                .maxFocusTime(0)
+                .sleepVulnerableTime("데이터 없음")
+                .distractionPatternTime("데이터 없음")
+                .aiComment("지난 주 학습 데이터가 부족하여 분석할 수 없습니다.")
+                .build();
+        reportRepository.save(report);
+    }
+
+    // --- 신규 스탯 계산 로직 ---
+
+    /**
+     * 일 평균 공부 시간 (분)
+     * 총 공부 시간 합계 / 7일
+     */
+    private int calculateAvgStudyTime(List<StudySession> sessions, int days) {
+        if (sessions.isEmpty() || days == 0) return 0;
+        long totalStudyTime = sessions.stream()
+                .mapToLong(StudySession::getSessionRealStudyTime)
+                .sum();
+        return (int) (totalStudyTime / days);
+    }
+
+    /**
+     * 집중도 백분위 (0~100)
+     * 현재는 집중력 점수를 그대로 반환 (추후 고도화)
+     */
+    private int calculateFocusDepthPercentage(int focusDepth, int maxFocusTime) {
+        return Math.min(focusDepth, 100);
     }
 
     // --- 스탯 계산 로직 (Private Helper Methods) ---
