@@ -38,6 +38,8 @@ public class StudySessionService {
     private final RoomMemberRepository roomMemberRepository;
     private final LiveKitConfig liveKitConfig;
 
+    private final static int MAX_USER = 6;
+
     public SessionMemberInfoResponse enterRoom(Member member, String roomId) {
         StudyRoom room = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));

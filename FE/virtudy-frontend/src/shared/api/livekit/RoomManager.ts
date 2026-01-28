@@ -1,6 +1,7 @@
 import { Room, RoomEvent, RemoteParticipant, RemoteTrackPublication, RemoteTrack } from 'livekit-client';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import type { st } from 'vue-router/dist/router-CWoNjPRp.mjs';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
 const LIVEKIT_URL = 'ws://127.0.0.1:7880'; // 실제 LiveKit 서버 주소 (로컬 기본값)
@@ -29,44 +30,24 @@ export class RoomManager {
     // 1. 통합 연결 함수 (입장 API -> LiveKit 연결 -> 소켓 연결)
     async joinStudyRoom(roomId: string, userId: string, token?: string) {
         this.roomId = roomId;
-        this.userId = userId;
+        this.userId = userId; // [추가] user ID 저장
 
         try {
-            // [변경] 백엔드 API에서 실제 토큰 발급 시도 (우선순위 1)
-            let finalToken = token;
+            // [수정] 프론트엔드 로컬 토큰 생성기 사용 (백엔드 미구현 대응)
+            // 백엔드 구현완료: 기존 LocalTokenGenerator 로직 삭제하고, 인자로 받은 token 사용
+            const { LocalTokenGenerator } = await import('../../lib/LocalTokenGenerator');
+            const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
 
-            if (!finalToken) {
-                console.log('[RoomManager] 백엔드 토큰 발급 시도...');
-                try {
-                    // configured axios instance 사용 (자동으로 Auth Header 추가됨)
-                    const { default: axios } = await import('@/shared/api/axios.config');
-                    const response = await axios.post(`/api/sessions/enter/${roomId}`);
-
-                    if (response.data && response.data.liveKitToken) {
-                        finalToken = response.data.liveKitToken;
-                        console.log('[RoomManager] 백엔드 토큰 발급 성공');
-                    }
-                } catch (apiError) {
-                    console.warn('[RoomManager] 백엔드 토큰 발급 실패. 로컬 토큰으로 대체합니다.', apiError);
-                }
-            }
-
-            // [변경] 백엔드 실패 시 로컬 토큰 생성 (우선순위 2 - Fallback)
-            if (!finalToken) {
-                console.warn('[RoomManager] 로컬 생성 토큰을 사용합니다.');
-                const { LocalTokenGenerator } = await import('../../lib/LocalTokenGenerator');
-                finalToken = await LocalTokenGenerator.generateToken(roomId, userId);
-            }
-
-            // 그래도 없으면 에러
-            if (!finalToken) {
-                throw new Error('LiveKit 입장 토큰이 없습니다 (백엔드/로컬 모두 실패).');
+            // 토큰 검사
+            if (!token) {
+                // 만약 토큰이 없다면 에러를 띄움 (백엔드가 주기 때문)
+                throw new Error('LiveKit 입장 토큰이 없습니다.');
             }
 
             console.log(`[RoomManager] 토큰 확인 완료. LiveKit 연결을 시작합니다.`);
 
             // 1-2. LiveKit 연결 (미디어 플레인)
-            await this.connectLiveKit(finalToken);
+            await this.connectLiveKit(token);
 
             // 1-3. WebSocket 연결 (컨트롤 플레인)
             this.connectWebSocket();
@@ -106,59 +87,13 @@ export class RoomManager {
             await this.room.connect(LIVEKIT_URL, token);
             console.log('[LiveKit] 서버 연결 성공');
 
-            // [변경] AI 테스트를 위해 실제 카메라 대신 가상 트랙(Canvas) 송출
-            // await this.room.localParticipant.setMicrophoneEnabled(false);
-            // await this.room.localParticipant.setCameraEnabled(true);
-
-            const virtualTrack = this.createVirtualVideoTrack();
-            await this.room.localParticipant.publishTrack(virtualTrack, {
-                name: 'virtual-camera',
-                source: 'camera' as any // Type assertion
-            });
-            console.log('[LiveKit] 가상 카메라 트랙 게시 완료 (AI 충돌 방지)');
-
+            // 카메라 명시적 켜기 (connect 옵션 대신 표준 메소드 사용)
+            await this.room.localParticipant.setMicrophoneEnabled(false);
+            await this.room.localParticipant.setCameraEnabled(true);
         } catch (e) {
             console.error(e);
             throw e;
         }
-    }
-
-    // [추가] 가상 비디오 트랙 생성 (Canvas 이용)
-    private createVirtualVideoTrack(): MediaStreamTrack {
-        const canvas = document.createElement('canvas');
-        canvas.width = 640;
-        canvas.height = 480;
-        const ctx = canvas.getContext('2d');
-
-        if (!ctx) throw new Error('Canvas context generation failed');
-
-        // 애니메이션 루프
-        const draw = () => {
-            // 배경
-            ctx.fillStyle = '#2c3e50';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // 텍스트
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '40px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('AI Testing Mode', canvas.width / 2, canvas.height / 2 - 20);
-
-            ctx.font = '20px Arial';
-            ctx.fillText('Camera Disabled for AI', canvas.width / 2, canvas.height / 2 + 30);
-
-            // 움직이는 요소 (시간 표시)
-            const time = new Date().toLocaleTimeString();
-            ctx.fillText(time, canvas.width / 2, canvas.height / 2 + 70);
-
-            requestAnimationFrame(draw);
-        };
-        draw();
-
-        const stream = canvas.captureStream(30); // 30 FPS
-        const track = stream.getVideoTracks()[0];
-        if (!track) throw new Error('No video track generated');
-        return track;
     }
 
     // 3. WebSocket(SockJS+Stomp) 연결 로직
@@ -190,7 +125,7 @@ export class RoomManager {
     // 트랙 구독 핸들러 (화면에 비디오 표시)
     private handleTrackSubscribed(
         track: RemoteTrack,
-        _publication: RemoteTrackPublication,
+        publication: RemoteTrackPublication,
         participant: RemoteParticipant
     ) {
         if (track.kind === 'video' || track.kind === 'audio') {
@@ -203,7 +138,7 @@ export class RoomManager {
     // 트랙 구독 해제 핸들러
     private handleTrackUnsubscribed(
         track: RemoteTrack,
-        _publication: RemoteTrackPublication,
+        publication: RemoteTrackPublication,
         participant: RemoteParticipant
     ) {
         console.log(`[LiveKit] 트랙 해제: ${participant.identity} (${track.kind})`);

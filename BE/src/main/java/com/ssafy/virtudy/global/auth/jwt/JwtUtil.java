@@ -40,8 +40,8 @@ public class JwtUtil {
                         "tokenType", "ACCESS",
                         "userId", member.getMemberId(),
                         "email", member.getEmail(),
-                        "userName", member.getNickName(),
-                        "userProfileImgUrl", member.getAvatar()
+                        "userName", member.getNickName()
+//                        "userProfileImgUrl", member.getAvatar()
                 ));
     }
 
@@ -57,8 +57,8 @@ public class JwtUtil {
                 REFRESH_TOKEN_EXPIRE_MIN,
                 Map.of(
                         "tokenType", "REFRESH",
-                        "userId", member.getMemberId(),
-                        "email", member.getEmail() // ✅ [필수 추가] 이게 있어야 reissue에서 꺼내 씁니다!
+                                "userId", member.getMemberId(),
+                                "email", member.getEmail() // ✅ [필수 추가] 이게 있어야 reissue에서 꺼내 씁니다!
                 ));
     }
 

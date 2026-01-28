@@ -27,4 +27,11 @@ public class MemberDto {
                 .avatar(member.getAvatar())
                 .build();
     }
+
+    public MemberDto(String memberId, Avatar avatar, String email, String nickName) {
+        this.memberId = memberId;
+        this.avatar = avatar;
+        this.email = email;
+        this.nickName = nickName;
+    }
 }
