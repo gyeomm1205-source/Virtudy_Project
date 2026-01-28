@@ -1,4 +1,4 @@
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { getTop5Rank } from '@/features/ranking/api/rankingApi';
 import type { RankItem } from '@/features/ranking/types/ranking.types';
 
@@ -25,13 +25,10 @@ export const useMainRanking = () => {
     }
   };
 
-  onMounted(() => {
-    fetchTopRanks();
-  });
-
   return {
     privateTop5,
     teamTop5,
-    isLoading
+    isLoading,
+    fetchTopRanks, // 데이터 패칭 함수를 반환
   };
 };

@@ -1,16 +1,14 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { jwtDecode } from 'jwt-decode'; // JWT 토큰 (userId) 확인용
 import api from '@/shared/api/axios.config'; // 설정된 axios 인스턴스
+import type { User } from '@/shared/types/common.types';
 
-interface User {
-  nickName: string;
-  // Add other user-related fields here if needed
-}
 
 export const useAuthStore = defineStore('auth', () => {
   // 상태 (State)
-  const accessToken = ref(localStorage.getItem('accessToken') || null); 
-  // const accessToken = ref(localStorage.getItem('accessToken') || 'MOCK_ACCESS_TOKEN'); // Mock용 임시 토큰으로 로그인되면 삭제하기
+  const accessToken = ref(localStorage.getItem('accessToken') || null);
+  const userId = ref<string | null>(localStorage.getItem('userId') || null); // userId 토큰에서 추출해 저장
   const signupInfo = ref(localStorage.getItem('signupInfo') ? JSON.parse(localStorage.getItem('signupInfo')!) : null); // 신규 유저 임시 정보
   const userInfo = ref<User | null>(localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')!) : null); // 추가 정보(닉네임 등) 저장용
 
@@ -22,7 +20,23 @@ export const useAuthStore = defineStore('auth', () => {
   const setToken = (token: string) => {
     accessToken.value = token;
     localStorage.setItem('accessToken', token); // 브라우저 새로고침 대비
+
+    try { 
+      const decoded: any = jwtDecode(token);
+
+      // 토큰에서 userId 추출
+      const extractedId = decoded.userId;
+
+      if (extractedId) {
+        userId.value = extractedId;
+        localStorage.setItem('userId', extractedId); // 새로고침 유지
+      }
+    } catch (error) {
+      console.error('🚫 토큰 디코딩 실패:', error);
+    }
   };
+
+  
 
   // 2. 신규 가입 플로우를 위한 임시 정보 저장
   interface SignupInfo {
@@ -49,9 +63,11 @@ export const useAuthStore = defineStore('auth', () => {
   // 5. 로그아웃 또는 전체 인증 정보 초기화
   const clearAuth = () => {
     accessToken.value = null;
+    userId.value = null; // userId 초기화
     userInfo.value = null;
     signupInfo.value = null; // 임시 정보도 함께 클리어
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('userId'); // userId 함께 삭제
     localStorage.removeItem('signupInfo');
     localStorage.removeItem('userInfo');
   };
@@ -69,11 +85,27 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('내 정보 가져오기 성공:', data);
     } catch (error) {
       console.error('내 정보 불러오기 실패:', error);
+      // 토큰이 유효하지 않은 경우 인증 정보 클리어
+      clearAuth();
+    }
+  };
+
+  // [추가] 앱 초기화 시 토큰 유효성 검증
+  const validateToken = async () => {
+    if (!accessToken.value) return;
+
+    try {
+      await api.get('/members/profile');
+    } catch (error) {
+      // 토큰이 유효하지 않으면 로그아웃 처리
+      console.warn('저장된 토큰이 유효하지 않습니다. 로그아웃 처리합니다.');
+      clearAuth();
     }
   };
 
   return {
     accessToken,
+    userId,
     signupInfo,
     userInfo,
     isLoggedIn,
@@ -83,5 +115,6 @@ export const useAuthStore = defineStore('auth', () => {
     setUserInfo,
     clearAuth,
     fetchUserInfo,
+    validateToken,
   };
 });

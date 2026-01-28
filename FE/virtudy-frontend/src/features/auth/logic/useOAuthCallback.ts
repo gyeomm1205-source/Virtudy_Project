@@ -57,7 +57,13 @@ export const useOAuthCallback = () => {
         // 토큰 저장 후 유저 페이지로
         authStore.setToken(accessToken);
         if (nickName) {
-          authStore.setUserInfo({ nickName });
+          authStore.setUserInfo({
+            nickName,
+            email: '',
+            avatarImageUrl: '',
+            jobType: '',
+            tier: ''
+          });
         }
         await router.push({ name: 'user' });
       }
