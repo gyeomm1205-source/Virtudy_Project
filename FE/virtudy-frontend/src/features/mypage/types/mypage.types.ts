@@ -1,19 +1,8 @@
-export interface AvatarConfig {
-  hairFront: string;
-  hairBack: string;
-  hairColor: string;
-  eyes: string;
-  glasses: string;
-  outfit: string;
-  clothesColor: string;
-}
+import type { User } from '@/shared/types/common.types';
 
-export interface UserProfileResponse {
-  avatar: AvatarConfig;
-  email: string;
-  nickName: string;
-  tier: string;
-  jobType: string;
+export interface UserProfileResponse extends User {
+  // 이미 User에 있는 avatar, email, nickName, tier, jobType은 자동 상속됨
+  
   tierScore?: number; // 티어 점수
   favoriteRoomTitle?: string; //최애 스터디방 제목
   pureStudyTime?: number; // 일일 순공부시간 (분)
