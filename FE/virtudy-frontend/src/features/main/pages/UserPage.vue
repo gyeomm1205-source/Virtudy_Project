@@ -12,8 +12,8 @@
             :tier-score="userInfo.tierScore"
             :tier="userInfo.tier"
             :favorite-room-title="userInfo.favoriteRoomTitle"
-            :pure-study-time="userInfo.pureStudyTime"
-            :focus-depth="userInfo.focusDepth"
+            :pure-study-time="userInfo.dailyPureStudyTime"
+            :focus-depth="userInfo.dailyFocusDepth"
             :avatar-image-url="userInfo.avatarImageUrl"
           />
           
@@ -72,8 +72,8 @@ const userInfo = ref<UserProfileResponse>({
   },
   tierScore: 0,
   favoriteRoomTitle: "최애스터디",
-  pureStudyTime: 0,
-  focusDepth: 0,
+  dailyPureStudyTime: 0,
+  dailyFocusDepth: 0,
   avatarImageUrl: "",
 });
 
