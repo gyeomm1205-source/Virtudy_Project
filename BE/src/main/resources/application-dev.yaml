@@ -72,6 +72,5 @@ management:
   metrics:
     tags:
       application: 'virtudy-server'
-  endpoint:
-    health:
-      show-details: "always"
+
+

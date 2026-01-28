@@ -38,11 +38,6 @@ public class KakaoClient {
     /**
      * 인가 코드로 토큰 요청
      * 요청 URL: https://kauth.kakao.com/oauth/token
-<<<<<<< HEAD
-     *
-=======
-     * 
->>>>>>> c54e331 (add: oauth 회원탈퇴, 로그아웃 로직 구현)
      * @param code: 인가 코드
      * @return access token 문자열
      */
@@ -77,6 +72,7 @@ public class KakaoClient {
     /**
      * 위에서 발급받은 access Token으로 사용자 정보 요청하기
      * 요청 URL: https://kapi.kakao.com/v2/user/me
+     * 
      * @param accessToken: 발급받은 인가 코드
      * @return KakaoUserInfo Dto로 매핑해서 리턴한다
      */
