@@ -81,7 +81,9 @@ const { privateTop5, teamTop5, isLoading, fetchTopRanks } = useMainRanking();
 
 const handleRandomMatch = () => console.log("랜덤 매칭");
 const handleCreateRoom = () => console.log("방 만들기");
-const handleShowRoomList = () => console.log("전체 목록");
+const handleShowRoomList = () => {
+  router.push('/lobby');
+};
 
 onMounted(async () => {
   fetchTopRanks();
