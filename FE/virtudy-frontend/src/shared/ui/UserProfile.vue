@@ -1,5 +1,5 @@
 <template>
-  <div class="user-profile-card">
+  <div class="user-profile-card shadow-[4px_4px_0px_0px_var(--color-choco)]">
     <div class="profile-main">
       <div class="profile-image-wrapper">
         <div class="image-container">
@@ -52,18 +52,27 @@
 <script setup lang="ts">
 import MiniReport from '@/shared/ui/MiniReport.vue'; 
 
-// [수정] 백엔드 명세(mypage.types.ts)와 동일한 필드명으로 Props 정의
+// [수정] 백엔드 명세와 동일한 필드명으로 Props 정의
+interface AvatarConfig {
+  hairFront: string;
+  hairBack: string;
+  hairColor: string;
+  eyes: string;
+  glasses: string;
+  outfit: string;
+  clothesColor: string;
+}
+
 interface UserProfileProps {
   nickName?: string;
   tierScore?: number;       // userScore -> tierScore
   tier?: string;
   favoriteRoomTitle?: string; // favoriteStudy -> favoriteRoomTitle
-  
   // [중요] 백엔드에서 오는 데이터 이름 그대로 사용
   pureStudyTime?: number;   // studyHours -> pureStudyTime (분 단위 숫자)
-  focusDepth?: number;      // concentration -> focusDepth (퍼센트 숫자)
-  
+  focusDepth?: number;      // concentration -> focusDepth (퍼센트 숫자) 
   avatarImageUrl?: string;  // userProfileImage -> avatarImageUrl
+  avatar?: AvatarConfig;    // 백엔드 avatar 설정 값
 }
 
 // 기본값 설정 (데이터가 없을 때 보여줄 값)
@@ -100,24 +109,24 @@ const defaultProfileImage = "http://localhost:3845/assets/b8326e9b387ebdb70a5f94
   width: 100%;
 }
 
-.image-container { position: relative; width: 146px; height: 146px; margin: 0 auto; top: 28px; }
+.image-container { position: relative; width: 146px; height: 146px; margin: 0 auto; top: 10px; }
 .frame-img { width: 100%; height: 100%; object-fit: cover; }
 .user-img-box { position: absolute; top: 6px; left: 8px; width: 130px; height: 130px; border-radius: 50%; overflow: hidden; }
 .user-img { width: 100%; height: 100%; object-fit: cover; }
 
-.nickname-area { position: absolute; top: 201px; width: 100%; text-align: center; }
+.nickname-area { position: absolute; top: 158px; width: 100%; text-align: center; }
 .nickname-text { color: var(--color-choco); font-size: 28px; font-weight: bold; font-family: 'Xcu', sans-serif; }
 
-.score-tier-area { position: absolute; top: 230px; width: 100%; display: flex; justify-content: center; gap: 20px; }
+.score-tier-area { position: absolute; top: 190px; width: 100%; display: flex; justify-content: center; gap: 20px; }
 .info-text { color: var(--color-pancake); font-size: 24px; font-family: 'PfStardust30S', sans-serif; }
 
-.fav-study-area { position: absolute; top: 252px; width: 100%; text-align: center; }
+.fav-study-area { position: absolute; top: 218px; width: 100%; text-align: center; }
 .fav-text { color: var(--color-choco); font-size: 24px; font-family: 'PfStardust30S', sans-serif; }
 
 /* MiniReport 위치 및 스타일 오버라이딩 */
 .stats-area {
   position: absolute;
-  top: 274px; /* 기존 디자인 위치 */
+  top: 260px; /* 기존 디자인 위치 */
   left: 13px;
   width: 447px;
   height: 133px;
