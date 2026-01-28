@@ -16,7 +16,7 @@ export const lobbyAPI = {
    * GET /api/study-rooms
    */
   getPublicRooms: async () => {
-    return api.get<RoomData[]>('/api/study-rooms');
+    return api.get<RoomData[]>('/study-rooms');
   },
 
   /**
@@ -25,7 +25,7 @@ export const lobbyAPI = {
    * - 내가 속한(방장이거나 참여중인) 방 최신순 10개
    */
   getMyRooms: async (userId: string) => {
-    return api.get<RoomData[]>('/api/study-rooms/my', {
+    return api.get<RoomData[]>('/study-rooms/my', {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -36,7 +36,7 @@ export const lobbyAPI = {
    * - 성공 시 생성된 RoomData 반환
    */
   createRoom: async (userId: string, data: CreateRoomReq) => {
-    return api.post<RoomData>('/api/study-rooms', data, {
+    return api.post<RoomData>('/study-rooms', data, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -46,7 +46,7 @@ export const lobbyAPI = {
    * GET /api/study-rooms/{roomId}
    */
   getRoomDetail: async (roomId: string) => {
-    return api.get<RoomData>(`/api/study-rooms/${roomId}`);
+    return api.get<RoomData>(`/study-rooms/${roomId}`);
   },
 
   /**
@@ -54,7 +54,7 @@ export const lobbyAPI = {
    * PATCH /api/study-rooms/{roomId}
    */
   updateRoom: async (userId: string, roomId: string, data: UpdateRoomReq) => {
-    return api.patch(`/api/study-rooms/${roomId}`, data, {
+    return api.patch(`/study-rooms/${roomId}`, data, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -64,7 +64,7 @@ export const lobbyAPI = {
    * DELETE /api/study-rooms/{roomId}
    */
   deleteRoom: async (userId: string, roomId: string) => {
-    return api.delete(`/api/study-rooms/${roomId}`, {
+    return api.delete(`/study-rooms/${roomId}`, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -74,7 +74,7 @@ export const lobbyAPI = {
    * PATCH /api/study-rooms/favorite/{roomId}
    */
   toggleFavorite: async (userId: string, roomId: string) => {
-    return api.patch(`/api/study-rooms/favorite/${roomId}`, {}, {
+    return api.patch(`/study-rooms/favorite/${roomId}`, {}, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
