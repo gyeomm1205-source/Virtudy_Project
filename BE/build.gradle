@@ -55,6 +55,8 @@ dependencies {
 	// LiveKit
 	implementation 'io.livekit:livekit-server:0.5.10'
 
+	// Kafka
+	implementation 'org.springframework.kafka:spring-kafka'
 }
 
 tasks.named('test') {

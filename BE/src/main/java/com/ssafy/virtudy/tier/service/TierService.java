@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -35,8 +34,8 @@ public class TierService {
     private final MemberRepository memberRepository;
     private final StudyAnalysisService studyAnalysisService;
     private final RedisTemplate<String, String> redisTemplate;
+    // private final com.ssafy.virtudy.study.service.RedisLogService redisLogService; // 제거
 
-    private static final String REDIS_TIER_KEY = "tier_ranking";
     private static final String DIAMOND = "DIAMOND";
     private static final String PLATINUM = "PLATINUM";
     private static final String GOLD = "GOLD";
@@ -45,18 +44,25 @@ public class TierService {
 
 
 
-    // TODO 1시간 주기로 종료된 세션만 조회하고 있는데, 세션에서 로그를 언제 남기냐에 따라 달라질 듯 
     /**
      * 1시간마다 실행되는 티어 점수 갱신 스케줄러.
-     * 1. 최근 1시간 동안 종료된 세션들을 조회합니다.
-     * 2. 각 멤버별로 세션을 그룹화합니다.
-     * 3. 각 세션의 학습 데이터를 분석하여 티어 점수를 계산합니다.
-     * 4. 계산된 점수를 DB(MemberGameStat)와 Redis(ZSet)에 업데이트합니다.
+     * 1. (제거됨) Redis Queue에 쌓인 학습 로그 동기화 -> Kafka Consumer가 실시간 처리함
+     * 2. 최근 1시간 동안 종료된 세션들을 조회합니다.
+     * 3. 각 멤버별로 세션을 그룹화합니다.
+     * 4. 각 세션의 학습 데이터를 분석하여 티어 점수를 계산합니다.
+     * 5. 계산된 점수를 DB(MemberGameStat)와 Redis(ZSet)에 업데이트합니다.
      * 매 정시(0분 0초)에 실행됩니다.
      */
     @Scheduled(cron = "0 0 * * * *")
     public void scheduleTierUpdate() {
         log.info("티어 점수 갱신 [시작]: {}", LocalDateTime.now());
+
+        // 0. Redis 로그 동기화 로직 제거됨 (Kafka Consumer가 처리)
+        // try {
+        //     redisLogService.processPendingLogs();
+        // } catch (Exception e) {
+        //     log.error("Redis 로그 동기화 중 오류 발생 (티어 계산은 계속 진행)", e);
+        // }
 
         // 1. 조회 범위 설정 (최근 1시간)
         LocalDateTime now = LocalDateTime.now();
