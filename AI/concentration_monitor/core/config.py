@@ -25,3 +25,9 @@ class Config:
     PENALTY_PHONE = 2.0
     PENALTY_ABSENT = 5.0
     PENALTY_UNKNOWN = 0.5
+
+    # --- Kafka ---
+    KAFKA_BOOTSTRAP_SERVERS = ['kafka:29092'] # Docker internal or localhost:9092
+    KAFKA_TOPIC = 'study-log-topic'
+    LOG_COOLDOWN = 60.0  # Seconds
+
