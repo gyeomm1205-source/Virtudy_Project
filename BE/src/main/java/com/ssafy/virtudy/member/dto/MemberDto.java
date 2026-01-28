@@ -1,5 +1,6 @@
 package com.ssafy.virtudy.member.dto;
 
+import com.ssafy.virtudy.member.domain.Avatar;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import com.ssafy.virtudy.member.domain.Member;
 public class MemberDto {
     private String memberId;
     private String nickName;
-    private String avatarImageUrl;
+    private Avatar avatar;
     private String email;
 
     // TODO 여기에 Member 관련 데이터가 다 들어갈 필요는 없겠지
@@ -23,7 +24,14 @@ public class MemberDto {
                 .memberId(member.getMemberId())
                 .nickName(member.getNickName())
                 .email(member.getEmail())
-                .avatarImageUrl(member.getAvatarImageUrl())
+                .avatar(member.getAvatar())
                 .build();
+    }
+
+    public MemberDto(String memberId, Avatar avatar, String email, String nickName) {
+        this.memberId = memberId;
+        this.avatar = avatar;
+        this.email = email;
+        this.nickName = nickName;
     }
 }

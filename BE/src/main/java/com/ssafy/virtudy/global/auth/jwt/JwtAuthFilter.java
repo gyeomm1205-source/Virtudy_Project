@@ -53,7 +53,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
 
-        // 1. 토큰 유효성 검사
+////         1. 토큰 유효성 검사
         if (token != null && jwtUtil.validateToken(token)) {
 
             // [추가] 2. Redis 블랙리스트 확인

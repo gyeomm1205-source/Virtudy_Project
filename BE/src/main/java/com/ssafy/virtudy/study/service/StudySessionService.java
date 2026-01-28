@@ -30,13 +30,13 @@ import java.util.concurrent.ThreadLocalRandom;
 @Transactional
 public class StudySessionService {
 
-    private final static int MAX_USER = 6;
-
     private final StudySessionRepository studySessionRepository;
     private final StudyRoomRepository studyRoomRepository;
     private final MemberRepository memberRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final LiveKitConfig liveKitConfig;
+
+    private final static int MAX_USER = 6;
 
     public SessionMemberInfoResponse enterRoom(Member member, String roomId) {
         StudyRoom room = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)

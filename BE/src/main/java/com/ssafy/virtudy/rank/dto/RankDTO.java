@@ -1,5 +1,7 @@
 package com.ssafy.virtudy.rank.dto;
 
+import com.ssafy.virtudy.member.domain.Avatar;
+import com.ssafy.virtudy.member.dto.AvatarResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,11 +14,11 @@ public class RankDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Response {
-        private String id;
         private String nickName;
+        private String email;
         private int rank;
         private int score;
-        private String avatarImageUrl;
+        private AvatarResponse avatar;
         private Tier tier;
     }
 
