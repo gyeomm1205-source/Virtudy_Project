@@ -15,7 +15,7 @@ export const lobbyAPI = {
    * GET /api/study-rooms
    */
   getPublicRooms: async () => {
-    return axios.get<RoomData[]>('/study-rooms');
+    return axios.get<RoomData[]>('/api/study-rooms');
   },
 
   /**
@@ -24,7 +24,7 @@ export const lobbyAPI = {
    * - 내가 속한(방장이거나 참여중인) 방 최신순 10개
    */
   getMyRooms: async (userId: string) => {
-    return axios.get<RoomData[]>('/study-rooms/my', {
+    return axios.get<RoomData[]>('/api/study-rooms/my', {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -35,7 +35,7 @@ export const lobbyAPI = {
    * - 성공 시 생성된 RoomData 반환
    */
   createRoom: async (userId: string, data: CreateRoomReq) => {
-    return axios.post<RoomData>('/study-rooms', data, {
+    return axios.post<RoomData>('/api/study-rooms', data, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -45,7 +45,7 @@ export const lobbyAPI = {
    * GET /api/study-rooms/{roomId}
    */
   getRoomDetail: async (roomId: string) => {
-    return axios.get<RoomData>(`/study-rooms/${roomId}`);
+    return axios.get<RoomData>(`/api/study-rooms/${roomId}`);
   },
 
   /**
@@ -53,7 +53,7 @@ export const lobbyAPI = {
    * PATCH /api/study-rooms/{roomId}
    */
   updateRoom: async (userId: string, roomId: string, data: UpdateRoomReq) => {
-    return axios.patch(`/study-rooms/${roomId}`, data, {
+    return axios.patch(`/api/study-rooms/${roomId}`, data, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -63,7 +63,7 @@ export const lobbyAPI = {
    * DELETE /api/study-rooms/{roomId}
    */
   deleteRoom: async (userId: string, roomId: string) => {
-    return axios.delete(`/study-rooms/${roomId}`, {
+    return axios.delete(`/api/study-rooms/${roomId}`, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -73,7 +73,7 @@ export const lobbyAPI = {
    * PATCH /api/study-rooms/favorite/{roomId}
    */
   toggleFavorite: async (userId: string, roomId: string) => {
-    return axios.patch(`/study-rooms/favorite/${roomId}`, {}, {
+    return axios.patch(`/api/study-rooms/favorite/${roomId}`, {}, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
