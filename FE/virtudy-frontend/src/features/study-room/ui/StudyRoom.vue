@@ -1,4 +1,6 @@
-<!-- 화상 채팅 메인 화면 -->
+<!-- Pages의 StudyRoomPage.vue로 변경했습니다. 현재 사용하지 않음 -->
+
+<!-- 화상 채팅 메인 화면
 
 <script setup lang="ts">
 import { ref } from 'vue';
@@ -31,16 +33,16 @@ const handleJoin = async () => {
               const publication = room.localParticipant.getTrackPublication(Track.Source.Camera);
               const localVideoTrack = publication?.track;
 
-              if (localVideoTrack) {
-                const videoEl = document.getElementById('my-video-element') as HTMLVideoElement;
-                if (videoEl) {
-                    localVideoTrack.attach(videoEl);
-                    console.log('내 카메라 연결 완료');
-                  }
-              } else {
-                  console.warn('카메라 트랙을 찾을 수 없습니다.');
+            if (localVideoTrack) {
+              const videoEl = document.getElementById('my-video-element') as HTMLVideoElement;
+            if (videoEl) {
+              localVideoTrack.attach(videoEl);
+              console.log('내 카메라 연결 완료');
               }
+            } else {
+              console.warn('카메라 트랙을 찾을 수 없습니다.');
             }
+        }
         }
     } catch (e) {
         // 이미 useStudyRoom 내부에서 에러 처리됨
@@ -220,4 +222,4 @@ const handleSendChat = () => {
 .messages { flex: 1; border: 1px solid #e9ecef; border-radius: 4px; margin-bottom: 10px; padding: 10px; background: white; overflow-y: auto; }
 .chat-input { display: flex; gap: 5px; }
 .chat-input input { flex: 1; padding: 8px; }
-</style>
+</style> -->

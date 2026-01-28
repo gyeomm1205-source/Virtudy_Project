@@ -77,14 +77,11 @@ export function useLobby() {
       // 입장 API 호출
       const { data } = await lobbyAPI.enterRoom(userId.value, roomId, password);
       
-      // 토큰을 가지고 스터디 룸 페이지로 이동
-      router.push({ name: 'StudyRoom', params: { roomId }, query: { token: data.liveKitToken } });
-      
       // 테스트를 위해 콘솔에 토큰 출력
       console.log('✅ 입장 성공! 토큰:', data.liveKitToken);
       
-      // 실제 라우팅 (라우터 설정이 되어있어야 함)
-      router.push(`/study/${roomId}?token=${data.liveKitToken}`);
+      // 토큰을 가지고 스터디 룸 페이지로 이동
+      router.push({ name: 'StudyRoom', params: { roomId }, query: { token: data.liveKitToken } });
       
     } catch (e: any) {
       handleApiError(e);
