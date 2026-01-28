@@ -7,6 +7,7 @@ import com.ssafy.virtudy.study.domain.StudyLog;
 import com.ssafy.virtudy.study.domain.StudySession;
 import com.ssafy.virtudy.study.dto.StudyLogRequest;
 import com.ssafy.virtudy.study.repository.StudyLogRepository;
+import com.ssafy.virtudy.study.repository.StudyLogBulkRepository;
 import com.ssafy.virtudy.study.repository.StudySessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class StudyLogService {
 
     private final StudyLogRepository studyLogRepository;
+    private final StudyLogBulkRepository studyLogBulkRepository; // [신규] JDBC (저장용)
     private final StudySessionRepository studySessionRepository;
 
     /**
@@ -54,5 +56,40 @@ public class StudyLogService {
         // 4. DB 저장
         studyLogRepository.save(log);
         return log.getId();
+    }
+
+    /**
+     * Kafka Batch Consumer용: 여러 로그를 한 번에 저장합니다.
+     * - JDBC Bulk Insert (batchUpdate)를 사용하여 성능을 최적화했습니다.
+     * - DB URL에 rewriteBatchedStatements=true 옵션이 있어야 실제 Bulk Insert로 동작합니다.
+     *
+     * @param requests 로그 요청 리스트
+     */
+    public void saveBatch(java.util.List<StudyLogRequest> requests) {
+        if (requests == null || requests.isEmpty()) return;
+
+        // 1. DTO -> Entity 변환
+        java.util.List<StudyLog> logs = requests.stream()
+            .map(req -> {
+                 // getReferenceById는 PK(Long)를 요구하므로, String sessionId로는 사용할 수 없습니다.
+                 // 따라서 findBySessionId로 조회합니다. (캐싱 도입 시 최적화 가능)
+                 StudySession session = studySessionRepository.findBySessionId(req.getSessionId())
+                         .orElseThrow(() -> new BaseException(BaseErrorCode.SESSION_NOT_FOUND_ERROR));
+                 
+                 return StudyLog.builder()
+                        // .logId(...) 생략: @Builder.Default로 자동 생성됨
+                        .session(session)
+                        .member(session.getMember())
+                        .eventType(req.getEventType())
+                        .detectedAt(req.getDetectedAt() != null ? req.getDetectedAt() : LocalDateTime.now())
+                        .build();
+            })
+            // 스트림 내부에서 예외 발생 시 전체 중단하지 않으려면 filter/try-catch 처리 필요하나, 
+            // 현재 구조에선 Entity 변환 실패 시 런타임 예외가 터져서 롤백되는 것이 정합성 유지에 나을 수 있음 
+            // 또는 개별 try-catch로 감싸서 유효한 것만 필터링 가능
+            .collect(java.util.stream.Collectors.toList());
+
+        // 2. [수정] JDBC Bulk Insert 호출
+        studyLogBulkRepository.saveAllBatch(logs);
     }
 }

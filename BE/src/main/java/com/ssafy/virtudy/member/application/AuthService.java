@@ -134,6 +134,7 @@ public class AuthService {
 
         // TODO MemberGameStat 도 여기서 초기화해줘야 함
         MemberGameStat memberGameStat = MemberGameStat.builder()
+                .statId(String.valueOf(java.util.UUID.randomUUID()))
                 .member(newMember)
                 .point(0)
                 .totalStudyTime(0)
