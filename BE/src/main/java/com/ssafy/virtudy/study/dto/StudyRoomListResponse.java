@@ -21,10 +21,14 @@ public class StudyRoomListResponse {
     @Schema(description = "현재 참여 인원 수", example = "5")
     private final int currentUser;
 
-    public StudyRoomListResponse(StudyRoom studyRoom, int currentUser) {
+    @Schema(description = "사용자가 해당 스터디방의 방장인지 여부", example = "true")
+    private final boolean isOwner;
+
+    public StudyRoomListResponse(StudyRoom studyRoom, int currentUser, boolean isOwner) {
         this.roomId = studyRoom.getRoomId();
         this.title = studyRoom.getTitle();
         this.type = studyRoom.getType();
         this.currentUser = currentUser;
+        this.isOwner = isOwner;
     }
 }
