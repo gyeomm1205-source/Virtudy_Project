@@ -29,12 +29,13 @@
         </div>
         
         <div class="absolute top-[260px] w-full flex flex-col gap-[10px]">
-          <button class="butter-btn bg-[var(--color-butter)] w-full" @click="randomMatch">
+          <button class="butter-btn bg-[var(--color-butter)] w-full" @click="handleRandomMatch">
             <span class="text-[var(--color-choco)] text-[28px] font-['Xcu'] font-medium leading-none">
               랜덤매칭
             </span>
           </button>
-          <button class="butter-btn bg-[var(--color-butter2)] w-full" @click="createRoom">
+          
+          <button class="butter-btn bg-[var(--color-butter2)] w-full" @click="openCreateModal">
             <span class="text-[var(--color-choco)] text-[28px] font-['Xcu'] font-medium leading-none">
               방만들기
             </span>
@@ -44,8 +45,8 @@
       
       <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px]">
         <RoomList 
-          :rooms="allRooms"
-          @roomClick="onRoomClick"
+          :rooms="displayedRooms"
+          @roomClick="handleRoomClick"
           @filterChange="setFilter"
           @sortChange="setSortBy"
           @search="onSearchInput"
@@ -58,37 +59,48 @@
       <GlobalFooter />
     </div>
 
+    <CreateRoomModal 
+      v-if="showModal" 
+      @close="showModal = false"
+      @success="fetchAllRooms" 
+    />
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import { storeToRefs } from 'pinia';
+
+// ✅ FSD 모듈 import
+import { useAuthStore } from '@/stores/authStore';
+import { useLobby } from '@/features/lobby/logic/useLobby';
+import { lobbyAPI } from '@/features/lobby/api/lobbyAPI'; // 랜덤매칭용
+
+// ✅ UI 컴포넌트 import
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RoomList from '@/shared/ui/RoomList.vue';
-
-const MOCK_MEMBER_ID = 'test-member-001';
-
-interface Room {
-  roomId: string;
-  title: string;
-  type?: string;
-  currentMembers?: number;
-  maxMembers?: number;
-  createdAt?: string;
-}
-
-const emit = defineEmits<{
-  roomClick: [room: Room];
-}>();
+import CreateRoomModal from '../ui/CreateRoomModal.vue'; // 새로 만든 모달
 
 const router = useRouter();
 
-// State
-const allRooms = ref<Room[]>([]);
-const currentFilter = ref<string>('all');
+// 1. Store & Hook 연결
+const authStore = useAuthStore();
+const { userId } = storeToRefs(authStore);
+
+const { 
+  publicRooms, 
+  myRooms, 
+  // isLoading, // 로딩바 필요하면 사용
+  fetchAllRooms, 
+  joinRoom 
+} = useLobby();
+
+// 2. UI 상태 관리
+const showModal = ref(false); // 모달 표시 여부
+const currentFilter = ref<string>('all'); // 'all' | 'my'
 const sortBy = ref<string>('popular');
 const searchQuery = ref<string>('');
 const currentPage = ref<number>(1);
@@ -97,72 +109,43 @@ const ITEMS_PER_PAGE = 6;
 // Methods
 const goBack = () => router.back();
 
-const fetchRooms = async () => {
-  allRooms.value = [];
+// 방 만들기 버튼 클릭 (모달 열기)
+const openCreateModal = () => {
+  if (!userId.value) {
+    alert('로그인이 필요한 서비스입니다.');
+    return;
+  }
+  showModal.value = true;
+};
+
+// 랜덤 매칭
+const handleRandomMatch = async () => {
+  if (!userId.value) {
+    alert('로그인이 필요합니다.');
+    return;
+  }
   try {
-    let response;
-    if (currentFilter.value === 'all') {
-      response = await axios.get('/api/study-rooms/');
-    } else {
-      response = await axios.get('/api/study-rooms/my', {
-        headers: { 'X-MEMBER-ID': MOCK_MEMBER_ID }
-      });
-    }
-    if (response && response.data) {
-      allRooms.value = response.data;
-    }
-  } catch (error) {
-    console.error('방 목록 조회 실패:', error);
-    allRooms.value = [];
+    const { data } = await lobbyAPI.enterRandomRoom(userId.value);
+    // 입장 성공 -> 스터디룸으로 이동 (userId를 사용)
+    router.push(`/study/${data.userId}?token=${data.liveKitToken}`);
+  } catch (e) {
+    console.error(e);
+    alert('입장 가능한 방이 없습니다.');
   }
 };
 
-const filteredRooms = computed(() => {
-  let filtered = [...allRooms.value];
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(room => 
-      room.title?.toLowerCase().includes(query)
-    );
-  }
-  if (sortBy.value === 'popular') {
-    filtered.sort((a, b) => (b.currentMembers || 0) - (a.currentMembers || 0));
-  } else if (sortBy.value === 'latest') {
-    filtered.sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    });
-  }
-  return filtered;
-});
+// 방 클릭 (입장 로직)
+const handleRoomClick = async (room: any) => {
+  // RoomList에서 넘어오는 room 객체의 ID 사용
+  await joinRoom(room.roomId);
+};
 
-const displayedRooms = computed(() => {
-  const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
-  const end = start + ITEMS_PER_PAGE;
-  return filteredRooms.value.slice(start, end);
-});
-
-const totalPages = computed(() => {
-  return Math.max(1, Math.ceil(filteredRooms.value.length / ITEMS_PER_PAGE));
-});
-
-const visiblePages = computed(() => {
-  const pages: number[] = [];
-  const start = Math.max(1, currentPage.value - 2);
-  const end = Math.min(totalPages.value, currentPage.value + 2);
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-  return pages;
-});
-
+// 탭 변경 (전체 <-> 내 스터디)
 const setFilter = (filter: string) => {
-  if (currentFilter.value === filter) return;
   currentFilter.value = filter;
   currentPage.value = 1;
   searchQuery.value = '';
-  fetchRooms();
+  fetchAllRooms(); // 탭 바꿀 때 데이터 갱신
 };
 
 const setSortBy = (sort: string) => {
@@ -175,20 +158,63 @@ const onSearchInput = (query: string) => {
   currentPage.value = 1;
 };
 
-const onRoomClick = (room: Room) => {
-  emit('roomClick', room);
-  router.push(`/study-room/${room.roomId}`);
-};
+// 3. Computed Properties (데이터 가공)
 
-const randomMatch = () => {
-  console.log('랜덤매칭 시작');
-};
+// 현재 탭에 맞는 데이터 소스 선택
+const targetSourceRooms = computed(() => {
+  return currentFilter.value === 'all' ? publicRooms.value : myRooms.value;
+});
 
-const createRoom = () => {
-  router.push('/create-room');
-};
+// 필터링 및 정렬 로직
+const filteredRooms = computed(() => {
+  // 원본 데이터 복사 (type error 방지를 위해 any 캐스팅 혹은 RoomData 타입 호환 확인 필요)
+  let filtered = [...targetSourceRooms.value];
 
+  // 검색
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(room => 
+      room.title?.toLowerCase().includes(query)
+    );
+  }
+
+  // 정렬
+  if (sortBy.value === 'popular') {
+    // API 필드명 currentUser 사용 (기존 currentMembers 대응)
+    filtered.sort((a, b) => (b.currentUser || 0) - (a.currentUser || 0));
+  } else if (sortBy.value === 'latest') {
+    // createdAt 필드가 없으므로 roomId 기반으로 정렬
+    filtered.sort((a, b) => b.roomId.localeCompare(a.roomId));
+  }
+  return filtered;
+});
+
+// 페이지네이션 및 RoomList 컴포넌트 타입 매핑
+const displayedRooms = computed(() => {
+  const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const slicedRooms = filteredRooms.value.slice(start, end);
+  
+  // RoomList 컴포넌트가 요구하는 Room 타입으로 변환
+  return slicedRooms.map(room => ({
+    roomId: room.roomId,
+    title: room.title,
+    currentMembers: room.currentUser,
+    maxMembers: 4, // 기본값으로 설정
+    createdAt: new Date().toISOString() // 현재 시간으로 설정
+  }));
+});
+
+
+
+// 초기 데이터 로드
 onMounted(() => {
-  fetchRooms();
+  if (userId.value) {
+    fetchAllRooms();
+  } else {
+    // 비로그인 상태 처리 (필요시)
+    console.warn('로그인 정보가 없습니다. (게스트 모드)');
+    fetchAllRooms(); // 공개방은 볼 수 있게 할 경우
+  }
 });
 </script>

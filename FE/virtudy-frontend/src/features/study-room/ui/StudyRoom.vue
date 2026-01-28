@@ -27,19 +27,19 @@ const handleJoin = async () => {
             const room = roomManager.getRoom();
             
             if (room && room.localParticipant) {
-               // Use Track.Source.Camera safely
-               const publication = room.localParticipant.getTrackPublication(Track.Source.Camera);
-               const localVideoTrack = publication?.track;
+              // Use Track.Source.Camera safely
+              const publication = room.localParticipant.getTrackPublication(Track.Source.Camera);
+              const localVideoTrack = publication?.track;
 
-               if (localVideoTrack) {
-                   const videoEl = document.getElementById('my-video-element') as HTMLVideoElement;
-                   if (videoEl) {
-                       localVideoTrack.attach(videoEl);
-                       console.log('내 카메라 연결 완료');
-                   }
-               } else {
-                   console.warn('카메라 트랙을 찾을 수 없습니다.');
-               }
+              if (localVideoTrack) {
+                const videoEl = document.getElementById('my-video-element') as HTMLVideoElement;
+                if (videoEl) {
+                    localVideoTrack.attach(videoEl);
+                    console.log('내 카메라 연결 완료');
+                  }
+              } else {
+                  console.warn('카메라 트랙을 찾을 수 없습니다.');
+              }
             }
         }
     } catch (e) {

@@ -5,11 +5,13 @@ import type { RoomData, CreateRoomReq, ApiErrorResponse } from '../types/lobby.t
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
 
-const authStore = useAuthStore();
-const { userId } = storeToRefs(authStore);
+// 사용자 정보 스토어
 
 export function useLobby() {
   const router = useRouter();
+
+  const authStore = useAuthStore();
+  const { userId } = storeToRefs(authStore);
   
   // 상태 (State)
   const publicRooms = ref<RoomData[]>([]); // 전체 방 목록

@@ -1,6 +1,7 @@
 import { Room, RoomEvent, RemoteParticipant, RemoteTrackPublication, RemoteTrack } from 'livekit-client';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import type { st } from 'vue-router/dist/router-CWoNjPRp.mjs';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
 const LIVEKIT_URL = 'ws://127.0.0.1:7880'; // 실제 LiveKit 서버 주소 (로컬 기본값)
@@ -27,21 +28,26 @@ export class RoomManager {
     }
 
     // 1. 통합 연결 함수 (입장 API -> LiveKit 연결 -> 소켓 연결)
-    async joinStudyRoom(roomId: string, userId: string) {
+    async joinStudyRoom(roomId: string, userId: string, token?: string) {
         this.roomId = roomId;
-        this.userId = userId; // [추가] 멤버 ID 저장
+        this.userId = userId; // [추가] user ID 저장
 
         try {
             // [수정] 프론트엔드 로컬 토큰 생성기 사용 (백엔드 미구현 대응)
+            // 백엔드 구현완료: 기존 LocalTokenGenerator 로직 삭제하고, 인자로 받은 token 사용
             const { LocalTokenGenerator } = await import('../../lib/LocalTokenGenerator');
             const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
 
-            if (!liveKitToken) {
-                throw new Error('LiveKit 토큰을 생성하지 못했습니다.');
+            // 토큰 검사
+            if (!token) {
+                // 만약 토큰이 없다면 에러를 띄움 (백엔드가 주기 때문)
+                throw new Error('LiveKit 입장 토큰이 없습니다.');
             }
 
+            console.log(`[RoomManager] 토큰 확인 완료. LiveKit 연결을 시작합니다.`);
+
             // 1-2. LiveKit 연결 (미디어 플레인)
-            await this.connectLiveKit(liveKitToken);
+            await this.connectLiveKit(token);
 
             // 1-3. WebSocket 연결 (컨트롤 플레인)
             this.connectWebSocket();
