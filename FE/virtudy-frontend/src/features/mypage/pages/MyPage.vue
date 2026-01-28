@@ -34,7 +34,7 @@
         <button 
           @click="activeTab = 'profile'"
           :class="[
-            'w-full px-[2rem] py-[1.25rem] border-2 border-[var(--color-choco)] border-solid rounded-[0.125rem] shadow-[4px_4px_0px_0px_var(--color-choco)] cursor-pointer transition-colors',
+            'w-full px-[2rem] py-[1.25rem] border-2 border-[var(--color-choco)] border-solid rounded-[0.125rem] shadow-[4px_4px_0px_0px_var(--color-choco)] cursor-pointer transition-transform hover:scale-105',
             activeTab === 'profile' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-butter2)]'
           ]"
         >
@@ -43,9 +43,9 @@
           </span>
         </button>
         <button 
-          @click="activeTab = 'report'"
+          @click="goToReport"
           :class="[
-            'w-full px-[2rem] py-[1.25rem] border-2 border-[var(--color-choco)] border-solid rounded-[0.125rem] shadow-[4px_4px_0px_0px_var(--color-choco)] cursor-pointer transition-colors',
+            'w-full px-[2rem] py-[1.25rem] border-2 border-[var(--color-choco)] border-solid rounded-[0.125rem] shadow-[4px_4px_0px_0px_var(--color-choco)] cursor-pointer transition-transform hover:scale-105',
             activeTab === 'report' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-butter2)]'
           ]"
         >
@@ -122,14 +122,20 @@
           <!-- 공부시간/집중도 카드 -->
           <div class="mb-[1.25rem]">
             <MiniReport 
-              :studyTime="userInfo?.pureStudyTime" 
-              :focusing="userInfo?.focusDepth" 
+              :studyTime="userInfo?.dailyPureStudyTime" 
+              :focusing="userInfo?.dailyFocusDepth" 
             />
           </div>
           
           <!-- 오각형 그래프 -->
           <div class="mb-[1.25rem]">
-            <PentagonChart />
+            <PentagonChart 
+            :endurance="reportData?.endurance || 0"
+            :focusDepth="reportData?.focusDepth || 0"
+            :regularity="reportData?.regularity || 0"
+            :stability="reportData?.stability || 0"
+            :willPower="reportData?.willPower || 0"
+          />
           </div>
         </div>
         
@@ -165,6 +171,7 @@ import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import MiniReport from '@/shared/ui/MiniReport.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';  
 import ProfileEditModal from '../ui/ProfileEditModal.vue';
+import { useWeeklyReport } from  '@/features/report/logic/useWeeklyReport';
 
 const router = useRouter();
 const { 
@@ -172,8 +179,15 @@ const {
   openEditModal, closeEditModal, submitEdit 
 } = useMyPage();
 
+// useWeeklyReport 내부의 onMounted가 실행되면서 자동으로 '지난주' 데이터를 불러옵니다.
+const { reportData } = useWeeklyReport();
 const goBack = () => {
   router.push({ name: 'user' });
+};
+
+const goToReport = () => {
+  activeTab.value = 'report';
+  router.push({ name: 'report' });
 };
 </script>
 

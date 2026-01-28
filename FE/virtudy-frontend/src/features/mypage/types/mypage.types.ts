@@ -16,8 +16,8 @@ export interface UserProfileResponse {
   jobType: string;
   tierScore?: number; // 티어 점수
   favoriteRoomTitle?: string; //최애 스터디방 제목
-  pureStudyTime?: number; // 일일 순공부시간 (분)
-  focusDepth?: number; // 집중도 (%)
+  dailyPureStudyTime?: number; // 일일 순공부시간 (분)
+  dailyFocusDepth?: number; // 집중도 (%)
   avatarImageUrl?: string; // 기존 이미지 기반 아바타 호환용
 }
 
