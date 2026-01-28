@@ -7,7 +7,7 @@ import UserPage from '@/features/main/pages/UserPage.vue';
 import OAuthCallbackPage from '@/features/auth/pages/OAuthCallbackPage.vue'; // 콜백 처리를 위한 페이지
 import TermsOfServicePage from '@/features/onboarding/pages/TermsOfServicePage.vue';
 import OnboardingSurveyPage from '@/features/onboarding/pages/OnboardingSurveyView.vue';
-import StudyRoom from '@/features/study-room/ui/StudyRoom.vue';
+import StudyRoomPage from '@/features/study-room/pages/StudyRoomPage.vue';
 import IntroductionPage from '@/features/introduction/pages/IntroductionPage.vue';
 import RankingPage from '@/features/ranking/pages/RankingPage.vue';
 import MyPage from '@/features/mypage/pages/MyPage.vue';
@@ -20,7 +20,12 @@ const router = createRouter({
     {
       path: '/study',
       name: 'study',
-      component: StudyRoom
+      component: StudyRoomPage
+    },
+    {
+      path: '/study/:roomId',
+      name: 'StudyRoom',
+      component: StudyRoomPage
     },
     {
       path: '/',
