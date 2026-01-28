@@ -1,5 +1,15 @@
+export interface AvatarConfig {
+  hairFront: string;
+  hairBack: string;
+  hairColor: string;
+  eyes: string;
+  glasses: string;
+  outfit: string;
+  clothesColor: string;
+}
+
 export interface UserProfileResponse {
-  avatarImageUrl: string;
+  avatar: AvatarConfig;
   email: string;
   nickName: string;
   tier: string;
@@ -8,6 +18,7 @@ export interface UserProfileResponse {
   favoriteRoomTitle?: string; //최애 스터디방 제목
   pureStudyTime?: number; // 일일 순공부시간 (분)
   focusDepth?: number; // 집중도 (%)
+  avatarImageUrl?: string; // 기존 이미지 기반 아바타 호환용
 }
 
 export interface ProfileUpdateRequest {

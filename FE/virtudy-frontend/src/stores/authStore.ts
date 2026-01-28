@@ -2,12 +2,23 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '@/shared/api/axios.config'; // 설정된 axios 인스턴스
 
+interface AvatarConfig {
+  hairFront: string;
+  hairBack: string;
+  hairColor: string;
+  eyes: string;
+  glasses: string;
+  outfit: string;
+  clothesColor: string;
+}
+
 interface User {
   nickName: string;
   email: string;       
-  avatarImageUrl: string; 
   jobType: string;        
   tier: string;           
+  avatar?: AvatarConfig;
+  avatarImageUrl?: string; 
 }
 
 export const useAuthStore = defineStore('auth', () => {
