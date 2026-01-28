@@ -1,4 +1,4 @@
-package com.ssafy.virtudy.common.config;
+package com.ssafy.virtudy.global.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.EnableCaching;

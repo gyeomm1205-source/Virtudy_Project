@@ -1,12 +1,11 @@
 package com.ssafy.virtudy.rank.service;
 
+import com.ssafy.virtudy.global.aop.LogExecutionTime;
 import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
 import com.ssafy.virtudy.global.event.exception.BaseException;
-import com.ssafy.virtudy.member.domain.Avatar;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.domain.MemberGameStat;
 import com.ssafy.virtudy.member.dto.AvatarResponse;
-import com.ssafy.virtudy.member.dto.MemberDto;
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.rank.dto.RankDTO;
@@ -17,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.function.Function;
@@ -79,7 +77,6 @@ public class RankService {
             if (member == null) continue; // 혹은 기본값 처리
 
             responseList.add(RankDTO.Response.builder()
-                    .id(userId)
                     .rank(currentRank++)
                     .nickName(member.getNickName()) // ✅ DB에서 가져온 닉네임 세팅
                     .email(member.getEmail())       // ✅ 필요한 경우 이메일도 세팅
@@ -118,7 +115,6 @@ public class RankService {
             return null;
         }
         return RankDTO.Response.builder()
-                .id(userId)
                 .nickName(nickName)
                 .rank(rankIndex.intValue() + 1)
                 .score(scoreVal.intValue())
@@ -133,6 +129,7 @@ public class RankService {
      * @param type
      * @return
      */
+    @LogExecutionTime
     public List<RankDTO.Response> getUserRankByNickName(String name, String type) {
         Long rankIndex = null;
         Double scoreVal = 0.0;
@@ -159,7 +156,6 @@ public class RankService {
                 avatarDto = AvatarResponse.from(tempMember.getAvatar());
                 responseList.add(
                         RankDTO.Response.builder()
-                                .id(userId)
                                 .nickName(nickName)
                                 .email(tempMember.getEmail())
                                 .rank(rankIndex.intValue() + 1)
@@ -189,7 +185,6 @@ public class RankService {
                 avatarDto = AvatarResponse.from(tempStudyRoom.getOwner().getAvatar());
                 responseList.add(
                         RankDTO.Response.builder()
-                                .id(userId)
                                 .nickName(nickName)
                                 .email(tempStudyRoom.getOwner().getEmail())
                                 .avatar(avatarDto)

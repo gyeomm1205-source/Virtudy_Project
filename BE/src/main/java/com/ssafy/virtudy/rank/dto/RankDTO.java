@@ -14,7 +14,6 @@ public class RankDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Response {
-        private String id;
         private String nickName;
         private String email;
         private int rank;
