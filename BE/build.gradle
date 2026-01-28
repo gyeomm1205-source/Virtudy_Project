@@ -47,6 +47,13 @@ dependencies {
 	// WebSocket
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
+	// Aop
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+	// Prometheus
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+
 	// JavaFaker => 실제 사람 이름과 같은 데이터 만들 수 있음.
 	implementation 'net.datafaker:datafaker:2.1.0'
 	testImplementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
