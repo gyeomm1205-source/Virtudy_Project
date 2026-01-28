@@ -1,79 +1,106 @@
 <template>
-  <div class="min-h-screen bg-[var(--color-cream2)] relative w-full">
-    <!-- Navigation -->
+  <div class="min-h-screen bg-[var(--color-cream2)] relative w-full flex flex-col">
     <GlobalNavBar />
     
-    <!-- Main Content Area -->
-    <div class="relative pt-[4.688rem] pb-[8rem] min-h-[calc(100vh-8rem)]">
-      <!-- 왼쪽 - 프로필과 메뉴 -->
-      <div class="absolute left-[calc(8.33%+6.813rem)] top-[6.625rem] h-[39.688rem] w-[29.563rem]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
-        <div class="flex flex-col gap-0">
-          <!-- 프로필 영역 -->
+    <div class="flex-1 flex justify-center items-start pt-[8rem] pb-[8rem] px-[1rem]">
+      
+      <div class="flex gap-[2rem] w-full max-w-[60rem]">
+        
+        <div class="w-[29.5rem] flex flex-col gap-[1rem]">
           <UserProfile 
-            :user-nickname="userInfo.nickname"
-            :user-score="userInfo.score"
-            :user-tier="userInfo.tier"
-            :favorite-study="userInfo.favoriteStudy"
-            :study-hours="userInfo.studyHours"
-            :concentration="userInfo.concentration"
+            :nick-name="userInfo.nickName"
+            :tier-score="userInfo.tierScore"
+            :tier="userInfo.tier"
+            :favorite-room-title="userInfo.favoriteRoomTitle"
+            :pure-study-time="userInfo.pureStudyTime"
+            :focus-depth="userInfo.focusDepth"
+            :avatar-image-url="userInfo.avatarImageUrl"
           />
           
-          <!-- 메뉴 바 -->
           <StudyMenu 
             @random-match="handleRandomMatch"
             @create-room="handleCreateRoom"
             @show-room-list="handleShowRoomList"
           />
         </div>
-      </div>
-      
-      <!-- 오른쪽 - 랭킹 -->
-      <div class="absolute left-[calc(50%+1.125rem)] top-[6.625rem] h-[39.688rem] w-[29.563rem]">
-        <RankingSectionMini 
-          :personal-ranking="personalRanking"
-          :team-ranking="teamRanking"
-        />
+        
+        <div class="w-[29.5rem]">
+          <RankingSectionMini 
+            :private-top5="privateTop5"
+            :team-top5="teamTop5"
+            :is-loading="isLoading"
+          />
+        </div>
       </div>
     </div>
     
-    <!-- Footer -->
     <GlobalFooter />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+/* 스크립트 부분은 기존과 동일하므로 그대로 두시면 됩니다 */
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore'; 
+import { useMainRanking } from '@/features/ranking/logic/useMainRanking';
+import { getMyProfile } from '@/features/mypage/api/mypageApi';
+import type { UserProfileResponse } from '@/features/mypage/types/mypage.types';
+
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
-import UserProfile from '@/shared/ui/UserProfile.vue';
+import UserProfile from '@/shared/ui/UserProfile.vue'; 
 import StudyMenu from '@/shared/ui/StudyMenu.vue';
 import RankingSectionMini from '@/shared/ui/RankingSectionMini.vue';
-import { useMainRanking } from '@/features/ranking/logic/useMainRanking';
 
 const router = useRouter();
+const authStore = useAuthStore();
 
-// 유저 정보 (추후 API나 스토어에서 가져올 수 있음)
-const userInfo = ref({
-  nickname: "닉네임",
-  score: "000",
-  tier: "티어명",
-  favoriteStudy: "<최애스터디이름>",
-  studyHours: "0",
-  concentration: "00",
-  profileImage: null,
+const userInfo = ref<UserProfileResponse>({
+  nickName: "닉네임",
+  email: "",
+  jobType: "",
+  tier: "BRONZE",
+  avatar: {
+    hairFront: "",
+    hairBack: "",
+    hairColor: "",
+    eyes: "",
+    glasses: "",
+    outfit: "",
+    clothesColor: "",
+  },
+  tierScore: 0,
+  favoriteRoomTitle: "최애스터디",
+  pureStudyTime: 0,
+  focusDepth: 0,
+  avatarImageUrl: "",
 });
 
-// 랭킹 데이터 가져오기
-
-
-// 로직 훅 실행. 이제 훅 자체는 API를 호출하지 않습니다.
 const { privateTop5, teamTop5, isLoading, fetchTopRanks } = useMainRanking();
-import { onMounted } from 'vue';
 
-// onMounted 훅을 사용해, 컴포넌트가 완전히 준비된 후 API를 호출합니다.
-onMounted(() => {
+const handleRandomMatch = () => console.log("랜덤 매칭");
+const handleCreateRoom = () => console.log("방 만들기");
+const handleShowRoomList = () => console.log("전체 목록");
+
+onMounted(async () => {
   fetchTopRanks();
+  try {
+    const data = await getMyProfile();
+    userInfo.value = data; 
+    
+    if (authStore.userInfo) {
+       authStore.setUserInfo({
+         ...authStore.userInfo,
+         nickName: data.nickName,
+         avatar: data.avatar,
+         avatarImageUrl: data.avatarImageUrl ?? authStore.userInfo.avatarImageUrl,
+       });
+    }
+  } catch (error) {
+    if (authStore.userInfo) {
+      userInfo.value.nickName = authStore.userInfo.nickName;
+    }
+  }
 });
 </script>
-

@@ -3,9 +3,6 @@
     <!-- Navigation -->
     <GlobalNavBar />
     
-    <!-- Footer -->
-    <GlobalFooter />
-    
     <!-- Main Content -->
     <div class="absolute flex flex-col gap-[80px] h-[419px] items-center justify-center left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[844px]">
       <!-- Page Title -->
@@ -32,6 +29,7 @@
       </button>
     </div>
   </div>
+  <GlobalFooter class="absolute bottom-0 w-full left-0" />
 </template>
 
 <script setup lang="ts">

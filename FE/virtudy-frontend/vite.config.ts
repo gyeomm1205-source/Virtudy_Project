@@ -21,13 +21,15 @@ export default defineConfig({
       '/api': {
         target: 'http://i14a703.p.ssafy.io:8080',
         changeOrigin: true,
+        secure: false,
         // 백엔드 API 경로가 /api로 시작하므로 rewrite는 하지 않습니다.
       },
       // [추가] WebSocket 요청도 백엔드로 프록시 (CORS 해결)
       '/ws': {
-        target: 'http://i14a703.p.ssafy.io:8080', // Interceptor가 8081을 요구하므로 8081로 연결
+        target: 'http://i14a703.p.ssafy.io:8081', // Interceptor가 8081을 요구하므로 8081로 연결
         changeOrigin: true,
-        ws: true
+        ws: true,
+        secure: false
       }
     }
   }

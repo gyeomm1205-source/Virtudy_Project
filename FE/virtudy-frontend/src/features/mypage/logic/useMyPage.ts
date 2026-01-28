@@ -23,21 +23,15 @@ export const useMyPage = () => {
     isLoading.value = true;
     try {
       const data = await getMyProfile();
-      // 백엔드가 준 이름으로 변경
-      userInfo.value = {
-        ...data,
-        tierScore: 1250, // 임시 점수
-        favoriteRoomTitle: '최애스터디룸', // 임시 방이름
-        pureStudyTime: 180, // 일일 순공부시간
-        focusDepth: 85, // 임시 집중도 (%)
-      };
+      userInfo.value = data;
       
       // 스토어 정보도 최신화 (헤더 등 전역 반영을 위해)
       if (authStore.userInfo) {
         authStore.setUserInfo({ 
           ...authStore.userInfo, 
           nickName: data.nickName,
-          // avatarImageUrl 등이 바뀌었다면 여기서 업데이트
+          avatar: data.avatar,
+          avatarImageUrl: data.avatarImageUrl ?? authStore.userInfo.avatarImageUrl,
         });
       }
     } catch (error) {
