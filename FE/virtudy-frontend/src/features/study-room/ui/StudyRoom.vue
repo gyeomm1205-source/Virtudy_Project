@@ -7,19 +7,19 @@ import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
 
 const roomIdInput = ref('room-1');
-const memberIdInput = ref('member-' + Math.floor(Math.random() * 1000));
+const userIdInput = ref('member-' + Math.floor(Math.random() * 1000));
 const chatMessage = ref('');
 
 const { joinRoom, leaveRoom, sendChat, isConnected, error, messages, remoteTracks } = useStudyRoom();
 
 // 방 입장 핸들러
 const handleJoin = async () => {
-    if (!roomIdInput.value || !memberIdInput.value) {
+    if (!roomIdInput.value || !userIdInput.value) {
         alert('방 번호와 멤버 ID를 입력해주세요.');
         return;
     }
     try {
-        await joinRoom(roomIdInput.value, memberIdInput.value);
+        await joinRoom(roomIdInput.value, userIdInput.value);
 
         // 카메라 트랙 연결 (RoomManager가 video: true로 연결했다는 가정)
         if (isConnected.value) {
@@ -73,7 +73,7 @@ const handleSendChat = () => {
             </div>
             <div class="input-group">
                 <label>내 아이디:</label>
-                <input v-model="memberIdInput" type="text" placeholder="예: user-1" />
+                <input v-model="userIdInput" type="text" placeholder="예: user-1" />
             </div>
             <button @click="handleJoin" class="btn primary">입장하기</button>
             <p v-if="error" class="error-msg">{{ error }}</p>
@@ -94,7 +94,7 @@ const handleSendChat = () => {
                         <!-- 내 카메라 화면 -->
                         <div class="my-camera">
                             <video id="my-video-element" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
-                            <span class="label">나 ({{ memberIdInput }})</span>
+                            <span class="label">나 ({{ userIdInput }})</span>
                         </div>
 
                         <!-- 상대방 카메라 화면 -->
@@ -118,7 +118,7 @@ const handleSendChat = () => {
                             <p class="sys-msg">채팅방에 입장했습니다.</p>
                             <div v-for="(msg, index) in messages" :key="index" class="msg-item">
                                 <span v-if="msg.type === 'CHAT'">
-                                    <strong>{{ msg.sender === memberIdInput ? '나' : msg.sender }}:</strong> {{ msg.data?.message || msg.message }}
+                                    <strong>{{ msg.sender === userIdInput ? '나' : msg.sender }}:</strong> {{ msg.data?.message || msg.message }}
                                 </span>
                                 <span v-else class="sys-msg">
                                     {{ msg.type }} 이벤트 발생

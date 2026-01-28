@@ -10,7 +10,7 @@ export function useStudyRoom() {
     const messages = ref<any[]>([]);
     const remoteTracks = ref<{ participantId: string; track: any }[]>([]);
 
-    const joinRoom = async (roomId: string, memberId: string) => {
+    const joinRoom = async (roomId: string, userId: string) => {
         try {
             isConnected.value = false;
             error.value = null;
@@ -43,7 +43,7 @@ export function useStudyRoom() {
                 );
             });
 
-            await roomManager.joinStudyRoom(roomId, memberId);
+            await roomManager.joinStudyRoom(roomId, userId);
 
             isConnected.value = true;
         } catch (e: any) {

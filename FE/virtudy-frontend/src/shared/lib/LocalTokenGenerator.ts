@@ -3,13 +3,13 @@ export class LocalTokenGenerator {
     private static API_KEY = 'devkey';
     private static API_SECRET = 'secret';
 
-    static async generateToken(roomId: string, memberId: string): Promise<string> {
+    static async generateToken(roomId: string, userId: string): Promise<string> {
         const header = { alg: 'HS256', typ: 'JWT' };
 
         // Payload structure ensuring video permissions
         const payload = {
             iss: this.API_KEY,
-            sub: memberId,
+            sub: userId,
             video: {
                 room: roomId,
                 roomJoin: true,

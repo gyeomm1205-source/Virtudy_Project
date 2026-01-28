@@ -78,7 +78,7 @@ export interface EnterRoomReq {
  * - /api/sessions/enter/random
  */
 export interface EnterSessionRes {
-  memberId: string;
+  userId: string;
   nickName: string;
   avatar: AvatarConfig;
   liveKitToken: string;
