@@ -1,6 +1,6 @@
 package com.ssafy.virtudy.study.domain;
 
-import com.ssafy.virtudy.common.BaseTimeEntity;
+import com.ssafy.virtudy.global.BaseTimeEntity;
 import com.ssafy.virtudy.member.domain.Member;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -51,9 +51,9 @@ public class StudyRoom extends BaseTimeEntity {
     private RoomStatType status = RoomStatType.OPEN;
 
     public void update(String title, String password, String description) {
-        this.title = title;
-        this.password = password;
-        this.description = description;
+        if (title != null) this.title = title;
+        if (password != null) this.password = password;
+        if (description != null) this.description = description;
     }
 
     public void close() {

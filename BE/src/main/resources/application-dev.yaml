@@ -5,6 +5,25 @@ spring:
   config:
     activate:
       on-profile: dev
+  # [추가] Kafka 설정
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS} # 환경변수 없으면 기본값 사용
+    consumer:
+      group-id: virtudy-group
+      auto-offset-reset: earliest
+      max-poll-records: 500 # 한 번에 가져올 최대 개수
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*" # 모든 패키지의 DTO 허용
+        # [필수 추가] 이게 없으면 AI 서버가 보낸 메시지를 읽을 때 에러가 납니다!
+        spring.json.value.default.type: "com.ssafy.virtudy.study.dto.StudyLogRequest"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    listener:
+      type: batch # 배치 모드 활성화
+
 
   data:
     redis:
@@ -19,7 +38,7 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DEV_DB_HOST}:${DEV_DB_PORT}/${DEV_DB_NAME}?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${DEV_DB_HOST}:${DEV_DB_PORT}/${DEV_DB_NAME}?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
     username: ${DEV_DB_USER}
     password: ${DEV_DB_PASSWORD}
 
@@ -29,7 +48,7 @@ server:
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret-id: ${KAKAO_CLIENT_SECRET_ID}
-  redirect-uri: "http://localhost:3030/login/callback/kakao"
+  redirect-uri: "http://i14a703.p.ssafy.io:80/login/callback/kakao"
   token-uri: "https://kauth.kakao.com/oauth/token"
   user-info-uri: "https://kapi.kakao.com/v2/user/me"
 
@@ -43,3 +62,13 @@ livekit:
   api:
     key: ${LIVEKIT_API_KEY}
     secret: ${LIVEKIT_API_SECRET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+
+  metrics:
+    tags:
+      application: ${METRICS_APPLICATION}

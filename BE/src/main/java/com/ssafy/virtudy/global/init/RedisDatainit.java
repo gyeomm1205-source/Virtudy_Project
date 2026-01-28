@@ -1,4 +1,4 @@
-package com.ssafy.virtudy.common.init;
+package com.ssafy.virtudy.global.init;
 
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.domain.MemberGameStat;
@@ -60,6 +60,7 @@ public class RedisDatainit implements ApplicationRunner {
                     MemberGameStatDto.RedisResponse.builder()
                     .id(memberGameStat.getMember().getMemberId())
                     .nickName(memberGameStat.getMember().getNickName())
+                    .email(memberGameStat.getMember().getEmail())
                     .tierScore(memberGameStat.getTierScore())
                     .build()
             );
@@ -72,6 +73,7 @@ public class RedisDatainit implements ApplicationRunner {
                     MemberGameStatDto.RedisResponse.builder()
                             .id(studyRoom.getRoomId())
                             .nickName(studyRoom.getTitle())
+                            .email(studyRoom.getOwner().getEmail())
                             .tierScore(studyRoom.getRoomTierScore())
                             .build()
             );

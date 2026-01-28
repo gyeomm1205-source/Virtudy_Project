@@ -1,6 +1,7 @@
 // 방 목록 조회, 방 생성 API (CRUD)
 
-import axios from 'axios';
+// import axios from 'axios';
+import api from '@/shared/api/axios.config'; // ✅ 설정된 axios instance 사용
 import type { 
   RoomData, 
   CreateRoomReq, 
@@ -15,7 +16,7 @@ export const lobbyAPI = {
    * GET /api/study-rooms
    */
   getPublicRooms: async () => {
-    return axios.get<RoomData[]>('/api/study-rooms');
+    return api.get<RoomData[]>('/api/study-rooms');
   },
 
   /**
@@ -24,7 +25,7 @@ export const lobbyAPI = {
    * - 내가 속한(방장이거나 참여중인) 방 최신순 10개
    */
   getMyRooms: async (userId: string) => {
-    return axios.get<RoomData[]>('/api/study-rooms/my', {
+    return api.get<RoomData[]>('/api/study-rooms/my', {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -35,7 +36,7 @@ export const lobbyAPI = {
    * - 성공 시 생성된 RoomData 반환
    */
   createRoom: async (userId: string, data: CreateRoomReq) => {
-    return axios.post<RoomData>('/api/study-rooms', data, {
+    return api.post<RoomData>('/api/study-rooms', data, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -45,7 +46,7 @@ export const lobbyAPI = {
    * GET /api/study-rooms/{roomId}
    */
   getRoomDetail: async (roomId: string) => {
-    return axios.get<RoomData>(`/api/study-rooms/${roomId}`);
+    return api.get<RoomData>(`/api/study-rooms/${roomId}`);
   },
 
   /**
@@ -53,7 +54,7 @@ export const lobbyAPI = {
    * PATCH /api/study-rooms/{roomId}
    */
   updateRoom: async (userId: string, roomId: string, data: UpdateRoomReq) => {
-    return axios.patch(`/api/study-rooms/${roomId}`, data, {
+    return api.patch(`/api/study-rooms/${roomId}`, data, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -63,7 +64,7 @@ export const lobbyAPI = {
    * DELETE /api/study-rooms/{roomId}
    */
   deleteRoom: async (userId: string, roomId: string) => {
-    return axios.delete(`/api/study-rooms/${roomId}`, {
+    return api.delete(`/api/study-rooms/${roomId}`, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -73,7 +74,7 @@ export const lobbyAPI = {
    * PATCH /api/study-rooms/favorite/{roomId}
    */
   toggleFavorite: async (userId: string, roomId: string) => {
-    return axios.patch(`/api/study-rooms/favorite/${roomId}`, {}, {
+    return api.patch(`/api/study-rooms/favorite/${roomId}`, {}, {
       headers: { 'X-MEMBER-ID': userId }
     });
   },
@@ -90,7 +91,7 @@ export const lobbyAPI = {
     // Body에 비밀번호를 담아서 보냄 (EnterRoomReq 구조 맞춤)
     const body: EnterRoomReq = { password };
     
-    return axios.post<EnterSessionRes>(
+    return api.post<EnterSessionRes>(
       `/sessions/enter/${roomId}`, 
       body, 
       { headers: { 'X-MEMBER-ID': userId } }
@@ -102,7 +103,7 @@ export const lobbyAPI = {
    * POST /api/sessions/enter/random
    */
   enterRandomRoom: async (userId: string) => {
-    return axios.post<EnterSessionRes>(
+    return api.post<EnterSessionRes>(
       '/sessions/enter/random', 
       {}, 
       { headers: { 'X-MEMBER-ID': userId } }

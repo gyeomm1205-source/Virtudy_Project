@@ -19,16 +19,16 @@ export default defineConfig({
     proxy: {
       // 브라우저에서 /api로 시작하는 요청을 보내면 백엔드 서버(80)로 전달합니다.
       '/api': {
-        target: 'http://i14a703.p.ssafy.io:80',
-        // target: 'http://i14a703.p.ssafy.io:8080', // 로컬 백엔드 테스트용
+        // target: 'http://i14a703.p.ssafy.io:80',
+        target: 'http://i14a703.p.ssafy.io:8080', // 로컬 백엔드 테스트용
         changeOrigin: true,
         secure: false,
         // 백엔드 API 경로가 /api로 시작하므로 rewrite는 하지 않습니다.
       },
       // [추가] WebSocket 요청도 백엔드로 프록시 (CORS 해결)
       '/ws': {
-        target: 'http://i14a703.p.ssafy.io:80',
-        // target: 'http://i14a703.p.ssafy.io:8081', // Interceptor가 8081을 요구하므로 8081로 연결
+        // target: 'http://i14a703.p.ssafy.io:80',
+        target: 'http://i14a703.p.ssafy.io:8081', // Interceptor가 8081을 요구하므로 8081로 연결
         changeOrigin: true,
         ws: true,
         secure: false
