@@ -21,11 +21,7 @@
       
       <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px]">
         <div class="absolute left-[54px] top-[83px] w-[146px] h-[146px] rounded-full overflow-hidden border-4 border-[var(--color-choco)]">
-          <img 
-            src="http://localhost:3845/assets/ae7ca0939b29738c16aee5cf86953e893d60c594.svg"
-            alt="프로필 사진"
-            class="w-full h-full object-cover"
-          />
+          프로필 사진
         </div>
         
         <div class="absolute top-[260px] w-full flex flex-col gap-[10px]">
