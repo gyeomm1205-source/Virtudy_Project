@@ -11,6 +11,7 @@ public class MemberGameStatDto {
     public static class RedisResponse {
         private String id; // 밖으로 도는 거 ㄱㄱ UUID
         private String nickName;
+        private String email;
         private int tierScore;
     }
 }

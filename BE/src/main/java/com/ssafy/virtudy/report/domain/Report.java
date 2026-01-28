@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -13,7 +12,7 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA 필수: 기본 생성자
 public class Report {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // mysql의 auto_inc 사용하기 위함
     private Long id; // PK
@@ -24,9 +23,18 @@ public class Report {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "MEMBER_ID")
     private Member member; // FK
+    
+    // TODO 집중도는 퍼센트로 계산되고 있음. 
+    // 집중력 기반으로 백분위 계산하면 됨
 
-    @Column(nullable = false, updatable = false)
-    private LocalDate reportDate;
+    @Column(nullable = false)
+    private LocalDate reportDate; // 리포트 기준 날짜 (그 주의 월요일)
+
+    @Column(nullable = false)
+    private int focusDepthPercentage = 0; // 집중도 (백분위)
+
+    @Column(nullable = false)
+    private int avgStudyTime = 0; // 평균 공부시간 
 
     @Column(nullable = false)
     private int endurance = 0; // 지구력
@@ -56,13 +64,15 @@ public class Report {
     private String distractionPatternTime; // 딴짓(폰/이탈) 빈번 시간대
 
     @Builder
-    public Report(Member member, LocalDate reportDate,
+    public Report(Member member, LocalDate reportDate, int focusDepthPercentage, int avgStudyTime,
                   int endurance, int focusDepth, int regularity,
                   int stability, int willPower, String aiComment,
                   int maxFocusTime, String sleepVulnerableTime, String distractionPatternTime) {
         this.reportId = UUID.randomUUID().toString();
         this.member = member;
         this.reportDate = reportDate;
+        this.focusDepthPercentage = focusDepthPercentage;
+        this.avgStudyTime = avgStudyTime;
         this.endurance = endurance;
         this.focusDepth = focusDepth;
         this.regularity = regularity;
