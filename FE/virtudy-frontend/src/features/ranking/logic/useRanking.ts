@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { getMyRank, getRankList, searchRank } from '../api/rankingApi';
 import type { RankItem, RankType, MyRankInfo } from '../types/ranking.types';
+import { useAuthStore } from '@/stores/authStore';
 
 export const useRanking = () => {
   // --- 상태 (State) ---
@@ -22,6 +23,10 @@ export const useRanking = () => {
       myRankInfo.value = await getMyRank(rankType.value);
     } catch (e) {
       console.error(e);
+      // [수정] 500 에러 등 실패 시 콘솔만 찍고 myRankInfo를 null로 유지
+      // 이렇게 해야 화면에서 데이터 없음을 인지하고 대체 텍스트를 띄워줄 수 있음
+      console.warn("신규 유저이거나 순위 데이터가 없습니다.", e);
+      myRankInfo.value = null;
     }
   };
 
