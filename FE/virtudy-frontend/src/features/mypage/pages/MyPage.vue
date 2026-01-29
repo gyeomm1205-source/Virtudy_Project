@@ -102,7 +102,7 @@
           
           <!-- 최애 스터디 -->
           <p class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none">
-            &lt;{{ userInfo?.favoriteRoomTitle}}&gt;
+            &lt;{{ userInfo?.favoriteRoomTitle || '최애 스터디 없음' }}&gt;
           </p>
         </div>
 
