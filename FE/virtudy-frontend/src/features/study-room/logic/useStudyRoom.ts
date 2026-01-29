@@ -1,7 +1,9 @@
 // WebRTC 연결, 미디어 제어 로직
 
-import { ref, onUnmounted } from 'vue';
-import { RoomManager } from '@/core/managers/RoomManager';
+import { computed, ref, onUnmounted } from 'vue';
+import { RoomManager } from '@/shared/api/livekit/RoomManager';
+
+type FocusEventType = 'FOCUS' | 'SLEEP' | 'PHONE' | 'AWAY';
 
 export function useStudyRoom() {
     const roomManager = RoomManager.getInstance();
@@ -9,6 +11,9 @@ export function useStudyRoom() {
     const error = ref<string | null>(null);
     const messages = ref<any[]>([]);
     const remoteTracks = ref<{ participantId: string; track: any }[]>([]);
+    const focusEventType = ref<FocusEventType | null>(null);
+    // null이 아니고 FOCUS가 아니면 '딴짓 중(true)'으로 판단
+    const isDistracted = computed(() => focusEventType.value !== null && focusEventType.value !== 'FOCUS');
 
     /**
      * 방 입장 함수
@@ -29,6 +34,18 @@ export function useStudyRoom() {
 
             // 메시지 수신 리스너 등록 (채팅, 시스템 메시지)
             roomManager.onMessage((payload) => {
+                const directType = payload?.eventType || payload?.data?.eventType;
+                const signalType = payload?.type;
+
+                if (signalType === 'AI_EVENT' || signalType === 'AI_STATE' || directType) {
+                    const eventType = (directType || payload?.data?.state || payload?.data?.focusState) as FocusEventType | undefined;
+                    if (eventType === 'FOCUS' || eventType === 'SLEEP' || eventType === 'PHONE' || eventType === 'AWAY') {
+                        focusEventType.value = eventType;
+                    } else if (typeof payload?.data?.value === 'number') {
+                        focusEventType.value = payload.data.value === 1 ? 'SLEEP' : 'FOCUS';
+                    }
+                }
+
                 messages.value.push(payload);
             });
 
@@ -67,8 +84,8 @@ export function useStudyRoom() {
     };
 
     // 방 나가기
-    const leaveRoom = () => {
-        roomManager.leaveRoom();
+    const leaveRoom = (disconnectHeaders?: Record<string, string>) => {
+        roomManager.leaveRoom(disconnectHeaders);
         isConnected.value = false;
         messages.value = [];
         remoteTracks.value = [];
@@ -82,11 +99,19 @@ export function useStudyRoom() {
 
     // 컴포넌트가 파괴될 때 자동으로 리소스 정리 (안전장치)
     // 주의: SPA에서 페이지 이동 시에도 방을 유지해야 한다면 이 부분은 제거하거나 조건부로 처리해야 함
-    onUnmounted(() => {
-        if (isConnected.value) {
-            leaveRoom();
-        }
-    });
+    // [수정] onUnmounted 제거함 -> Page 컴포넌트에서 handleLeave를 통해 제어하도록 위임
+    // onUnmounted(() => {
+    //     if (isConnected.value) {
+    //         leaveRoom();
+    //     }
+    // });
+
+
+    // [추가] 테스트용: 강제로 AI 상태를 변경하는 함수
+    const setDebugState = (state: FocusEventType) => {
+        console.log(`🛠️ [DEBUG] 상태 강제 변경: ${state}`);
+        focusEventType.value = state;
+    };
 
     return {
         joinRoom,
@@ -96,5 +121,8 @@ export function useStudyRoom() {
         error,
         messages,
         remoteTracks,
+        focusEventType,
+        isDistracted,
+        setDebugState, // [추가] 디버그용 함수 반환
     };
 }

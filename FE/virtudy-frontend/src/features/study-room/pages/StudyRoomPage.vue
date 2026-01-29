@@ -2,10 +2,12 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
-import { RoomManager } from '@/core/managers/RoomManager'; 
+import { useFocusTimer } from '../logic/useFocusTimer';
+import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
-import { useAuthStore } from '@/stores/authStore';
-
+import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
+import StudyTimer from '@/shared/ui/StudyTimer.vue';
+import FocusTimer from '@/shared/ui/FocusTimer.vue';
 // 아바타 컴포넌트 & 타입
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
@@ -28,8 +30,12 @@ const {
     isConnected, 
     error, 
     messages, 
-    remoteTracks 
+    remoteTracks,
+    isDistracted,
+    setDebugState, // [추가] 디버그 상태 설정 함수
 } = useStudyRoom();
+
+const { focusSeconds } = useFocusTimer(isDistracted);
 
 // 4. 상태 변수
 const chatMessage = ref('');
@@ -130,8 +136,11 @@ const attachLocalVideo = () => {
 
 const handleLeave = () => {
     if (confirm('정말 나가시겠습니까?')) {
-        leaveRoom();
-        router.replace('/lobby');
+        const focusMinutes = Math.floor(focusSeconds.value / 60);
+        leaveRoom({
+            'study-time': String(focusMinutes),
+        });
+        router.replace('/lobby'); // 로비로 이동
     }
 };
 
@@ -144,12 +153,34 @@ const handleSendChat = () => {
 // 뒤로가기 등을 했을 때 안전하게 연결 종료
 
 onUnmounted(() => {
-    leaveRoom();
+    const focusMinutes = Math.floor(focusSeconds.value / 60);
+    leaveRoom({
+        'study-time': String(focusMinutes),
+    });
 });
 </script>
 
 <template>
     <div class="page-container">
+        <!-- 403문제가 해결되면 화면안에서 보이게 할 예정 -->
+        <div style="position: absolute; top: 10px; right: 800px; z-index: 9999; display: flex; gap: 10px;">
+            <StudyTimer />
+            <FocusTimer :seconds="focusSeconds" />
+        </div>
+        <!-- 집중 타이머 로직이 잘 돌아가는지 확인하기 위해서 버튼을 넣어둠. 나중에 삭제 예정 -->
+        <div style="position: absolute; top: 80px; left: 10px; z-index: 9999; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px;">
+            <p style="color: white; font-weight: bold; margin-bottom: 5px;">🤖 AI 상태 테스트</p>
+            <div style="display: flex; gap: 5px;">
+                <button @click="setDebugState('FOCUS')" style="background: green; color: white; padding: 5px;">FOCUS (재개)</button>
+                <button @click="setDebugState('SLEEP')" style="background: orange; color: white; padding: 5px;">SLEEP (정지)</button>
+                <button @click="setDebugState('PHONE')" style="background: red; color: white; padding: 5px;">PHONE (정지)</button>
+                <button @click="setDebugState('AWAY')" style="background: gray; color: white; padding: 5px;">AWAY (정지)</button>
+            </div>
+            <p style="color: yellow; margin-top: 5px; font-size: 0.8rem;">
+                현재 상태: {{ isDistracted ? '🚫 딴짓 중 (타이머 멈춤)' : '🔥 집중 중 (타이머 작동)' }}
+            </p>
+        </div>
+
         <div v-if="!isConnected" class="loading-overlay">
             <div class="loading-content">
                 <div v-if="error" class="error-msg">
