@@ -34,8 +34,7 @@ async def make_avatar(
         "eyes": gpt_result.get("eyes"),
         "glasses": gpt_result.get("accessory_glasses"),
         "clothes": gpt_result.get("outfit"),
-        "clothes_color": gpt_result.get("clothes_color"),
-        "face_shape": gpt_result.get("face_shape", "face_shape_default")
+        "clothes_color": gpt_result.get("clothes_color")
     }
 
     
