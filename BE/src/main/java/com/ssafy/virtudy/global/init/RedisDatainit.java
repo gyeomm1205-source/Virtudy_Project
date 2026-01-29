@@ -58,11 +58,11 @@ public class RedisDatainit implements ApplicationRunner {
         for(MemberGameStat memberGameStat : memberGameStatList) {
             redisPrivateResponses.add(
                     MemberGameStatDto.RedisResponse.builder()
-                    .id(memberGameStat.getMember().getMemberId())
-                    .nickName(memberGameStat.getMember().getNickName())
-                    .email(memberGameStat.getMember().getEmail())
-                    .tierScore(memberGameStat.getTierScore())
-                    .build()
+                            .id(memberGameStat.getMember().getMemberId())
+                            .nickName(memberGameStat.getMember().getNickName())
+                            .email(memberGameStat.getMember().getEmail())
+                            .tierScore(memberGameStat.getTierScore())
+                            .build()
             );
 
             StudyRoom studyRoom = teamScoreMap.get(memberGameStat.getMember().getMemberId()).getFavoriteRoom();
