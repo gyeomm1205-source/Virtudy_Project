@@ -293,6 +293,8 @@ onUnmounted(() => {
 }
 
 .video-card.local { border: 2px solid #2ed573; }
+.video-card.local video { transform: scaleX(-1); }
+
 
 /* 채팅 섹션 */
 .chat-section {

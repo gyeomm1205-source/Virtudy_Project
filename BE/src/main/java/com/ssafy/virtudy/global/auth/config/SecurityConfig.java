@@ -49,19 +49,20 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
-//                        .anyRequest().permitAll()); // TODO : 추후 정상 인증 로직 아래 버전으로 수정 필요
+                        // .anyRequest().permitAll()); // TODO : 추후 정상 인증 로직 아래 버전으로 수정 필요
                         .requestMatchers(
-                                            "/swagger-ui.html",
-                                            "/swagger-ui/**",
-                                            "/v3/api-docs/**",
-                                            "/api/auth/login",
-                                            "/api/auth/signup",
-                                            "/api/auth/reissue",
-                                            "/api/auth/kakao/callback"
-                ).permitAll()
-                .anyRequest().authenticated())
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/api/auth/login",
+                                "/api/auth/signup",
+                                "/api/auth/reissue",
+                                "/api/auth/kakao/callback",
+                                "/ws/**")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
-                UsernamePasswordAuthenticationFilter.class);
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -76,6 +77,8 @@ public class SecurityConfig {
                 "http://localhost:3030", // (혹시 포트 다르면 추가)
                 "http://localhost:3031", // Vite dev server
                 "http://localhost:3032", // User's current port
+                "http://127.0.0.1:3030",
+                "http://127.0.0.1:3000",
                 "http://www.virtudy.com" // 운영 프론트엔드
         ));
 

@@ -1,4 +1,4 @@
-import { Room, RoomEvent, RemoteParticipant, RemoteTrackPublication, RemoteTrack } from 'livekit-client';
+import { Room, RoomEvent, RemoteParticipant, RemoteTrackPublication, RemoteTrack, LocalVideoTrack, Track } from 'livekit-client';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import type { st } from 'vue-router/dist/router-CWoNjPRp.mjs';
@@ -60,6 +60,23 @@ export class RoomManager {
         }
     }
 
+    // 2-1. 가상 카메라 트랙 생성 (AI가 카메라 점유 시 사용)
+    private async createVirtualVideoTrack(): Promise<LocalVideoTrack> {
+        const canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 480;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 640, 480);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '30px Arial';
+            ctx.fillText('AI Camera In Use', 200, 240);
+        }
+        const stream = canvas.captureStream(30);
+        return new LocalVideoTrack(stream.getVideoTracks()[0]);
+    }
+
     // 2. LiveKit 연결 로직
     private async connectLiveKit(token: string) {
         this.room = new Room({
@@ -79,17 +96,18 @@ export class RoomManager {
 
         this.room.on(RoomEvent.Disconnected, () => {
             console.warn('[LiveKit] 연결이 끊어졌습니다.');
-            // 여기서 "연결 끊김" 모달을 띄우거나 홈으로 이동
         });
 
         try {
-            // [수정] Test Mode 제거 및 Video: true 설정
             await this.room.connect(LIVEKIT_URL, token);
             console.log('[LiveKit] 서버 연결 성공');
 
-            // 카메라 명시적 켜기 (connect 옵션 대신 표준 메소드 사용)
             await this.room.localParticipant.setMicrophoneEnabled(false);
-            await this.room.localParticipant.setCameraEnabled(true);
+
+            // [수정] AI와 카메라 충돌 방지를 위해, 브라우저는 무조건 가상 화면(Canvas)을 사용하도록 강제함
+            console.log('[LiveKit] AI 작동을 위해 가상 카메라를 강제로 사용합니다.');
+            const virtualTrack = await this.createVirtualVideoTrack();
+            await this.room.localParticipant.publishTrack(virtualTrack, { source: Track.Source.Camera });
         } catch (e) {
             console.error(e);
             throw e;

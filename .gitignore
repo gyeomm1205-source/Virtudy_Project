@@ -1,8 +1,22 @@
+# Dependencies
 node_modules/
-dist/
+**/node_modules/
+FE/node_modules/
+BE/node_modules/
+AI/node_modules/
+
+# Environment Variables
 .env
-.DS_Store
-coverage/
+.env.*
+! .env.example
+
+# Build Outputs
+dist/
+build/
+*.pyc
+__pycache__/
+
+# IDEs
 .vscode/
 /BE/
 .idea/
