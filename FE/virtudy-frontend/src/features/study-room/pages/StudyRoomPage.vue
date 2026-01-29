@@ -2,25 +2,30 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
+// [Merge] Combined Imports
+import { useFocusTimer } from '../logic/useFocusTimer';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
 import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
+import StudyTimer from '@/shared/ui/StudyTimer.vue';
+import FocusTimer from '@/shared/ui/FocusTimer.vue';
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import type { AvatarConfig } from '@/shared/types/common.types';
+// HEAD Imports
 import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
-
 
 // 1. 라우터 및 스토어 설정
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 
-// 2. URL에서 정보 추출 (방 ID, 토큰)
+// 2. URL에서 정보 추출
 const roomId = route.params.roomId as string;
 const token = route.query.token as string;
-// 사용자 ID (스토어에서 가져오거나, 없으면 게스트)
 const userId = authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
 
-// 3. 로직 훅 가져오기 (useStudyRoom)
+// 3. 로직 훅
 const { 
     joinRoom, 
     leaveRoom, 
@@ -28,57 +33,77 @@ const {
     isConnected, 
     error, 
     messages, 
-    remoteTracks 
+    remoteTracks,
+    isDistracted,
+    setDebugState, 
 } = useStudyRoom();
 
-// 3.1 AI 핸들러 연결
+// 3.1 AI 핸들러 & 타이머 연결 ([Merge] Both)
 useAiHandler();
 const aiStore = useStudyRoomAiStore();
-
+const { focusSeconds } = useFocusTimer(isDistracted);
 
 // 4. 상태 변수
 const chatMessage = ref('');
 const localVideoRef = ref<HTMLVideoElement | null>(null);
 
-// ------------------------------------------------------------------
-// 🚀 핵심 로직: 방 입장 및 미디어 연결
-// ------------------------------------------------------------------
+// =================================================================
+// 🧪 [테스트/아바타] 설정
+// =================================================================
 
-// 컴포넌트가 켜지면(마운트) 자동으로 입장 시도
-onMounted(async () => {
-    if (!token || !roomId) {
-        alert('잘못된 접근입니다. (토큰 또는 방 번호 누락)');
-        router.replace('/lobby');
-        return;
-    }
-
-    console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
-    
-    // 방 입장 (토큰 전달 필수!)
-    await joinRoom(roomId, userId, token);
+// 1) 내 아바타 설정 (백엔드 Mock Data)
+const myAvatarConfig = ref<AvatarConfig>({
+    hairFront: 'bang',                  
+    hairBack: 'hair_back_long_straight',
+    hairColor: '#3B3024',               
+    eyes: 'eyes_cat',                   
+    glasses: 'accessory_glasses',       
+    outfit: 'outfit_knit',              
+    clothesColor: '#FFD700'             
 });
 
-// 연결 상태가 true가 되면 내 카메라(Local Video)를 붙임
-watch(isConnected, async (connected) => {
+// 2) AI 상태 매핑 Helpers
+// HEAD의 aiStore.focusStatus (FOCUS, SLEEP, PHONE, AWAY)를 Avatar Props (0/1)로 변환
+const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
+const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
+const getAiAbsent = (status: string) => (status === 'AWAY' ? 1 : 0);
+
+// [NEW] 눈 깜빡임 & 입모양 상태 (기본값)
+const isBlinking = ref(false); 
+const mouthState = ref<'closed' | 'slightly_open' | 'wide_open'>('closed');
+
+// =================================================================
+// 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
+// =================================================================
+
+onMounted(() => {
+    const init = async () => {
+        if (!token || !roomId) {
+            alert('잘못된 접근입니다.');
+            router.replace('/lobby');
+            return;
+        }
+        console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
+        await joinRoom(roomId, userId, token);
+    };
+    init();
+});
+
+watch(isConnected, (connected) => {
     if (connected) {
-        await nextTick(); // DOM 렌더링 대기
-        attachLocalVideo();
+        nextTick().then(() => attachLocalVideo());
     }
 });
 
-// 내 카메라 화면을 HTML <video> 태그에 연결하는 함수
 const attachLocalVideo = () => {
     const roomManager = RoomManager.getInstance();
     const room = roomManager.getRoom();
 
     if (room && room.localParticipant && localVideoRef.value) {
-        // 카메라 트랙 찾기
         const publication = room.localParticipant.getTrackPublication(Track.Source.Camera);
         if (publication && publication.track) {
             publication.track.attach(localVideoRef.value);
-            console.log('✅ 내 카메라 화면 연결 완료');
-        } else {
-            console.warn('⚠️ 내 카메라 트랙을 찾을 수 없습니다. (권한 확인 필요)');
+            console.log('✅ 내 카메라 연결됨 (화면에는 숨김 처리)');
         }
     }
 };
@@ -89,7 +114,10 @@ const attachLocalVideo = () => {
 
 const handleLeave = () => {
     if (confirm('정말 나가시겠습니까?')) {
-        leaveRoom();
+        const focusMinutes = Math.floor(focusSeconds.value / 60);
+        leaveRoom({
+            'study-time': String(focusMinutes),
+        });
         router.replace('/lobby'); // 로비로 이동
     }
 };
@@ -100,24 +128,32 @@ const handleSendChat = () => {
     chatMessage.value = '';
 };
 
-// 뒤로가기 등을 했을 때 안전하게 연결 종료
 onUnmounted(() => {
-    leaveRoom();
+    const focusMinutes = Math.floor(focusSeconds.value / 60);
+    leaveRoom({
+        'study-time': String(focusMinutes),
+    });
 });
 </script>
 
 <template>
     <div class="page-container">
+        <!-- 타이머 오버레이 -->
+        <div style="position: absolute; top: 10px; right: 800px; z-index: 9999; display: flex; gap: 10px;">
+            <StudyTimer />
+            <FocusTimer :seconds="focusSeconds" />
+        </div>
+
         <div v-if="!isConnected" class="loading-overlay">
             <div class="loading-content">
                 <div v-if="error" class="error-msg">
                     <p>🚫 입장 실패</p>
                     <p>{{ error }}</p>
-                    <button @click="router.replace('/lobby')" class="btn-retry">로비로 돌아가기</button>
+                    <button @click="router.replace('/lobby')" class="btn-retry">돌아가기</button>
                 </div>
                 <div v-else>
                     <div class="spinner"></div>
-                    <p>스터디룸에 입장하고 있습니다...</p>
+                    <p>입장 중...</p>
                 </div>
             </div>
         </div>
@@ -132,32 +168,59 @@ onUnmounted(() => {
             </header>
 
             <main class="room-content">
-                
                 <section class="video-section">
                     <div class="video-grid">
+                        
+                        <!-- 로컬 유저 (나) -->
                         <div class="video-card local">
-                            <video ref="localVideoRef" autoplay muted playsinline></video>
-                            <span class="name-tag">나 (Me)</span>
+                            <!-- 실제 비디오는 숨기고 AI 분석용으로만 송출 -->
+                            <video ref="localVideoRef" autoplay muted playsinline class="hidden-video"></video>
+                            
+                            <!-- 아바타 표시 (AI 상태 연동) -->
+                            <div class="avatar-wrapper">
+                                <CharacterAvatar 
+                                    :config="myAvatarConfig"
+                                    :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
+                                    :aiPhone="getAiPhone(aiStore.focusStatus)"
+                                    :aiAbsent="getAiAbsent(aiStore.focusStatus)"
+                                    :isBlinking="isBlinking"
+                                    :mouthState="mouthState"
+                                />
+                            </div>
+                            <span class="name-tag">나 (Me) - {{ aiStore.focusStatus }}</span>
                         </div>
 
-                        <div 
-                            v-for="rt in remoteTracks" 
-                            :key="rt.participantId" 
-                            class="video-card remote"
-                        >
+                        <!-- 리모트 유저 (상대방) -->
+                        <div v-for="rt in remoteTracks" :key="rt.participantId" class="video-card remote">
+                            <!-- 상대방 비디오도 일단 숨기고 아바타? (상대 상태 데이터가 없으면 비디오 보여야 함) 
+                                 [FIX] 상대방은 비디오를 보여주거나, 상대방 상태 데이터가 있다면 아바타를 보여줘야 함.
+                                 일단 origin/fe 로직(무조건 아바타)을 따르되, 데이터가 없으면 기본값. 
+                                 하지만 리모트 비디오가 오는데 굳이 숨기나? -> origin/fe 의도를 따름. -->
                             <video 
                                 :ref="(el) => { if(el) rt.track.attach(el as HTMLMediaElement) }"
-                                autoplay 
-                                playsinline
+                                autoplay playsinline 
+                                class="hidden-video"
                             ></video>
+
+                            <div class="avatar-wrapper">
+                                <CharacterAvatar 
+                                    :config="myAvatarConfig"
+                                    :aiDrowsy="0" 
+                                    :aiPhone="0" 
+                                    :aiAbsent="0"
+                                    :isBlinking="false"
+                                    :mouthState="'closed'"
+                                />
+                            </div>
                             <span class="name-tag">{{ rt.participantId }}</span>
                         </div>
+
                     </div>
                 </section>
 
-                <!-- AI 상태 디버깅/표시 패널 (임시) -->
+                <!-- AI 상태 디버깅/표시 패널 (HEAD 유지) -->
                 <div class="ai-status-panel">
-                    <h3>🤖 AI Analysis</h3>
+                    <h3>🤖 AI Score</h3>
                     <div class="status-item">
                         <span class="label">집중도:</span>
                         <div class="score-bar">
@@ -165,43 +228,21 @@ onUnmounted(() => {
                         </div>
                         <span class="value">{{ Math.round(aiStore.concentrationScore) }}점</span>
                     </div>
-                    <div class="status-item">
-                        <span class="label">상태:</span>
-                        <span class="badge" :class="aiStore.focusStatus">{{ aiStore.focusStatus }}</span>
-                    </div>
-
                 </div>
 
                 <aside class="chat-section">
-
-                    <div class="chat-header">
-                        <h3>💬 채팅</h3>
-                    </div>
-                    
+                    <div class="chat-header"><h3>💬 채팅</h3></div>
                     <div class="chat-messages">
-                        <div 
-                            v-for="(msg, idx) in messages" 
-                            :key="idx" 
-                            class="message-bubble"
-                            :class="{ 'my-msg': msg.sender === userId, 'sys-msg': msg.type !== 'CHAT' }"
-                        >
+                        <div v-for="(msg, idx) in messages" :key="idx" class="message-bubble" :class="{ 'my-msg': msg.sender === userId, 'sys-msg': msg.type !== 'CHAT' }">
                             <div v-if="msg.type === 'CHAT'">
                                 <span class="sender">{{ msg.sender }}</span>
                                 <p class="text">{{ msg.data?.message || msg.message }}</p>
                             </div>
-                            <div v-else class="system-text">
-                                🔔 {{ msg.type }} 이벤트
-                            </div>
+                            <div v-else class="system-text">🔔 {{ msg.type }} 이벤트</div>
                         </div>
                     </div>
-
                     <div class="chat-input-area">
-                        <input 
-                            v-model="chatMessage" 
-                            @keyup.enter="handleSendChat"
-                            type="text" 
-                            placeholder="메시지를 입력하세요..." 
-                        />
+                        <input v-model="chatMessage" @keyup.enter="handleSendChat" type="text" placeholder="메시지 입력..." />
                         <button @click="handleSendChat">전송</button>
                     </div>
                 </aside>
@@ -211,116 +252,49 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 전체 레이아웃 */
+/* 페이지 기본 설정 (Nav바 가림 해결) */
 .page-container {
     width: 100vw;
     height: 100vh;
     background-color: #f0f2f5;
     overflow: hidden;
+    padding-top: 80px; /* Nav바 높이만큼 여백 */
+    box-sizing: border-box;
 }
 
-/* 로딩 화면 */
-.loading-overlay {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.9);
-    font-size: 1.2rem;
-    color: #555;
-}
-.error-msg { color: #e74c3c; text-align: center; }
-.btn-retry { margin-top: 10px; padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; }
-.spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #3498db;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
-}
+/* 로딩 & 스피너 */
+.loading-overlay { display: flex; justify-content: center; align-items: center; height: 100%; background: rgba(255,255,255,0.9); }
+.spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* 스터디룸 레이아웃 */
-.room-layout {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
+/* 레이아웃 구조 */
+.room-layout { display: flex; flex-direction: column; height: 100%; }
+.room-header { height: 60px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+.room-content { flex: 1; display: flex; overflow: hidden; }
 
-.room-header {
-    height: 60px;
-    background: #ffffff;
-    border-bottom: 1px solid #ddd;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 20px;
-    flex-shrink: 0;
-}
+/* 버튼 & 뱃지 */
+.btn-leave { background: #ff4757; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.user-badge { font-weight: bold; margin-right: 10px; color: #555; }
 
-.btn-leave {
-    background-color: #ff4757;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-}
-.btn-leave:hover { background-color: #ff6b81; }
-
-.room-content {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-}
-
-/* 비디오 섹션 */
-.video-section {
-    flex: 3;
-    background-color: #2f3542;
-    padding: 20px;
-    overflow-y: auto;
-}
-
-.video-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    justify-content: center;
-}
+/* 비디오 영역 */
+.video-section { flex: 3; background-color: #2f3542; padding: 20px; overflow-y: auto; }
+.video-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; justify-content: center; }
 
 .video-card {
     position: relative;
-    background: #000;
+    background: radial-gradient(circle, #ffffff 0%, #dfe4ea 100%);
     border-radius: 12px;
     overflow: hidden;
     aspect-ratio: 16 / 9;
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-.video-card video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+.video-card.local { border: 3px solid #2ed573; }
+.hidden-video { display: none; } /* 실제 비디오 숨김 (AI 분석용으로 Backstage에서 돌아감) */
 
-.video-card .name-tag {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-}
-
-.video-card.local { border: 2px solid #2ed573; }
-.video-card.local video { transform: scaleX(-1); }
-
+/* 아바타 래퍼 */
+.avatar-wrapper { width: 70%; height: 70%; margin: 5% auto; } 
+.name-tag { position: absolute; bottom: 10px; left: 10px; background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.9rem; z-index: 10; }
 
 /* AI 상태 패널 */
 .ai-status-panel {
@@ -336,93 +310,15 @@ onUnmounted(() => {
 .status-item .label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px; }
 .score-bar { background: #555; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 4px; }
 .score-bar .fill { height: 100%; transition: width 0.3s, background-color 0.3s; }
-.badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; background: #555; }
-.badge.FOCUS { background: #2ecc71; color: white; }
-.badge.SLEEP { background: #e74c3c; color: white; }
-.badge.PHONE { background: #f1c40f; color: black; }
-.badge.AWAY { background: #95a5a6; color: white; }
 
-/* 채팅 섹션 */
-
-.chat-section {
-    flex: 1;
-    min-width: 300px;
-    max-width: 400px;
-    background: white;
-    border-left: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
-}
-
-.chat-header {
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-    background: #f8f9fa;
-}
-
-.chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 15px;
-    background: #f1f2f6;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.message-bubble {
-    background: white;
-    padding: 8px 12px;
-    border-radius: 10px;
-    max-width: 90%;
-    font-size: 0.95rem;
-    align-self: flex-start;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.message-bubble.my-msg {
-    align-self: flex-end;
-    background: #d1ccc0; /* 옅은 갈색/베이지 톤 */
-    background: #7bed9f; /* 카톡 느낌 원하면 */
-}
-
-.message-bubble.sys-msg {
-    align-self: center;
-    background: none;
-    box-shadow: none;
-    color: #888;
-    font-size: 0.8rem;
-}
-
-.sender {
-    display: block;
-    font-weight: bold;
-    font-size: 0.8rem;
-    margin-bottom: 4px;
-    color: #555;
-}
-
-.chat-input-area {
-    padding: 15px;
-    border-top: 1px solid #ddd;
-    display: flex;
-    gap: 10px;
-    background: white;
-}
-
-.chat-input-area input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-    outline: none;
-}
-.chat-input-area button {
-    padding: 0 20px;
-    border: none;
-    border-radius: 20px;
-    background: #3742fa;
-    color: white;
-    cursor: pointer;
-}
+/* 채팅 영역 */
+.chat-section { flex: 1; min-width: 300px; max-width: 400px; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; }
+.chat-header { padding: 15px; border-bottom: 1px solid #eee; background: #f8f9fa; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 15px; background: #f1f2f6; display: flex; flex-direction: column; gap: 10px; }
+.message-bubble { background: white; padding: 8px 12px; border-radius: 10px; max-width: 90%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.message-bubble.my-msg { align-self: flex-end; background: #7bed9f; }
+.message-bubble.sys-msg { align-self: center; background: none; box-shadow: none; color: #888; font-size: 0.8rem; }
+.chat-input-area { padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 10px; background: white; }
+.chat-input-area input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
+.chat-input-area button { padding: 0 20px; border: none; border-radius: 20px; background: #3742fa; color: white; cursor: pointer; }
 </style>
