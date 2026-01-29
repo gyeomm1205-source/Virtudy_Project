@@ -47,3 +47,4 @@ coverage/
 /public/mock-data/
 /public/models/temp/
 venv/
+pnpm
