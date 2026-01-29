@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,8 +27,11 @@ public class ReportPreparationService {
      * 주간 리포트 생성 스케줄러
      * 매주 월요일 새벽 4시 0분 0초 (cron = "0 0 4 * * MON")에 실행됩니다.
      * 지난주(월~일)의 학습 데이터를 집계하여 리포트를 생성합니다.
+     * 주의! GMS 토큰이 사용되므로, 너무 많은 더미데이터로 무분별한 호출은 지양 (한 주에 한 사용자당, 약 20 크레딧 사용됨)
      */
     @Scheduled(cron = "0 0 4 * * MON")
+//    @Scheduled(cron = "0 59 * * * *") // TEST용
+    @Transactional
     public void createWeeklyReports() {
         // 지난주 월요일 ~ 일요일 기간 설정
         LocalDate today = LocalDate.now();
