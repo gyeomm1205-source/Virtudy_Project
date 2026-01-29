@@ -37,9 +37,13 @@ export const useOAuthCallback = () => {
       // 백엔드에 인가 코드 전송
       const response = await authAPI.kakaoCallback(code);
 
+      // 디버깅 코드 (나중에 지워야함)-------------------
+      console.log(response)
+      // -----------------------------
+
       // 응답에서 토큰 및 신규/기존 유저 여부 추출
       const { needSignup: isNewUser, accessToken, ...signupInfo } = response.data;
-
+      
       if (isNewUser) {
         // 신규 유저 → 임시 가입 정보 저장 후 약관 페이지로
         authStore.setSignupInfo(signupInfo);
