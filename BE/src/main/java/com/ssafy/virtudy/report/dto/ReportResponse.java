@@ -10,7 +10,7 @@ public class ReportResponse {
     private String reportId; // UUID (외부 공개용)
     // private LocalDate reportDate;
     private int focusDepthPercentage; // 집중도 (백분위)
-    private int avgStudyTime; // 평균 공부시간 
+    private int totalStudyTime; // 총 공부시간 
     private int endurance; // 지구력 
     private int focusDepth; // 집중력 
     private int regularity; // 규칙성
@@ -24,7 +24,7 @@ public class ReportResponse {
                 .reportId(report.getReportId())
                 // .reportDate(report.getReportDate())
                 .focusDepthPercentage(report.getFocusDepthPercentage())
-                .avgStudyTime(report.getAvgStudyTime())
+                .totalStudyTime(report.getTotalStudyTime())
                 .endurance(report.getEndurance())
                 .focusDepth(report.getFocusDepth())
                 .regularity(report.getRegularity())

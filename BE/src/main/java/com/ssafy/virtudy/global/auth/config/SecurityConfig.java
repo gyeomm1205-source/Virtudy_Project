@@ -49,18 +49,19 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
-                        .anyRequest().permitAll()); // TODO : 추후 정상 인증 로직 아래 버전으로 수정 필요
-//                        .requestMatchers(
-//                                            "/swagger-ui.html",
-//                                            "/swagger-ui/**",
-//                                            "/v3/api-docs/**",
-//                                            "/api/auth/login",
-//                                            "/api/auth/signup",
-//                                            "/api/auth/reissue"
-//                ).permitAll()
-//                .anyRequest().authenticated())
-//                .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
-//                UsernamePasswordAuthenticationFilter.class)
+//                        .anyRequest().permitAll()); // TODO : 추후 정상 인증 로직 아래 버전으로 수정 필요
+                        .requestMatchers(
+                                            "/swagger-ui.html",
+                                            "/swagger-ui/**",
+                                            "/v3/api-docs/**",
+                                            "/api/auth/login",
+                                            "/api/auth/signup",
+                                            "/api/auth/reissue",
+                                            "/api/auth/kakao/callback"
+                ).permitAll()
+                .anyRequest().authenticated())
+                .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
+                UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -77,6 +77,7 @@ public class KakaoClient {
     /**
      * 위에서 발급받은 access Token으로 사용자 정보 요청하기
      * 요청 URL: https://kapi.kakao.com/v2/user/me
+     * 
      * @param accessToken: 발급받은 인가 코드
      * @return KakaoUserInfo Dto로 매핑해서 리턴한다
      */
