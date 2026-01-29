@@ -46,6 +46,8 @@
           @filterChange="setFilter"
           @sortChange="setSortBy"
           @search="onSearchInput"
+          @edit="handleEditRoom"      
+          @delete="handleDeleteRoom"
         />
       </div>
 
@@ -55,11 +57,12 @@
       <GlobalFooter />
     </div>
 
-    <CreateRoomModal 
-      v-if="showModal" 
-      @close="showModal = false"
-      @success="fetchAllRooms" 
-    />
+  <CreateRoomModal 
+    v-if="showModal" 
+    :initialData="selectedRoom" 
+    @close="showModal = false"
+    @success="fetchAllRooms" 
+  />
 
   </div>
 </template>
@@ -80,6 +83,8 @@ import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RoomList from '@/shared/ui/RoomList.vue';
 import CreateRoomModal from '../ui/CreateRoomModal.vue'; // 새로 만든 모달
 
+import { maxMembers } from '@/shared/config/constants'; // 상수 import
+
 const router = useRouter();
 
 // 1. Store & Hook 연결
@@ -91,11 +96,14 @@ const {
   myRooms, 
   // isLoading, // 로딩바 필요하면 사용
   fetchAllRooms, 
-  joinRoom 
+  joinRoom,
+  deleteRoom,
+  updateRoom
 } = useLobby();
 
-// 2. UI 상태 관리
+// UI 상태 관리
 const showModal = ref(false); // 모달 표시 여부
+const selectedRoom = ref<RoomData | null>(null);
 const currentFilter = ref<string>('all'); // 'all' | 'my'
 const sortBy = ref<string>('popular');
 const searchQuery = ref<string>('');
@@ -111,7 +119,22 @@ const openCreateModal = () => {
     alert('로그인이 필요한 서비스입니다.');
     return;
   }
+  selectedRoom.value = null; // 생성 모드이므로 데이터 비우기
   showModal.value = true;
+};
+
+// 방 수정 버튼 클릭 
+const handleEditRoom = (room: any) => {
+  // RoomList에서 받은 room 데이터를 selectedRoom에 저장
+  // (RoomList의 room 타입과 RoomData 타입이 호환된다고 가정)
+  selectedRoom.value = room; 
+  showModal.value = true;
+};
+
+// ✅ 방 삭제 버튼 클릭
+const handleDeleteRoom = async (roomId: string) => {
+    // useLobby에서 가져온 deleteRoom 함수 사용
+    await deleteRoom(roomId);
 };
 
 // 랜덤 매칭
@@ -136,6 +159,7 @@ const handleRoomClick = async (room: any) => {
   await joinRoom(room.roomId);
 };
 
+
 // 탭 변경 (전체 <-> 내 스터디)
 const setFilter = (filter: string) => {
   currentFilter.value = filter;
@@ -154,7 +178,7 @@ const onSearchInput = (query: string) => {
   currentPage.value = 1;
 };
 
-// 3. Computed Properties (데이터 가공)
+// Computed Properties (데이터 가공)
 
 // 현재 탭에 맞는 데이터 소스 선택
 const targetSourceRooms = computed(() => {
@@ -196,8 +220,10 @@ const displayedRooms = computed(() => {
     roomId: room.roomId,
     title: room.title,
     currentMembers: room.currentUser,
-    maxMembers: 4, // 기본값으로 설정
-    createdAt: new Date().toISOString() // 현재 시간으로 설정
+    maxMembers: maxMembers,
+    createdAt: new Date().toISOString(), // 현재 시간으로 설정
+    owner: room.owner || false, 
+    description: room.description
   }));
 });
 

@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { lobbyAPI } from '../api/lobbyAPI';
-import type { RoomData, CreateRoomReq, ApiErrorResponse } from '../types/lobby.types';
+import type { RoomData, CreateRoomReq, UpdateRoomReq, ApiErrorResponse } from '../types/lobby.types';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -18,16 +18,10 @@ export function useLobby() {
   const myRooms = ref<RoomData[]>([]);     // 내 방 목록
   const isLoading = ref(false);
 
-  // 내 방 ID 목록 (삭제 버튼 노출용 Set)
-  const myRoomIds = computed(() => new Set(myRooms.value.map(r => r.roomId)));
-
   // 데이터 불러오기 (전체 & 내 방 동시 조회)
   const fetchAllRooms = async () => {
 
-    if (!userId.value) {
-      alert('로그인이 필요한 서비스입니다.');
-      return;
-    }
+    if (!userId.value) return;
 
     isLoading.value = true;
     try {
@@ -43,11 +37,6 @@ export function useLobby() {
     } finally {
       isLoading.value = false;
     }
-  };
-
-  // 방장이 맞는지 확인하는 헬퍼 함수
-  const isMyRoom = (roomId: string) => {
-    return myRoomIds.value.has(roomId);
   };
 
   // 방 생성
@@ -67,6 +56,42 @@ export function useLobby() {
     }
   };
 
+  // 방 수정
+  const updateRoom = async (roomId: string, reqData: UpdateRoomReq) => {
+    if (!userId.value) {
+      alert('로그인이 필요한 서비스입니다.');
+      return false;
+    }
+    try {
+      await lobbyAPI.updateRoom(userId.value, roomId, reqData);
+      await fetchAllRooms(); // 목록 갱신 (수정된 제목/설명 반영)
+      alert('스터디방 정보가 수정되었습니다.');
+      return true; // 성공
+    } catch (e: any) {
+      handleApiError(e);
+      return false;
+    }
+  };
+
+
+  // 방 삭제
+  const deleteRoom = async (roomId: string) => {
+    if (!confirm('정말 이 스터디방을 삭제하시겠습니까?')) return;
+    
+    if (!userId.value) {
+      alert('로그인이 필요한 서비스입니다.');
+      return;
+    }
+
+    try {
+      await lobbyAPI.deleteRoom(userId.value, roomId);
+      alert('삭제되었습니다.');
+      await fetchAllRooms(); // 목록 갱신
+    } catch (e: any) {
+      handleApiError(e);
+    }
+  };
+
   // 방 입장 (토큰 발급 -> 페이지 이동)
   const joinRoom = async (roomId: string, password?: string) => {
     if (!userId.value) {
@@ -75,30 +100,18 @@ export function useLobby() {
     }
     try {
       // 입장 API 호출
-      const { data } = await lobbyAPI.enterRoom(userId.value, roomId, password);
-
+      const sessionData = await lobbyAPI.enterRoom(userId.value, roomId, password);
+      
       // 테스트를 위해 콘솔에 토큰 출력
-      console.log('✅ 입장 성공! 토큰:', data.liveKitToken);
+      console.log('✅ 입장 성공! 토큰:', sessionData.liveKitToken);
 
       // 토큰을 가지고 스터디 룸 페이지로 이동
-      router.push({ name: 'StudyRoom', params: { roomId }, query: { token: data.liveKitToken } });
+      router.push({ 
+        name: 'StudyRoom', 
+        params: { roomId }, 
+        query: { token: sessionData.liveKitToken } 
+      });
 
-    } catch (e: any) {
-      handleApiError(e);
-    }
-  };
-
-  // 방 삭제
-  const deleteRoom = async (roomId: string) => {
-    if (!confirm('정말 이 스터디방을 삭제하시겠습니까?')) return;
-    if (!userId.value) {
-      alert('로그인이 필요한 서비스입니다.');
-      return;
-    }
-    try {
-      await lobbyAPI.deleteRoom(userId.value, roomId);
-      alert('삭제되었습니다.');
-      await fetchAllRooms(); // 목록 갱신
     } catch (e: any) {
       handleApiError(e);
     }
@@ -118,9 +131,9 @@ export function useLobby() {
     publicRooms,
     myRooms,
     isLoading,
-    isMyRoom,
     fetchAllRooms,
     createRoom,
+    updateRoom,
     joinRoom,
     deleteRoom
   };

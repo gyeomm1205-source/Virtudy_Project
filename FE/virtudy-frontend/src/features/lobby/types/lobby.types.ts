@@ -1,8 +1,8 @@
-import type { AvatarConfig } from '@/shared/types/common.types'; // 아바타 데이터 가져옴
+import type { AvatarConfig } from '@/shared/types/common.types';
 
 /**
  * 📝 Lobby Feature 타입 정의
- * - 기준: Virtudy API 명세서 v1.1.0
+ * - 기준: Virtudy API 명세서 v1.2.0 (2026.01.29 수정)
  */
 
 // ==========================================
@@ -31,15 +31,15 @@ export interface RoomData {
   title: string;
   type: 'PUBLIC' | 'PRIVATE';
   currentUser: number;
-
+  
   /** 상세 설명 (목록 조회 시엔 없을 수 있음) */
   description?: string;
 
-  /** * 🚧 [추후 추가 예정] 방장 여부 
-   * - 백엔드 업데이트 전까지는 undefined 상태
+  /** * ✅ [NEW] 방장(소유자) 여부 
+   * - 전체 목록 조회 및 내 스터디방 목록 조회 시 포함됨
+   * - true일 경우 수정/삭제 권한 부여
    */
-  // 예: isHost?: boolean; 
-
+  owner?: boolean; 
 }
 
 // ==========================================
@@ -78,7 +78,8 @@ export interface EnterRoomReq {
  * - /api/sessions/enter/random
  */
 export interface EnterSessionRes {
-  userId: string;
+  // ✅ 명세서에 따라 userId -> memberId로 변경됨
+  memberId: string; 
   nickName: string;
   avatar: AvatarConfig;
   liveKitToken: string;
