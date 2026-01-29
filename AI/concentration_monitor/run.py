@@ -165,6 +165,7 @@ def main():
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret: break
+            frame = cv2.flip(frame, 1) # [수정] 거울 모드 적용
             
             feats = extractor.process(frame)
             sig_abs = abs_det.process(feats["face_detected"])

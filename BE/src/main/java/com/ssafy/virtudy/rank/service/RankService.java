@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.function.Function;
@@ -72,8 +71,6 @@ public class RankService {
             String userId = tuple.getValue();
             Double scoreVal = tuple.getScore();
             int score = (scoreVal != null) ? scoreVal.intValue() : 0;
-            // Map에서 꺼내기 (이미 DTO로 변환되어 있어서 형변환 필요 없음)
-            AvatarResponse avatarDto = avatarMap.get(userId);
 
             // DB에서 가져온 추가 정보 (없을 경우 대비해 null 체크 권장)
             Member member = memberMap.get(userId);

@@ -1,6 +1,5 @@
 package com.ssafy.virtudy.member.dto;
 
-import com.ssafy.virtudy.member.domain.Avatar;
 import com.ssafy.virtudy.member.domain.JobType;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.report.domain.Report;

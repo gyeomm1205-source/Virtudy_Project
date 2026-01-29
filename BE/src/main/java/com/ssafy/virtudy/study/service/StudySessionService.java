@@ -30,8 +30,6 @@ import java.util.concurrent.ThreadLocalRandom;
 @Transactional
 public class StudySessionService {
 
-    private final static int MAX_USER = 6;
-
     private final StudySessionRepository studySessionRepository;
     private final StudyRoomRepository studyRoomRepository;
     private final MemberRepository memberRepository;
