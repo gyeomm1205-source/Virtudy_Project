@@ -1,4 +1,4 @@
 FROM amazoncorretto:17
 WORKDIR /app
-COPY build/libs/app.jar app.jar
+COPY build/libs/*-SNAPSHOT.jar app.jar
 ENTRYPOINT ["java","-jar","app.jar"]

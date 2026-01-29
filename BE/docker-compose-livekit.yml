@@ -15,4 +15,3 @@ services:
       - "LIVEKIT_KEYS=${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-secret}"
     networks:
       - virtudy-network
-
