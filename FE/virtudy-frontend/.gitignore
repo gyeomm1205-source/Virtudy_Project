@@ -27,6 +27,7 @@ dist-ssr
 # Vite specific (Vite 빌드 관련)
 .env.local
 .env.*.local
+.env.*
 
 # TypeScript
 *.tsbuildinfo
@@ -45,3 +46,4 @@ coverage/
 # (public에 필요한 모델은 올려야 하지만, 테스트용 원본은 제외)
 /public/mock-data/
 /public/models/temp/
+venv/
