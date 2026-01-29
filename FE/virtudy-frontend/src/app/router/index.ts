@@ -68,7 +68,8 @@ const router = createRouter({
       }
     },
     {
-      path: '/login/callback/kakao',
+      // daean change 
+      path: '/auth/kakao/callback',
       name: 'kakao-callback',
       component: OAuthCallbackPage
     },
