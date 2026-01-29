@@ -150,12 +150,14 @@ const {
 } = useWeeklyReport();
 
 const formatStudyTime = (minutes: number | undefined) => {
-  if (!minutes) return '0시간 0분';
+  if (!minutes) return '0h 0m';
   
   const h = Math.floor(minutes / 60); 
-  const m = minutes % 60;             
-  
-  return `${h}시간 ${m}분`;
+  const m = minutes % 60; 
+  //분이 딱 맞아떨어지면 시간만 표시(120분->2h)
+  if (m === 0) return `${h}h`;
+  //나머지가 있으면 분까지 리턴(135분->2h 15m)           
+  return `${h}h ${m}m`;
 };
 
 const goBack = () => {
