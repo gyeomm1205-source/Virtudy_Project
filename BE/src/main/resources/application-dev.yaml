@@ -71,6 +71,8 @@ management:
 
   metrics:
     tags:
+      application: 'virtudy-server'
+
       application: ${METRICS_APPLICATION}
 
 gms:

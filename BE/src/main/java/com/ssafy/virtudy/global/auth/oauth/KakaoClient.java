@@ -38,7 +38,6 @@ public class KakaoClient {
     /**
      * 인가 코드로 토큰 요청
      * 요청 URL: https://kauth.kakao.com/oauth/token
-     * 
      * @param code: 인가 코드
      * @return access token 문자열
      */

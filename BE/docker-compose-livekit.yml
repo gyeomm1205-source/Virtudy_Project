@@ -15,19 +15,3 @@ services:
       - "LIVEKIT_KEYS=${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-secret}"
     networks:
       - virtudy-network
-
-
-#  # Redis for LiveKit (and potential other uses)
-#  redis:
-#    image: redis:alpine
-#    container_name: virtudy-redis
-#    ports:
-#      - "6379:6379"
-#    networks:
-#      - virtudy-network
-#      - virtudy-network
-#
-#networks:
-#  virtudy-network:
-#    driver: bridge
-
