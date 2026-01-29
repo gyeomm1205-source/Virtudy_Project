@@ -72,3 +72,6 @@ management:
   metrics:
     tags:
       application: ${METRICS_APPLICATION}
+
+gms:
+  key: ${GMS_KEY}

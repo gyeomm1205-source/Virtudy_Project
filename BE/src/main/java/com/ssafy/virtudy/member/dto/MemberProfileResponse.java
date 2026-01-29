@@ -37,11 +37,11 @@ public class MemberProfileResponse {
     @Schema(description = "최애 스터디방 제목", example = "알고리즘 스터디")
     private String favoriteRoomTitle;
 
-    @Schema(description = "순공부시간(단위 : 분)", example = "120")
-    private int pureStudyTime;
+    @Schema(description = "일일 순공부시간(단위 : 분)", example = "120")
+    private int dailyPureStudyTime;
 
-    @Schema(description = "집중도", example = "60")
-    private int focusDepth;
+    @Schema(description = "일일 집중도", example = "60")
+    private int dailyFocusDepth;
 
     public static MemberProfileResponse from(Member member, Report todayReport, int tierScore, String tier) {
         return MemberProfileResponse.builder()
@@ -52,8 +52,8 @@ public class MemberProfileResponse {
                 .tierScore(tierScore)
                 .tier(tier)
                 .favoriteRoomTitle(member.getFavoriteRoom() != null ? member.getFavoriteRoom().getTitle() : null)
-                .pureStudyTime(todayReport != null ? todayReport.getMaxFocusTime() : 0)
-                .focusDepth(todayReport != null ? todayReport.getFocusDepth() : 0)
+                .dailyPureStudyTime(todayReport != null ? todayReport.getMaxFocusTime() : 0)
+                .dailyFocusDepth(todayReport != null ? todayReport.getFocusDepth() : 0)
                 .build();
     }
 }
