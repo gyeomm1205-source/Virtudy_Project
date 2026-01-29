@@ -8,9 +8,9 @@ from ..schemas import AvatarResponse
 from ..services import image_service, gpt_service
 # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
-router = APIRouter()
+router = APIRouter("")
 
-@router.post("/makeAvatar", response_model=AvatarResponse)
+@router.post("/avatar", response_model=AvatarResponse)
 async def make_avatar(
     nick_name: str  = Form(...), 
     file: UploadFile = File(...), 
