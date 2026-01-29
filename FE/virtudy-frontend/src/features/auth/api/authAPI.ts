@@ -4,6 +4,9 @@ import axios from '@/shared/api/axios.config';
 export const authAPI = {
   // 카카오 OAuth 콜백 처리
   kakaoCallback: (code: string) => {
+    // 디버깅 코드 (나중에 지워야함)-------------------
+      console.log(code)
+      // -----------------------------
     return axios.post('/auth/kakao/callback', null, { params: { code } });
   },
 
