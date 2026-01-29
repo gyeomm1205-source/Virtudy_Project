@@ -88,16 +88,23 @@ export const lobbyAPI = {
    * POST /api/sessions/enter/{roomId}
    */
   enterRoom: async (userId: string, roomId: string, password?: string) => {
-    // Body에 비밀번호를 담아서 보냄 (EnterRoomReq 구조 맞춤)
     const body: EnterRoomReq = { password };
     
-    return api.post<EnterSessionRes>(
+    // 1. Axios 응답을 변수에 받음
+    const response = await api.post<EnterSessionRes>(
       `/sessions/enter/${roomId}`, 
       body, 
       { headers: { 'X-MEMBER-ID': userId } }
     );
-  },
 
+    // 2. data만 꺼내서 + memberId 매핑까지 해서 반환
+    return {
+      userId: response.data.memberId,
+      nickName: response.data.nickName,
+      avatar: response.data.avatar,
+      liveKitToken: response.data.liveKitToken
+    };
+  },
   /**
    * 9. 랜덤 스터디방 입장
    * POST /api/sessions/enter/random

@@ -1,8 +1,6 @@
 <template>
   <div class="h-[686px] w-[691px]">
-    <!-- 상단 필터 및 검색 영역 -->
     <div class="h-[62px] relative mb-[20px]">
-      <!-- 필터 버튼들 -->
       <div class="absolute left-[31px] top-[9px] flex gap-0">
         <button 
           @click="setFilter('all')"
@@ -30,7 +28,6 @@
         </button>
       </div>
       
-      <!-- 정렬 옵션 -->
       <div class="absolute left-[334px] top-[29px] flex gap-[40px]">
         <button 
           @click="setSortBy('popular')"
@@ -52,7 +49,6 @@
         </button>
       </div>
       
-      <!-- 검색바 -->
       <div class="absolute right-0 top-[14px] w-[219px] border-2 border-[var(--color-choco)] border-solid bg-[var(--color-cream2)] h-[33px] flex items-center px-[7px] gap-[10px]" style="box-shadow: 3.667px 3.667px 0px 0px var(--color-choco);">
         <div class="w-[21px] h-[21px] flex items-center justify-center">
           <svg viewBox="0 0 21 21" class="w-[19.636px] h-[19.636px]">
@@ -69,39 +65,46 @@
       </div>
     </div>
     
-    <!-- 방 목록 그리드 -->
     <div class="bg-[var(--color-cream2)] border-2 border-[var(--color-choco)] border-solid h-[589px] rounded-[20px] p-[20px] overflow-clip" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
       <div class="grid grid-cols-2 gap-[20px] h-full">
         <div 
           v-for="(room, index) in displayedRooms" 
           :key="`room-${room.roomId || index}`"
-          class="bg-[var(--color-butter2)] border-2 border-[var(--color-choco)] border-solid rounded-[20px] relative cursor-pointer hover:scale-105 transition-transform w-[315.5px] h-full"
+          class="bg-[var(--color-butter2)] border-2 border-[var(--color-choco)] border-solid rounded-[20px] relative cursor-pointer hover:scale-105 transition-transform w-[315.5px] h-full group"
           style="box-shadow: 4px 4px 0px 0px var(--color-choco);"
           @click="onRoomClick(room)"
         >
-          <!-- 인원수 -->
-          <div class="absolute left-1/2 top-[24.5px] transform -translate-x-1/2 -translate-y-1/2">
-            <p class="text-[var(--color-syrup)] text-[28px] font-['PfStardust30S'] font-normal leading-none text-center">
-              {{ room.currentMembers || 0 }}/{{ room.maxMembers || 6 }} (인원수)
+          <div class="absolute right-[20px] top-[20px] flex items-center">
+            
+            <div v-if="room.owner" class="flex gap-[8px] mr-[10px] z-10">
+              <button 
+                @click.stop="emit('edit', room)" 
+                class="w-[24px] h-[24px] flex items-center justify-center hover:scale-110 transition-transform bg-[var(--color-cream)] rounded-full border border-[var(--color-choco)]"
+                title="방 정보 수정"
+              >
+                <span class="text-[14px] leading-none">✏️</span>
+              </button>
+              <button 
+                @click.stop="emit('delete', room.roomId!)" 
+                class="w-[24px] h-[24px] flex items-center justify-center hover:scale-110 transition-transform bg-[var(--color-cream)] rounded-full border border-[var(--color-choco)]"
+                title="방 삭제"
+              >
+                <span class="text-[12px] leading-none pt-[2px]">🗑️</span>
+              </button>
+            </div>
+
+            <p class="text-[var(--color-syrup)] text-[24px] font-['PfStardust30S'] font-normal leading-none">
+              {{ room.currentMembers || 0 }}/{{ room.maxMembers || 6 }}
             </p>
           </div>
           
-          <!-- 방제목 -->
-          <div class="absolute left-1/2 top-[87px] transform -translate-x-1/2 -translate-y-1/2">
-            <p class="text-[var(--color-choco)] text-[32px] font-['Xcu'] font-medium leading-none text-center">
+          <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%]">
+            <p class="text-[var(--color-choco)] text-[32px] font-['Xcu'] font-medium leading-tight text-center truncate">
               {{ room.title || '방제목' }}
             </p>
           </div>
-          
-          <!-- 입장 버튼 -->
-          <div class="absolute right-[20px] top-[25px] transform -translate-y-1/2">
-            <span class="text-[var(--color-choco)] text-[28px] font-['Xcu'] font-medium leading-none cursor-pointer hover:opacity-80">
-              입장
-            </span>
-          </div>
         </div>
         
-        <!-- 빈 슬롯들을 채우기 위한 더미 요소 -->
         <div 
           v-for="index in Math.max(0, 6 - displayedRooms.length)" 
           :key="`empty-${index}`"
@@ -117,11 +120,8 @@
       </div>
     </div>
     
-    <!-- 페이지네이션 -->
     <div class="h-[28px] mt-[15px] flex items-center justify-center relative">
-      <!-- 페이지 네비게이션 버튼들 -->
       <div class="flex items-center gap-[24px]">
-        <!-- 맨 앞으로 -->
         <button 
           @click="goToFirstPage" 
           :disabled="currentPage === 1"
@@ -136,7 +136,6 @@
           </svg>
         </button>
         
-        <!-- 이전 페이지 -->
         <button 
           @click="goToPrevPage" 
           :disabled="currentPage === 1"
@@ -150,7 +149,6 @@
           </svg>
         </button>
         
-        <!-- 페이지 번호들 -->
         <div class="flex items-center gap-[12px]">
           <button 
             v-for="pageNum in visiblePages" 
@@ -170,7 +168,6 @@
           </button>
         </div>
         
-        <!-- 다음 페이지 -->
         <button 
           @click="goToNextPage" 
           :disabled="currentPage === totalPages"
@@ -184,7 +181,6 @@
           </svg>
         </button>
         
-        <!-- 맨 뒤로 -->
         <button 
           @click="goToLastPage" 
           :disabled="currentPage === totalPages"
@@ -200,7 +196,6 @@
         </button>
       </div>
       
-      <!-- 페이지 정보 -->
       <div class="absolute right-0 top-[6px]">
         <span class="text-[var(--color-butter2)] text-[20px] font-['PfStardust30S'] font-normal leading-none tracking-[-0.8px]">
           {{ String(Math.min((currentPage - 1) * 6 + 1, totalRooms)).padStart(2, '0') }}-{{ String(Math.min(currentPage * 6, totalRooms)).padStart(2, '0') }} / {{ totalRooms }}
@@ -220,23 +215,25 @@ interface Room {
   currentMembers: number;
   maxMembers: number;
   createdAt: string;
+  owner?: boolean;       // 방장 여부
+  description?: string;  // 수정 시 필요할 수 있어서 추가
 }
 
 interface RoomListProps {
   rooms?: Room[];
 }
 
-// Props 정의
 const props = withDefaults(defineProps<RoomListProps>(), {
   rooms: () => []
 });
 
-// Emits 정의
 const emit = defineEmits<{
   roomClick: [room: Room];
   filterChange: [filter: string];
   sortChange: [sortBy: string];
   search: [query: string];
+  edit: [room: Room];        // 수정 버튼 클릭
+  delete: [roomId: string];  // 삭제 버튼 클릭
 }>();
 
 // Reactive state
@@ -253,12 +250,10 @@ const totalPages = computed(() => Math.max(1, Math.ceil(totalRooms.value / ITEMS
 const filteredRooms = computed(() => {
   let filtered = [...props.rooms];
   
-  // 필터링 로직
   if (currentFilter.value === 'myRooms') {
-    // 추후 사용자 방 필터링 로직 구현
+    // 필요한 경우 내 방 필터링 로직 추가
   }
   
-  // 검색 필터링
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(room => 
@@ -266,7 +261,6 @@ const filteredRooms = computed(() => {
     );
   }
   
-  // 정렬 로직
   if (sortBy.value === 'popular') {
     filtered.sort((a, b) => b.currentMembers - a.currentMembers);
   } else if (sortBy.value === 'latest') {
@@ -342,8 +336,7 @@ const goToNextPage = () => {
   }
 };
 
-// Watch for rooms prop changes
 watch(() => props.rooms, () => {
-  currentPage.value = 1;
+  // currentPage.value = 1; // 필요에 따라 주석 해제
 });
 </script>
