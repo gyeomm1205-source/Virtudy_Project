@@ -64,14 +64,19 @@ dependencies {
 
 	// Kafka
 	implementation 'org.springframework.kafka:spring-kafka'
+<<<<<<< HEAD
+=======
+
+	// WebClient
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
 }
 
-// build.gradle 맨 아래 추가
+
 jar {
 	enabled = false
 }
-

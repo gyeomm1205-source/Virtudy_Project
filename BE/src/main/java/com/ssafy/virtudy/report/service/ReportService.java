@@ -115,7 +115,11 @@ public class ReportService {
         int focusDepth = calculateFocusDepth(sessions);
         int stability = calculateStability(logs);
         int willPower = calculateWillPower(sessions, logs);
+<<<<<<< HEAD
         int avgStudyTime = calculateAvgStudyTime(sessions, 7); // 7일 평균
+=======
+        int totalStudyTime = calculateTotalStudyTime(sessions); // 총 공부시간
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
         int focusDepthPercentage = calculateFocusDepthPercentage(focusDepth, maxFocusTime);
 
         String sleepVulnerableTime = analyzeSleepPattern(logs);
@@ -126,7 +130,11 @@ public class ReportService {
                 .member(member)
                 .reportDate(startDate)
                 .focusDepthPercentage(focusDepthPercentage)
+<<<<<<< HEAD
                 .avgStudyTime(avgStudyTime)
+=======
+                .totalStudyTime(totalStudyTime)
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
                 .endurance(endurance)
                 .focusDepth(focusDepth)
                 .regularity(0)
@@ -147,7 +155,11 @@ public class ReportService {
                 .member(member)
                 .reportDate(startDate)
                 .focusDepthPercentage(0)
+<<<<<<< HEAD
                 .avgStudyTime(0)
+=======
+                .totalStudyTime(0)
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
                 .endurance(0)
                 .focusDepth(0)
                 .regularity(0)
@@ -167,12 +179,21 @@ public class ReportService {
      * 일 평균 공부 시간 (분)
      * 총 공부 시간 합계 / 7일
      */
+<<<<<<< HEAD
     private int calculateAvgStudyTime(List<StudySession> sessions, int days) {
         if (sessions.isEmpty() || days == 0) return 0;
         long totalStudyTime = sessions.stream()
                 .mapToLong(StudySession::getSessionRealStudyTime)
                 .sum();
         return (int) (totalStudyTime / days);
+=======
+    private int calculateTotalStudyTime(List<StudySession> sessions) {
+        if (sessions.isEmpty()) return 0;
+        long totalStudyTime = sessions.stream()
+                .mapToLong(StudySession::getSessionRealStudyTime)
+                .sum();
+        return (int) (totalStudyTime);
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
     }
 
     /**

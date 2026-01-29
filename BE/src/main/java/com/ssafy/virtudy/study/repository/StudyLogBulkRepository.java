@@ -20,7 +20,11 @@ public class StudyLogBulkRepository {
         if (logs.isEmpty()) return;
 
         // 1. 실행할 SQL 준비 (ID는 Auto Increment라서 생략)
+<<<<<<< HEAD
         String sql = "INSERT INTO study_log (log_id, session_id, member_id, event_type, detected_at) " +
+=======
+        String sql = "INSERT IGNORE INTO study_log (log_id, session_id, member_id, event_type, detected_at) " +
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
                      "VALUES (?, ?, ?, ?, ?)";
 
         // 2. JDBC 배치 실행

@@ -14,7 +14,11 @@ public class OpenApiConfig {
     public OpenAPI openAPI() {
         Info info = new Info()
                 .title("Virtudy API")
+<<<<<<< HEAD
                 .version("v1.1.0")
+=======
+                .version("v1.2.0")
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
                 .description("Virtudy 프로젝트의 API 명세서입니다.");
 
         String jwtSchemeName = "AccessToken";

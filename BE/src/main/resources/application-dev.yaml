@@ -7,23 +7,39 @@ spring:
       on-profile: dev
   # [추가] Kafka 설정
   kafka:
+<<<<<<< HEAD
+=======
+    properties:
+      reconnect.backoff.ms: 1000      # 배포 환경: 1->2->4->8->10
+      reconnect.backoff.max.ms: 10000 # 최대 10초까지 대기함
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS} # 환경변수 없으면 기본값 사용
     consumer:
       group-id: virtudy-group
       auto-offset-reset: earliest
       max-poll-records: 500 # 한 번에 가져올 최대 개수
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+<<<<<<< HEAD
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*" # 모든 패키지의 DTO 허용
         # [필수 추가] 이게 없으면 AI 서버가 보낸 메시지를 읽을 때 에러가 납니다!
+=======
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.json.trusted.packages: "*" # 모든 패키지의 DTO 허용
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
         spring.json.value.default.type: "com.ssafy.virtudy.study.dto.StudyLogRequest"
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     listener:
       type: batch # 배치 모드 활성화
+<<<<<<< HEAD
 
+=======
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
 
   data:
     redis:
@@ -48,7 +64,11 @@ server:
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret-id: ${KAKAO_CLIENT_SECRET_ID}
+<<<<<<< HEAD
   redirect-uri: "http://i14a703.p.ssafy.io:80/login/callback/kakao"
+=======
+  redirect-uri: "http://i14a703.p.ssafy.io/auth/kakao/callback"
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
   token-uri: "https://kauth.kakao.com/oauth/token"
   user-info-uri: "https://kapi.kakao.com/v2/user/me"
 
@@ -71,4 +91,11 @@ management:
 
   metrics:
     tags:
+<<<<<<< HEAD
       application: ${METRICS_APPLICATION}
+=======
+      application: 'virtudy-server'
+
+gms:
+  key: ${GMS_KEY}
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d

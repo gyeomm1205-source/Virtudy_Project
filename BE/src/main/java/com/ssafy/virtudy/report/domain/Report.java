@@ -34,7 +34,11 @@ public class Report {
     private int focusDepthPercentage = 0; // 집중도 (백분위)
 
     @Column(nullable = false)
+<<<<<<< HEAD
     private int avgStudyTime = 0; // 평균 공부시간 
+=======
+    private int totalStudyTime = 0; // 총 공부시간
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
 
     @Column(nullable = false)
     private int endurance = 0; // 지구력
@@ -64,7 +68,11 @@ public class Report {
     private String distractionPatternTime; // 딴짓(폰/이탈) 빈번 시간대
 
     @Builder
+<<<<<<< HEAD
     public Report(Member member, LocalDate reportDate, int focusDepthPercentage, int avgStudyTime,
+=======
+    public Report(Member member, LocalDate reportDate, int focusDepthPercentage, int totalStudyTime,
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
                   int endurance, int focusDepth, int regularity,
                   int stability, int willPower, String aiComment,
                   int maxFocusTime, String sleepVulnerableTime, String distractionPatternTime) {
@@ -72,7 +80,11 @@ public class Report {
         this.member = member;
         this.reportDate = reportDate;
         this.focusDepthPercentage = focusDepthPercentage;
+<<<<<<< HEAD
         this.avgStudyTime = avgStudyTime;
+=======
+        this.totalStudyTime = totalStudyTime;
+>>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
         this.endurance = endurance;
         this.focusDepth = focusDepth;
         this.regularity = regularity;
