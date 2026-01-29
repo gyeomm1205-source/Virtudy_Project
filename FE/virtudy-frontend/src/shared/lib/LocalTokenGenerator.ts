@@ -1,7 +1,7 @@
 export class LocalTokenGenerator {
     // LiveKit Default Dev Keys
-    private static API_KEY = 'devkey';
-    private static API_SECRET = 'secret';
+    private static API_KEY = 'APIteMFGyZJPUqY';
+    private static API_SECRET = '22IQPqfgWwSuHSziBe9Cxe9HXOmehSIeKtK7xEvLUJfE';
 
     static async generateToken(roomId: string, userId: string): Promise<string> {
         const header = { alg: 'HS256', typ: 'JWT' };

@@ -1,122 +1,210 @@
+import sys
+import time
 import cv2
 import numpy as np
-from detector import DrowsinessDetector
+import os
+import argparse
 
-# ===== 폰 감지 기능만 옵션으로 추가 =====
-ENABLE_PHONE_DETECTOR = True      # 필요 없으면 False
-PHONE_DRAW_DEBUG = False          # True면 phone_detector 내부 디버그(박스/점/텍스트) 그려짐
-SHOW_PHONE_TEXT_ON_BAR = True     # 상단바 텍스트에 Phone: ON/OFF 표시만 할지
+print("[INFO] Loading System Libraries...")
+import mediapipe as mp
+from ultralytics import YOLO
 
+# 1. 로직 모듈 임포트 (기존 로직 그대로 사용)
+print("[INFO] Loading Logic Modules...", flush=True)
+try:
+    from core.types import FrameSignals, FocusDecision, FocusState
+    from core.config import Config
+    from detectors.absence_detector import AbsenceDetector
+    from detectors.drowsiness_detector import DrowsinessDetector
+    from detectors.phone_detector import PhoneDetector
+    from fusion.state_fuser import StateFuser
+    from scoring.focus_scorer import FocusScorer
+    from utils.csv_logger import CSVLogger # CSV 기록용
+    from utils.kafka_logger import KafkaLogger # Kafka 전송용
+    print("[INFO] Logic Modules Loaded.", flush=True)
+except Exception as e:
+    print(f"[ERROR] Failed to load logic modules: {e}", flush=True)
+    sys.exit(1)
 
-def main():
-    detector = DrowsinessDetector()
-    cap = cv2.VideoCapture(0)
-
-    # 폰 감지기 로드 (실패해도 기존 기능은 동작하도록)
-    phone_detector = None
-    if ENABLE_PHONE_DETECTOR:
+# ==========================================
+# Feature Extraction Helpers
+# ==========================================
+class FeatureExtractor:
+    def __init__(self):
+        self.mp_face = mp.solutions.face_mesh
+        self.face = self.mp_face.FaceMesh(
+            max_num_faces=1, refine_landmarks=True,
+            min_detection_confidence=0.5, min_tracking_confidence=0.5
+        )
+        self.mp_hands = mp.solutions.hands
+        self.hands = self.mp_hands.Hands(
+            max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5
+        )
         try:
-            from phone_detector import PhoneDetector
-            phone_detector = PhoneDetector(draw_debug=PHONE_DRAW_DEBUG)
+            self.yolo = YOLO("yolov8n.pt")
+            self.yolo_names = self.yolo.names
         except Exception as e:
-            print("[WARN] PhoneDetector 로드 실패:", e)
-            phone_detector = None
+            print(f"[WARN] YOLO Load Failed: {e}")
+            self.yolo = None
 
-    print("시스템 시작! (종료: q)")
+    def _calc_ear(self, landmarks, w, h):
+        def dist(p1, p2):
+            return np.linalg.norm(np.array([landmarks[p1].x*w, landmarks[p1].y*h]) - 
+                                  np.array([landmarks[p2].x*w, landmarks[p2].y*h]))
+        l_v1, l_v2, l_h = dist(160, 144), dist(158, 153), dist(33, 133)
+        ear_l = (l_v1 + l_v2) / (2.0 * l_h) if l_h > 1e-6 else 0
+        r_v1, r_v2, r_h = dist(385, 380), dist(387, 373), dist(362, 263)
+        ear_r = (r_v1 + r_v2) / (2.0 * r_h) if r_h > 1e-6 else 0
+        return (ear_l + ear_r) / 2.0
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+    def _calc_head_pitch(self, landmarks):
+        nose_y, chin_y = landmarks[1].y, landmarks[152].y
+        eye_mid_y = (landmarks[33].y + landmarks[263].y) / 2.0
+        denom = (chin_y - eye_mid_y)
+        return (nose_y - eye_mid_y) / denom if denom > 1e-6 else 0.0
 
-        frame.flags.writeable = False
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    def process(self, frame):
         h, w, _ = frame.shape
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        face_res = self.face.process(rgb)
+        face_detected, ear, pitch, face_pixel_center = False, None, None, None
+        
+        if face_res.multi_face_landmarks:
+            face_detected = True
+            lm = face_res.multi_face_landmarks[0].landmark
+            ear, pitch = self._calc_ear(lm, w, h), self._calc_head_pitch(lm)
+            face_pixel_center = (int((lm[234].x + lm[454].x)/2 * w), int((lm[10].y + lm[152].y)/2 * h))
+            
+        hand_res = self.hands.process(rgb)
+        hand_centers = []
+        if hand_res.multi_hand_landmarks:
+            for hand in hand_res.multi_hand_landmarks:
+                sx, sy = sum([l.x for l in hand.landmark]) / 21, sum([l.y for l in hand.landmark]) / 21
+                hand_centers.append((int(sx*w), int(sy*h)))
 
-        # 감지기 실행
-        status, ear_value, target_landmarks = detector.process_frame(rgb_frame)
+        phone_conf, phone_box = 0.0, None
+        if self.yolo:
+            results = self.yolo(frame, verbose=False, classes=[67])
+            for r in results:
+                for box in r.boxes:
+                    if self.yolo_names[int(box.cls[0])] == 'cell phone':
+                        if float(box.conf[0]) > phone_conf:
+                            phone_conf = float(box.conf[0])
+                            phone_box = list(map(int, box.xyxy[0]))
 
-        frame.flags.writeable = True
+        hand_interaction = False
+        if phone_box and hand_centers:
+            px, py = (phone_box[0] + phone_box[2]) // 2, (phone_box[1] + phone_box[3]) // 2
+            thresh = (w**2 + h**2)**0.5 * 0.3
+            for hx, hy in hand_centers:
+                if ((px-hx)**2 + (py-hy)**2)**0.5 < thresh:
+                    hand_interaction = True; break
 
-        # --- [1] 인식된 얼굴 표시 (무서운 그물망 제거 -> 심플한 박스) ---
-        if target_landmarks:
-            # 10:이마, 152:턱, 234:왼쪽볼, 454:오른쪽볼
-            top = int(target_landmarks.landmark[10].y * h)
-            bottom = int(target_landmarks.landmark[152].y * h)
-            left = int(target_landmarks.landmark[234].x * w)
-            right = int(target_landmarks.landmark[454].x * w)
+        return {
+            "face_detected": face_detected, "ear": ear, "pitch": pitch,
+            "phone_conf": phone_conf, "hand_interaction": hand_interaction,
+            "debug": {"face_center": face_pixel_center, "phone_box": phone_box, "hand_centers": hand_centers}
+        }
 
-            margin = 30
-            top = max(0, top - margin * 2)
-            bottom = min(h, bottom + margin)
-            left = max(0, left - margin)
-            right = min(w, right + margin)
+# ==========================================
+# UI Helpers (원래 UI 디자인)
+# ==========================================
+def draw_ui(frame, decision, snap, feats, signals):
+    state = decision.state
+    color_map = {
+        FocusState.FOCUSED: (0, 255, 0), FocusState.DROWSY: (0, 0, 255),
+        FocusState.PHONE: (0, 255, 255), FocusState.ABSENT: (255, 0, 0), FocusState.UNKNOWN: (128, 128, 128)
+    }
+    color = color_map.get(state, (255, 255, 255))
+    cv2.rectangle(frame, (0, 0), (640, 50), color, -1)
+    status_text = f"STATUS: {state.name} ({decision.confidence:.2f})"
+    if state == FocusState.FOCUSED: status_text += " - KEEP GOING"
+    else: status_text += f" - {decision.reason}"
+    cv2.putText(frame, status_text, (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,0), 2)
+    cv2.putText(frame, f"SCORE: {snap.score:.1f}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2)
+    
+    debug = feats["debug"]
+    if debug.get("face_center"): cv2.circle(frame, debug["face_center"], 5, (0, 255, 0), -1)
+    if debug.get("phone_box"):
+        x1, y1, x2, y2 = debug["phone_box"]
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), 2)
+    for hx, hy in debug["hand_centers"]: cv2.circle(frame, (hx, hy), 5, (255, 0, 255), -1)
 
-            box_color = (100, 255, 100)
 
-            if status == "DROWSY":
-                box_color = (0, 0, 255)
 
-            cv2.rectangle(frame, (left, top), (right, bottom), box_color, 2)
-            cv2.putText(frame, "Target", (left, top - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, box_color, 2)
+# ==========================================
+# Main Control
+# ==========================================
+def main():
+    parser = argparse.ArgumentParser(description='Focus Monitor AI')
+    parser.add_argument('--session-id', type=str, required=True, help='Session ID from Backend')
+    args = parser.parse_args()
+    
+    current_session_id = args.session_id
+    print(f"[INFO] Starting Monitor for Session: {current_session_id}")
+    # 원래 최적화했던 수치들 복구
+    Config.PITCH_DROWSY_TH, Config.PITCH_PHONE_USE_TH = 0.45, 0.40
+    Config.EAR_DROWSY_TH = 0.18
 
-        # --- [2] 상태 텍스트 표시 ---
-        msg = f"Status: {status} (EAR: {ear_value:.2f})"
+    extractor = FeatureExtractor()
+    abs_det, drowsy_det, phone_det = AbsenceDetector(), DrowsinessDetector(), PhoneDetector()
+    fuser, scorer, logger = StateFuser(), FocusScorer(), CSVLogger()
+    
+    # Kafka Logger 초기화
+    kafka_logger = KafkaLogger(session_id=current_session_id)
+    
+    print("Initializing Camera...")
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    if not cap.isOpened():
+        cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+        if not cap.isOpened(): print("[ERROR] Camera failed."); return
 
-        if status == "NORMAL":
-            cv2.rectangle(frame, (0, 0), (640, 40), (50, 200, 50), -1)
+    print("Focus Monitor Started. Press 'q' to quit.")
 
-        elif status == "DROWSY":
-            cv2.rectangle(frame, (0, 0), (640, 40), (0, 0, 255), -1)
-            cv2.putText(frame, "WAKE UP!!!", (50, 200),
-                        cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
+    try: # [추가] 예외 처리를 시작합니다.
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret: break
+            frame = cv2.flip(frame, 1) # [수정] 거울 모드 적용
+            
+            feats = extractor.process(frame)
+            sig_abs = abs_det.process(feats["face_detected"])
+            sig_drowsy = drowsy_det.process(feats["face_detected"], feats["ear"], feats["pitch"])
+            sig_phone = phone_det.process(feats["phone_conf"], feats["face_detected"], feats["pitch"], feats["hand_interaction"])
+            
+            signals = FrameSignals(drowsy=sig_drowsy, absent=sig_abs, phone=sig_phone)
+            decision = fuser.decide(signals)
+            snap = scorer.update(decision.state)
+            
+            # [수정] 엑셀 이미지(image_e988b2.png)에 나오는 모든 컬럼을 기록합니다.
+            logger.log({
+                'state': decision.state.name,
+                'score': round(snap.score, 2),
+                'ear': round(feats['ear'], 3) if feats['ear'] else None,
+                'pitch': round(feats['pitch'], 3) if feats['pitch'] else None,
+                'phone_conf': round(feats['phone_conf'], 3),
+                'hand_interaction': 1 if feats['hand_interaction'] else 0,
+                'raw_absent': 1 if signals.absent.absent else 0,
+                'drowsy_score': round(signals.drowsy.drowsy_score, 2),
+                'phone_in_use': 1 if signals.phone.phone_in_use else 0
+            })
+            
+            # Kafka로 상태 전송
+            kafka_logger.log_state(decision.state)
 
-        elif status == "ABSENT":
-            cv2.rectangle(frame, (0, 0), (640, 40), (255, 0, 0), -1)
-            cv2.putText(frame, "ABSENT!!!", (50, 200),
-                        cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 5)
-
-        # ===== 여기부터 "폰 감지"만 최소로 추가 =====
-        phone_state = None
-
-        if phone_detector is not None:
-            try:
-                phone_result = phone_detector.update(frame)  # BGR frame
-                phone_state = phone_result.get("state", None)
-
-                # 디버그 그리기(원할 때만)
-                if PHONE_DRAW_DEBUG:
-                    frame = phone_detector.draw(frame, phone_result)
-
-            except Exception as e:
-                # 폰 감지 실패해도 기존 기능 영향 없게
-                print("[WARN] phone_detector.update 실패:", e)
-                phone_state = None
-
-        # 상단바 텍스트: 기존 msg 유지 + (옵션) 폰 상태만 덧붙이기
-        bar_text = msg
-        if SHOW_PHONE_TEXT_ON_BAR and phone_state is not None:
-            bar_text += f" | Phone: {phone_state}"
-
-        cv2.putText(frame, bar_text, (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-
-        cv2.imshow('Smart Sleep Monitor', frame)
-
-        if cv2.waitKey(5) & 0xFF == ord('q'):
-            break
-
-    # 정리
-    if phone_detector is not None:
-        try:
-            phone_detector.close()
-        except Exception:
-            pass
-
-    cap.release()
-    cv2.destroyAllWindows()
-
+            draw_ui(frame, decision, snap, feats, signals)
+            cv2.imshow("Focus Monitor", frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'): break
+            
+    finally: # [핵심] 프로그램이 중간에 멈추거나 꺼져도 반드시 실행됩니다.
+        print("[INFO] Saving all buffered data to CSV...")
+        cap.release()
+        cv2.destroyAllWindows()
+        logger.close() # 이 코드가 실행되어야 파일이 비어있지 않게 됩니다.
+        kafka_logger.close()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"[FATAL ERROR] {e}")

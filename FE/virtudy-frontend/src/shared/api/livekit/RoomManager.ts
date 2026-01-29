@@ -1,16 +1,18 @@
-import { Room, RoomEvent, RemoteParticipant, RemoteTrackPublication, RemoteTrack } from 'livekit-client';
+import { Room, RoomEvent, RemoteParticipant, RemoteTrackPublication, RemoteTrack, LocalVideoTrack, Track } from 'livekit-client';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import type { st } from 'vue-router/dist/router-CWoNjPRp.mjs';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
 const LIVEKIT_URL = 'ws://127.0.0.1:7880'; // 실제 LiveKit 서버 주소 (로컬 기본값)
 const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+// [추가] AI 서버 웹소켓 주소 (FastAPI 등 AI 서버의 웹소켓 엔드포인트)
+const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
 
 export class RoomManager {
     private static instance: RoomManager;
     private room: Room | null = null;
     private stompClient: Client | null = null;
+    private aiSocket: WebSocket | null = null; // [추가] AI용 직통 소켓
     private roomId: string = '';
     private userId: string = ''; // [추가] userId 저장
 
@@ -35,8 +37,10 @@ export class RoomManager {
         try {
             // [수정] 프론트엔드 로컬 토큰 생성기 사용 (백엔드 미구현 대응)
             // 백엔드 구현완료: 기존 LocalTokenGenerator 로직 삭제하고, 인자로 받은 token 사용
-            const { LocalTokenGenerator } = await import('../../lib/LocalTokenGenerator');
+            // 백엔드 구현완료: 기존 LocalTokenGenerator 로직 삭제하고, 인자로 받은 token 사용
+            const { LocalTokenGenerator } = await import('@/shared/lib/LocalTokenGenerator');
             const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
+            console.log(liveKitToken); // Use variable to avoid unused warning
 
             // 토큰 검사
             if (!token) {
@@ -51,6 +55,8 @@ export class RoomManager {
 
             // 1-3. WebSocket 연결 (컨트롤 플레인)
             this.connectWebSocket();
+            // [추가]1-4. 소켓 직통 연결 (집중도 데이터)
+            this.connectAISocket();
 
             console.log(`[RoomManager] 방 ${roomId} 입장 완료`);
         } catch (error) {
@@ -60,6 +66,29 @@ export class RoomManager {
         }
     }
 
+    
+    
+    // 2-1. 가상 카메라 트랙 생성 (AI가 카메라 점유 시 사용)
+    private async createVirtualVideoTrack(): Promise<LocalVideoTrack> {
+        const canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 480;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 640, 480);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '30px Arial';
+            ctx.fillText('AI Camera In Use', 200, 240);
+        }
+        const stream = canvas.captureStream(30);
+        const [videoTrack] = stream.getVideoTracks();
+        if (!videoTrack) {
+            throw new Error('가상 카메라 스트림에서 비디오 트랙을 찾을 수 없습니다.');
+        }
+        return new LocalVideoTrack(videoTrack);
+    }
+    
     // 2. LiveKit 연결 로직
     private async connectLiveKit(token: string) {
         this.room = new Room({
@@ -67,35 +96,36 @@ export class RoomManager {
             adaptiveStream: true,
             dynacast: true,
         });
-
+        
         // LiveKit 이벤트 리스너 등록
         this.room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
             this.handleTrackSubscribed(track, publication, participant);
         });
-
+        
         this.room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
             this.handleTrackUnsubscribed(track, publication, participant);
         });
-
+        
         this.room.on(RoomEvent.Disconnected, () => {
             console.warn('[LiveKit] 연결이 끊어졌습니다.');
-            // 여기서 "연결 끊김" 모달을 띄우거나 홈으로 이동
         });
-
+        
         try {
-            // [수정] Test Mode 제거 및 Video: true 설정
             await this.room.connect(LIVEKIT_URL, token);
             console.log('[LiveKit] 서버 연결 성공');
-
-            // 카메라 명시적 켜기 (connect 옵션 대신 표준 메소드 사용)
+            
             await this.room.localParticipant.setMicrophoneEnabled(false);
-            await this.room.localParticipant.setCameraEnabled(true);
+            
+            // [수정] AI와 카메라 충돌 방지를 위해, 브라우저는 무조건 가상 화면(Canvas)을 사용하도록 강제함
+            console.log('[LiveKit] AI 작동을 위해 가상 카메라를 강제로 사용합니다.');
+            const virtualTrack = await this.createVirtualVideoTrack();
+            await this.room.localParticipant.publishTrack(virtualTrack, { source: Track.Source.Camera });
         } catch (e) {
             console.error(e);
             throw e;
         }
     }
-
+    
     // 3. WebSocket(SockJS+Stomp) 연결 로직
     private connectWebSocket() {
         this.stompClient = new Client({
@@ -105,9 +135,13 @@ export class RoomManager {
                 console.log(`[Stomp] ${str}`);
             },
             reconnectDelay: 5000, // 자동 재연결 시도 (선택 사항)
+            connectHeaders: {
+                memberId: this.userId,
+                roomId: this.roomId,
+            },
             onConnect: () => {
                 console.log('[Stomp] 소켓 연결 성공');
-
+                
                 // 내 방의 제어 메시지 구독
                 this.stompClient?.subscribe(`/sub/room/${this.roomId}`, (message) => {
                     const payload = JSON.parse(message.body);
@@ -118,14 +152,53 @@ export class RoomManager {
                 console.error('[Stomp] 에러 발생:', frame.headers['message']);
             },
         });
-
+        
         this.stompClient.activate();
+    }
+    // [추가] 1-4. AI 서버 소켓 연결 (직통)
+    private connectAISocket() {
+        // AI 서버에 보낼 주소 (예: 방ID와 유저ID를 경로에 포함)
+        const url = `${AI_SOCKET_URL}/${this.roomId}/${this.userId}`;
+        
+        console.log(`[AI-Socket] 연결 시도: ${url}`);
+        this.aiSocket = new WebSocket(url);
+
+        this.aiSocket.onopen = () => {
+            console.log("🤖 [AI-Socket] 연결 성공!");
+        };
+
+        this.aiSocket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                // AI가 보낸 데이터를 공통 핸들러로 넘김 (useStudyRoom에서 처리)
+                // 데이터 형태를 프론트 내부 규격(eventType)으로 통일해서 넘겨줍니다.
+                // 예: AI가 { "status": "SLEEP" } 처럼 보낸다면 -> { "eventType": "SLEEP" }로 변환
+                const payload = {
+                    type: 'AI_EVENT',
+                    data: {
+                        eventType: data.eventType || data.status, // AI 서버 응답 필드명에 맞게 조정
+                        value: data.value // 0 or 1
+                    }
+                };
+                this.handleSocketMessage(payload);
+            } catch (error) {
+                console.error("[AI-Socket] 데이터 파싱 오류:", error);
+            }
+        };
+
+        this.aiSocket.onclose = () => {
+            console.log("🤖 [AI-Socket] 연결 종료");
+        };
+
+        this.aiSocket.onerror = (error) => {
+            console.error("🤖 [AI-Socket] 에러:", error);
+        };
     }
 
     // 트랙 구독 핸들러 (화면에 비디오 표시)
     private handleTrackSubscribed(
         track: RemoteTrack,
-        publication: RemoteTrackPublication,
+        _publication: RemoteTrackPublication,
         participant: RemoteParticipant
     ) {
         if (track.kind === 'video' || track.kind === 'audio') {
@@ -138,7 +211,7 @@ export class RoomManager {
     // 트랙 구독 해제 핸들러
     private handleTrackUnsubscribed(
         track: RemoteTrack,
-        publication: RemoteTrackPublication,
+        _publication: RemoteTrackPublication,
         participant: RemoteParticipant
     ) {
         console.log(`[LiveKit] 트랙 해제: ${participant.identity} (${track.kind})`);
@@ -181,10 +254,20 @@ export class RoomManager {
     }
 
     // 방 나가기 (Cleanup)
-    leaveRoom() {
+    leaveRoom(disconnectHeaders?: Record<string, string>) {
         this.room?.disconnect();
         this.room = null;
-        this.stompClient?.deactivate();
+        // [추가] AI 소켓 종료
+        if (this.aiSocket) {
+            this.aiSocket.close();
+            this.aiSocket = null;
+        }
+        if (this.stompClient) {
+            if (disconnectHeaders) {
+                this.stompClient.disconnectHeaders = disconnectHeaders;
+            }
+            this.stompClient.deactivate();
+        }
         this.stompClient = null;
         this.messageListeners = []; // 리스너 초기화
         console.log('[RoomManager] 방 퇴장 및 리소스 정리 완료');

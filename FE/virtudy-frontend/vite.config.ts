@@ -2,12 +2,16 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path' // 경로 별칭 설정용 
 import tailwindcss from '@tailwindcss/vite'
+import svgLoader from 'vite-svg-loader' // SVG 로더 플러그인 추가 (아바타를 위함)
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
-    tailwindcss()
+    tailwindcss(),
+    svgLoader({
+      defaultImport: 'component' // SVG를 기본적으로 Vue 컴포넌트로 import
+    }),
   ],
   resolve: {
     alias: {

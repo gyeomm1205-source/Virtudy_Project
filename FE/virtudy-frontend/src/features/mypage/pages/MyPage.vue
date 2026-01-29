@@ -102,7 +102,7 @@
           
           <!-- 최애 스터디 -->
           <p class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none">
-            &lt;{{ userInfo?.favoriteRoomTitle || '최애스터디이름' }}&gt;
+            &lt;{{ userInfo?.favoriteRoomTitle || '최애 스터디 없음' }}&gt;
           </p>
         </div>
 
@@ -140,7 +140,10 @@
         </div>
         
         <!-- 회원탈퇴 링크 -->
-        <button class="absolute right-[2.5rem] bottom-[2rem] text-[var(--color-syrup)] text-[0.75rem] font-['Pretendard'] font-normal leading-none tracking-[-0.03rem] underline cursor-pointer">
+        <button 
+          @click="handleWithdraw"
+          class="absolute right-[2.5rem] bottom-[2rem] text-[var(--color-syrup)] text-[0.75rem] font-['Pretendard'] font-normal leading-none tracking-[-0.03rem] underline cursor-pointer"
+        >
           회원탈퇴
         </button>
       </div>
@@ -164,6 +167,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore';
 import { useMyPage } from '../logic/useMyPage';
 import { JOB_OPTIONS } from '../types/mypage.types';
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
@@ -172,8 +176,10 @@ import MiniReport from '@/shared/ui/MiniReport.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';  
 import ProfileEditModal from '../ui/ProfileEditModal.vue';
 import { useWeeklyReport } from  '@/features/report/logic/useWeeklyReport';
+import { authAPI } from '@/features/auth/api/authAPI';
 
 const router = useRouter();
+const authStore = useAuthStore();
 const { 
   userInfo, activeTab, isEditModalOpen, editForm, 
   openEditModal, closeEditModal, submitEdit 
@@ -188,6 +194,21 @@ const goBack = () => {
 const goToReport = () => {
   activeTab.value = 'report';
   router.push({ name: 'report' });
+};
+
+const handleWithdraw = async () => {
+  const confirmed = confirm('정말 회원탈퇴 하시겠습니까?\n탈퇴 후에는 복구가 어렵습니다.');
+  if (!confirmed) return;
+
+  try {
+    await authAPI.withdraw();
+    authStore.clearAuth();
+    alert('회원탈퇴가 완료되었습니다.');
+    router.push({ name: 'guest' });
+  } catch (error) {
+    console.error('회원탈퇴 실패:', error);
+    alert('회원탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.');
+  }
 };
 </script>
 
