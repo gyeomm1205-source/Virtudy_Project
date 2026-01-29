@@ -1,6 +1,6 @@
 # 1. Python 3.9 slim 버전 사용 (가볍고 안정적)
 # 필요에 따라 3.10이나 3.11로 변경 가능
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # 2. 작업 디렉토리 설정
 WORKDIR /app
