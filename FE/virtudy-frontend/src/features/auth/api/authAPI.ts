@@ -15,5 +15,9 @@ export const authAPI = {
   // 로그아웃
   logout: () => {
     return axios.post('/auth/logout');
+  },
+  // 회원탈퇴
+  withdraw: () => {
+    return axios.delete('/auth/withdraw');
   }
 };
