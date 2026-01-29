@@ -1,7 +1,7 @@
 // WebRTC 연결, 미디어 제어 로직
 
 import { ref, onUnmounted } from 'vue';
-import { RoomManager } from '@/core/managers/RoomManager';
+import { RoomManager } from '@/shared/api/livekit/RoomManager';
 
 export function useStudyRoom() {
     const roomManager = RoomManager.getInstance();
@@ -25,10 +25,16 @@ export function useStudyRoom() {
             remoteTracks.value = [];
 
             // 이전 리스너 제거 (중복 방지)
-            roomManager.removeAllListeners();
+            // [Fix] useAiHandler 등 다른 훅에서 등록한 리스너까지 지워버리는 문제 발생
+            // 개별 리스너 관리는 각 컴포넌트/훅의 onUnmounted에서 처리하는 것이 맞음 (다만 RoomManager엔 remove가 없음..ㅠ)
+            // 우선 이 줄을 제거하여 AI 리스너가 살아남게 수정
+            // roomManager.removeAllListeners();
 
             // 메시지 수신 리스너 등록 (채팅, 시스템 메시지)
             roomManager.onMessage((payload) => {
+                // [Fix] AI 데이터(category 필드 있음)는 채팅에 추가하지 않음
+                if (payload && payload.category) return;
+
                 messages.value.push(payload);
             });
 

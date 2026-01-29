@@ -3,7 +3,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
-const LIVEKIT_URL = 'ws://127.0.0.1:7880'; // 실제 LiveKit 서버 주소 (로컬 기본값)
+const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880'; // 환경변수 우선 사용
 const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
 
 export class RoomManager {
@@ -101,16 +101,30 @@ export class RoomManager {
             console.warn('[LiveKit] 연결이 끊어졌습니다.');
         });
 
+        // [추가] 데이터 메시지 수신 (AI 상태 정보 등)
+        this.room.on(RoomEvent.DataReceived, (payload, participant, _kind, _topic) => {
+            const strData = new TextDecoder().decode(payload);
+            try {
+                const data = JSON.parse(strData);
+                console.log(`[LiveKit] 데이터 수신 (${participant?.identity}):`, data);
+                // 기존 메시지 리스너에게 전달 (useAiHandler 등에서 처리)
+                this.messageListeners.forEach(listener => listener(data));
+            } catch (e) {
+                console.warn('[LiveKit] 데이터 파싱 실패:', strData);
+            }
+        });
+
         try {
             await this.room.connect(LIVEKIT_URL, token);
             console.log('[LiveKit] 서버 연결 성공');
 
             await this.room.localParticipant.setMicrophoneEnabled(false);
 
-            // [수정] AI와 카메라 충돌 방지를 위해, 브라우저는 무조건 가상 화면(Canvas)을 사용하도록 강제함
-            console.log('[LiveKit] AI 작동을 위해 가상 카메라를 강제로 사용합니다.');
-            const virtualTrack = await this.createVirtualVideoTrack();
-            await this.room.localParticipant.publishTrack(virtualTrack, { source: Track.Source.Camera });
+            // [수정] AI 봇(서버) 방식을 사용하므로 브라우저가 실제 카메라를 송출해야 함
+            console.log('[LiveKit] 실제 카메라를 시작합니다.');
+            await this.room.localParticipant.setCameraEnabled(true);
+            // const virtualTrack = await this.createVirtualVideoTrack();
+            // await this.room.localParticipant.publishTrack(virtualTrack, { source: Track.Source.Camera });
         } catch (e) {
             console.error(e);
             throw e;
@@ -122,6 +136,10 @@ export class RoomManager {
         this.stompClient = new Client({
             // SockJS를 Factory로 주입
             webSocketFactory: () => new SockJS(SOCKET_URL),
+            connectHeaders: {
+                memberId: this.userId,
+                roomId: this.roomId,
+            },
             debug: (str) => {
                 console.log(`[Stomp] ${str}`);
             },

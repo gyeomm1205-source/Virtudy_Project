@@ -77,6 +77,8 @@ public class SecurityConfig {
                 "http://localhost:3030", // (혹시 포트 다르면 추가)
                 "http://localhost:3031", // Vite dev server
                 "http://localhost:3032", // User's current port
+                "http://localhost:5173", // Vite Default Port
+                "http://127.0.0.1:5173",
                 "http://127.0.0.1:3030",
                 "http://127.0.0.1:3000",
                 "http://www.virtudy.com" // 운영 프론트엔드

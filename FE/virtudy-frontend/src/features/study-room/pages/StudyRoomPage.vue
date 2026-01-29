@@ -2,9 +2,12 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
-import { RoomManager } from '@/core/managers/RoomManager';
+import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
 import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
+import { useAiHandler } from '../logic/useAiHandler';
+import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
+
 
 // 1. 라우터 및 스토어 설정
 const route = useRoute();
@@ -27,6 +30,11 @@ const {
     messages, 
     remoteTracks 
 } = useStudyRoom();
+
+// 3.1 AI 핸들러 연결
+useAiHandler();
+const aiStore = useStudyRoomAiStore();
+
 
 // 4. 상태 변수
 const chatMessage = ref('');
@@ -147,7 +155,25 @@ onUnmounted(() => {
                     </div>
                 </section>
 
+                <!-- AI 상태 디버깅/표시 패널 (임시) -->
+                <div class="ai-status-panel">
+                    <h3>🤖 AI Analysis</h3>
+                    <div class="status-item">
+                        <span class="label">집중도:</span>
+                        <div class="score-bar">
+                            <div class="fill" :style="{ width: aiStore.concentrationScore + '%', background: aiStore.concentrationScore < 50 ? 'red' : 'green' }"></div>
+                        </div>
+                        <span class="value">{{ Math.round(aiStore.concentrationScore) }}점</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">상태:</span>
+                        <span class="badge" :class="aiStore.focusStatus">{{ aiStore.focusStatus }}</span>
+                    </div>
+
+                </div>
+
                 <aside class="chat-section">
+
                     <div class="chat-header">
                         <h3>💬 채팅</h3>
                     </div>
@@ -296,7 +322,28 @@ onUnmounted(() => {
 .video-card.local video { transform: scaleX(-1); }
 
 
+/* AI 상태 패널 */
+.ai-status-panel {
+    width: 200px;
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+    border-left: 1px solid #444;
+    overflow-y: auto;
+}
+.ai-status-panel h3 { margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 10px; font-size: 1rem; }
+.status-item { margin-bottom: 15px; }
+.status-item .label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px; }
+.score-bar { background: #555; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 4px; }
+.score-bar .fill { height: 100%; transition: width 0.3s, background-color 0.3s; }
+.badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; background: #555; }
+.badge.FOCUS { background: #2ecc71; color: white; }
+.badge.SLEEP { background: #e74c3c; color: white; }
+.badge.PHONE { background: #f1c40f; color: black; }
+.badge.AWAY { background: #95a5a6; color: white; }
+
 /* 채팅 섹션 */
+
 .chat-section {
     flex: 1;
     min-width: 300px;
