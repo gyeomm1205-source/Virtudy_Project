@@ -31,7 +31,7 @@ export interface RoomData {
   title: string;
   type: 'PUBLIC' | 'PRIVATE';
   currentUser: number;
-  
+
   /** 상세 설명 (목록 조회 시엔 없을 수 있음) */
   description?: string;
 

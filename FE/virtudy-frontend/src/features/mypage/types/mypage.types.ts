@@ -2,7 +2,7 @@ import type { User } from '@/shared/types/common.types';
 
 export interface UserProfileResponse extends User {
   // 이미 User에 있는 avatar, email, nickName, tier, jobType은 자동 상속됨
-  
+
   tierScore?: number; // 티어 점수
   favoriteRoomTitle?: string; //최애 스터디방 제목
   dailyPureStudyTime?: number; // 일일 순공부시간 (분)

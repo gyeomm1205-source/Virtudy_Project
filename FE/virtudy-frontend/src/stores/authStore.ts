@@ -21,7 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = token;
     localStorage.setItem('accessToken', token); // 브라우저 새로고침 대비
 
-    try { 
+    try {
       const decoded: any = jwtDecode(token);
 
       // 토큰에서 userId 추출
@@ -36,7 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  
+
 
   // 2. 신규 가입 플로우를 위한 임시 정보 저장
   interface SignupInfo {
@@ -79,9 +79,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       // 작성하신 MemberController의 주소로 요청
       const { data } = await api.get('/members/profile');
-      
+
       // 받아온 데이터를 스토어에 저장
-      userInfo.value = data; 
+      userInfo.value = data;
       console.log('내 정보 가져오기 성공:', data);
     } catch (error) {
       console.error('내 정보 불러오기 실패:', error);

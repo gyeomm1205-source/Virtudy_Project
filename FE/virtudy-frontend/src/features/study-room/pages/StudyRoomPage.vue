@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
-import { RoomManager } from '@/shared/api/livekit/RoomManager';
+import { RoomManager } from '@/core/managers/RoomManager';
 import { Track } from 'livekit-client';
 import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
 
