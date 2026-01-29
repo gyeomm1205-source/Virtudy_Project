@@ -11,7 +11,7 @@
             :nick-name="userInfo.nickName"
             :tier-score="userInfo.tierScore"
             :tier="userInfo.tier"
-            :favorite-room-title="userInfo.favoriteRoomTitle"
+            :favorite-room-title="userInfo.favoriteRoomTitle || '최애 스터디 없음'"
             :pure-study-time="userInfo.dailyPureStudyTime"
             :focus-depth="userInfo.dailyFocusDepth"
             :avatar-image-url="userInfo.avatarImageUrl"
@@ -58,10 +58,10 @@ const authStore = useAuthStore();
 
 const userInfo = ref<UserProfileResponse>({
   userId: "",
-  nickName: "닉네임",
+  nickName: "",
   email: "",
   jobType: "",
-  tier: "BRONZE",
+  tier: "",
   avatar: {
     hairFront: "",
     hairBack: "",
@@ -72,7 +72,7 @@ const userInfo = ref<UserProfileResponse>({
     clothesColor: "",
   },
   tierScore: 0,
-  favoriteRoomTitle: "최애스터디",
+  favoriteRoomTitle: "",
   dailyPureStudyTime: 0,
   dailyFocusDepth: 0,
   avatarImageUrl: "",
