@@ -87,8 +87,8 @@ withDefaults(defineProps<UserProfileProps>(), {
 });
 
 // 이미지 URLs
-const profileFrameUrl = "http://localhost:3845/assets/66144dc9e39a8373edb406dbf825edc71dbab23b.svg";
-const defaultProfileImage = "http://localhost:3845/assets/b8326e9b387ebdb70a5f94f9be04f6872ffd0f1b.png";
+const profileFrameUrl = "/vite.svg"; // [수정] 임시 플레이스홀더
+const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
 </script>
 
 <style scoped>

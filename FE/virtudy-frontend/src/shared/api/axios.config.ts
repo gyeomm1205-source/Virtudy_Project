@@ -51,8 +51,10 @@ instance.interceptors.response.use(
     const { config, response } = error;
 
     // config._retry 플래그를 확인하여 재발급 요청은 딱 한 번만 시도하도록 제한 (무한 루프 방지)
-    // 백엔드 가이드: 401(Unauthorized) 또는 특정 코드(AUTH_004) 체크
-    if (config && response && response.status === 401 && response.data?.code === 'AUTH_004' && !config._retry) {
+    // 백엔드 가이드: 401(Unauthorized) 또는 특정 코드(AUTH_004, TOKEN_EXPIRED) 체크
+    const isTokenExpired = response?.data?.code === 'AUTH_004' || response?.data?.code === 'TOKEN_EXPIRED';
+
+    if (config && response && response.status === 401 && isTokenExpired && !config._retry) {
       config._retry = true; // 현재 요청이 재시도 중임을 표시
 
       // 토큰 만료 에러(AUTH_004)일 경우 재발급 시도
@@ -83,7 +85,7 @@ instance.interceptors.response.use(
 
     // 그 외 에러는 백엔드가 정의한 에러 메시지를 활용해 알림 처리
     // AUTH_004(재발급 흐름)일 때는 alert을 띄우지 않도록 조건 추가
-    if (response?.data?.code !== 'AUTH_004') {
+    if (response?.data?.code !== 'AUTH_004' && response?.data?.code !== 'TOKEN_EXPIRED') {
       const errorMessage = response?.data?.message || '문제가 발생했습니다.';
       alert(errorMessage);
     }
