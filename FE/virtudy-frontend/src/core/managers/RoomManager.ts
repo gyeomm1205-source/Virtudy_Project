@@ -1,7 +1,6 @@
 import { Room, RoomEvent, RemoteParticipant, RemoteTrackPublication, RemoteTrack, LocalVideoTrack, Track } from 'livekit-client';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import type { st } from 'vue-router/dist/router-CWoNjPRp.mjs';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
 const LIVEKIT_URL = 'ws://127.0.0.1:7880'; // 실제 LiveKit 서버 주소 (로컬 기본값)
@@ -35,8 +34,10 @@ export class RoomManager {
         try {
             // [수정] 프론트엔드 로컬 토큰 생성기 사용 (백엔드 미구현 대응)
             // 백엔드 구현완료: 기존 LocalTokenGenerator 로직 삭제하고, 인자로 받은 token 사용
-            const { LocalTokenGenerator } = await import('../../lib/LocalTokenGenerator');
+            // 백엔드 구현완료: 기존 LocalTokenGenerator 로직 삭제하고, 인자로 받은 token 사용
+            const { LocalTokenGenerator } = await import('@/shared/lib/LocalTokenGenerator');
             const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
+            console.log(liveKitToken); // Use variable to avoid unused warning
 
             // 토큰 검사
             if (!token) {
@@ -74,7 +75,9 @@ export class RoomManager {
             ctx.fillText('AI Camera In Use', 200, 240);
         }
         const stream = canvas.captureStream(30);
-        return new LocalVideoTrack(stream.getVideoTracks()[0]);
+        const track = stream.getVideoTracks()[0];
+        if (!track) throw new Error('No video track found in canvas stream');
+        return new LocalVideoTrack(track);
     }
 
     // 2. LiveKit 연결 로직
@@ -143,7 +146,7 @@ export class RoomManager {
     // 트랙 구독 핸들러 (화면에 비디오 표시)
     private handleTrackSubscribed(
         track: RemoteTrack,
-        publication: RemoteTrackPublication,
+        _publication: RemoteTrackPublication,
         participant: RemoteParticipant
     ) {
         if (track.kind === 'video' || track.kind === 'audio') {
@@ -156,7 +159,7 @@ export class RoomManager {
     // 트랙 구독 해제 핸들러
     private handleTrackUnsubscribed(
         track: RemoteTrack,
-        publication: RemoteTrackPublication,
+        _publication: RemoteTrackPublication,
         participant: RemoteParticipant
     ) {
         console.log(`[LiveKit] 트랙 해제: ${participant.identity} (${track.kind})`);

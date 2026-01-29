@@ -1,6 +1,3 @@
-// 공통 타입 파일
-
-// 아바타 정보
 export interface AvatarConfig {
     hairFront: string;
     hairBack: string;
@@ -11,7 +8,6 @@ export interface AvatarConfig {
     clothesColor: string;
 }
 
-// 유저 정보
 export interface User {
     userId: string;
     nickName: string;
@@ -20,4 +16,8 @@ export interface User {
     tier: string;
     avatar?: AvatarConfig;
     avatarImageUrl?: string;
+    tierScore?: number; // UserProfile.vue uses this? User interface in common had tierScore?
 }
+// Note: common.types.ts seen in Step 760 DID NOT have tierScore.
+// But UserProfile.vue has tierScore.
+// I will stick to what common.types.ts had for now plus exact copy.

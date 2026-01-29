@@ -1,7 +1,7 @@
 
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '../../../stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { authAPI } from '../api/authAPI';
 
 /**
@@ -47,7 +47,7 @@ export const useOAuthCallback = () => {
         await router.push({ name: 'terms' });
       } else {
         // 기존 유저
-        const { nickName } = response.data;
+        const { nickName, userId } = response.data; // userId 추출
         if (!accessToken) {
           // isNewUser가 false인데 토큰이 없는 경우 -> 서버 오류
           throw new Error(
@@ -58,6 +58,7 @@ export const useOAuthCallback = () => {
         authStore.setToken(accessToken);
         if (nickName) {
           authStore.setUserInfo({
+            userId: userId || 'unknown', // userId 필수
             nickName,
             email: '',
             avatarImageUrl: '',

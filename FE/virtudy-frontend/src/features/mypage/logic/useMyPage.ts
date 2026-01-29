@@ -5,7 +5,7 @@ import type { UserProfileResponse } from '../types/mypage.types';
 
 export const useMyPage = () => {
   const authStore = useAuthStore();
-  
+
   // 상태
   const userInfo = ref<UserProfileResponse | null>(null);
   const isLoading = ref(false);
@@ -24,11 +24,11 @@ export const useMyPage = () => {
     try {
       const data = await getMyProfile();
       userInfo.value = data;
-      
+
       // 스토어 정보도 최신화 (헤더 등 전역 반영을 위해)
       if (authStore.userInfo) {
-        authStore.setUserInfo({ 
-          ...authStore.userInfo, 
+        authStore.setUserInfo({
+          ...authStore.userInfo,
           nickName: data.nickName,
           avatar: data.avatar,
           avatarImageUrl: data.avatarImageUrl ?? authStore.userInfo.avatarImageUrl,

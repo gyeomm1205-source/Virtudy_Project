@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useStudyRoom } from '../logic/useStudyRoom';
-import { RoomManager } from '@/shared/api/livekit/RoomManager';
+import { RoomManager } from '@/core/managers/RoomManager';
 import { Track } from 'livekit-client';
 
 const roomIdInput = ref('room-1');

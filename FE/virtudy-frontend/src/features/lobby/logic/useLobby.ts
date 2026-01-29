@@ -12,12 +12,12 @@ export function useLobby() {
 
   const authStore = useAuthStore();
   const { userId } = storeToRefs(authStore);
-  
+
   // 상태 (State)
   const publicRooms = ref<RoomData[]>([]); // 전체 방 목록
   const myRooms = ref<RoomData[]>([]);     // 내 방 목록
   const isLoading = ref(false);
-  
+
   // 내 방 ID 목록 (삭제 버튼 노출용 Set)
   const myRoomIds = computed(() => new Set(myRooms.value.map(r => r.roomId)));
 
@@ -25,8 +25,8 @@ export function useLobby() {
   const fetchAllRooms = async () => {
 
     if (!userId.value) {
-    alert('로그인이 필요한 서비스입니다.');
-    return; 
+      alert('로그인이 필요한 서비스입니다.');
+      return;
     }
 
     isLoading.value = true;
@@ -76,13 +76,13 @@ export function useLobby() {
     try {
       // 입장 API 호출
       const { data } = await lobbyAPI.enterRoom(userId.value, roomId, password);
-      
+
       // 테스트를 위해 콘솔에 토큰 출력
       console.log('✅ 입장 성공! 토큰:', data.liveKitToken);
-      
+
       // 토큰을 가지고 스터디 룸 페이지로 이동
       router.push({ name: 'StudyRoom', params: { roomId }, query: { token: data.liveKitToken } });
-      
+
     } catch (e: any) {
       handleApiError(e);
     }
@@ -92,8 +92,8 @@ export function useLobby() {
   const deleteRoom = async (roomId: string) => {
     if (!confirm('정말 이 스터디방을 삭제하시겠습니까?')) return;
     if (!userId.value) {
-    alert('로그인이 필요한 서비스입니다.');
-    return; 
+      alert('로그인이 필요한 서비스입니다.');
+      return;
     }
     try {
       await lobbyAPI.deleteRoom(userId.value, roomId);

@@ -35,9 +35,9 @@ const router = createRouter({
         const authStore = useAuthStore();
         // 로그인 상태면 UserPage('/user')로, 아니면 GuestPage('/guest')로 보냄
         if (authStore.isLoggedIn) {
-          return { name: 'user' }; 
+          return { name: 'user' };
         } else {
-          return { name: 'guest' }; 
+          return { name: 'guest' };
         }
       }
     },

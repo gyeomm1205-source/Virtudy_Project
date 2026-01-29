@@ -1,7 +1,7 @@
 // WebRTC 연결, 미디어 제어 로직
 
 import { ref, onUnmounted } from 'vue';
-import { RoomManager } from '@/shared/api/livekit/RoomManager';
+import { RoomManager } from '@/core/managers/RoomManager';
 
 export function useStudyRoom() {
     const roomManager = RoomManager.getInstance();

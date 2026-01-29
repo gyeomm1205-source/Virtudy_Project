@@ -47,7 +47,7 @@ instance.interceptors.response.use(
         // RT는 쿠키에 있으므로 별도 데이터 없이 재발급 요청만 보냄
         // instance 대신 axios(기본)를 사용하여 재발급 요청 자체가 인터셉터에 걸리지 않게 함 (순환 방지)
         const { data } = await axios.post(`${instance.defaults.baseURL}/auth/reissue`, {}, { withCredentials: true });
-        
+
         // 새 AT 저장 (백엔드가 Json Body로 주기로 함)
         const newAccessToken = data.accessToken;
         // 동적 import로 컨텍스트 문제 해결: 인터셉터 실행 시점에 스토어를 가져옴
@@ -74,7 +74,7 @@ instance.interceptors.response.use(
       const errorMessage = response?.data?.message || '문제가 발생했습니다.';
       alert(errorMessage);
     }
-    
+
     return Promise.reject(error);
   }
 );
