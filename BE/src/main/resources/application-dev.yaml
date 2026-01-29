@@ -73,7 +73,5 @@ management:
     tags:
       application: 'virtudy-server'
 
-      application: ${METRICS_APPLICATION}
-
 gms:
   key: ${GMS_KEY}
