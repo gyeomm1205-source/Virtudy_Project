@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,44 +24,47 @@ public class ReportPreparationService {
     private final ReportService reportService;
 
     /**
-     * 일간 리포트 생성 스케줄러
-     * 매일 새벽 4시 0분 0초 (cron = "0 0 4 * * *")에 실행됩니다.
-     * 새벽 시간대는 서버 트래픽이 적고, 사용자들이 전날 공부를 확실히 마친 시점이므로 배치를 돌리기에 적합합니다.
+     * 주간 리포트 생성 스케줄러
+     * 매주 월요일 새벽 4시 0분 0초 (cron = "0 0 4 * * MON")에 실행됩니다.
+     * 지난주(월~일)의 학습 데이터를 집계하여 리포트를 생성합니다.
+     * 주의! GMS 토큰이 사용되므로, 너무 많은 더미데이터로 무분별한 호출은 지양 (한 주에 한 사용자당, 약 20 크레딧 사용됨)
      */
-    @Scheduled(cron = "0 0 4 * * *")
-    public void createDailyReports() {
-        // 전날(yesterday) 데이터를 집계 대상으로 설정
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        LocalDateTime startOfDay = yesterday.atStartOfDay();
-        LocalDateTime endOfDay = yesterday.atTime(23, 59, 59);
+    @Scheduled(cron = "0 0 4 * * MON")
+//    @Scheduled(cron = "0 59 * * * *") // TEST용
+    @Transactional
+    public void createWeeklyReports() {
+        // 지난주 월요일 ~ 일요일 기간 설정
+        LocalDate today = LocalDate.now();
+        LocalDate lastMonday = today.minusWeeks(1).with(java.time.DayOfWeek.MONDAY);
+        LocalDate lastSunday = today.minusWeeks(1).with(java.time.DayOfWeek.SUNDAY);
 
-        log.info("일간 리포트 생성 배치 시작 [기준일: {}]", yesterday);
+        LocalDateTime startOfWeek = lastMonday.atStartOfDay();
+        LocalDateTime endOfWeek = lastSunday.atTime(23, 59, 59);
 
-        // 1. 어제 학습 기록이 있는 모든 세션 조회
-        // (세션이 끝나지 않은 경우도 있을 수 있지만, EndTime이 해당 범위에 있는 세션만 대상으로 함)
-        List<StudySession> sessions = studySessionRepository.findByEndTimeBetween(startOfDay, endOfDay);
+        log.info("주간 리포트 생성 배치 시작 [기간: {} ~ {}]", lastMonday, lastSunday);
+
+        // 1. 해당 주간에 학습 기록이 있는 모든 세션 조회
+        List<StudySession> sessions = studySessionRepository.findByEndTimeBetween(startOfWeek, endOfWeek);
 
         // 2. 멤버별로 세션 데이터 그룹화 (Map<Member, List<StudySession>>)
-        // DB를 여러 번 왔다 갔다 하지 않고, 한 번의 조회와 메모리 상 그룹핑으로 효율성 증대
         Map<Member, List<StudySession>> memberSessions = sessions.stream()
                 .collect(Collectors.groupingBy(StudySession::getMember));
 
         log.info("리포트 생성 대상: 총 {}명의 회원", memberSessions.size());
 
-        // 3. 각 멤버별로 리포트 생성 서비스 호출
+        // 3. 각 멤버별로 주간 리포트 생성 서비스 호출
         for (Map.Entry<Member, List<StudySession>> entry : memberSessions.entrySet()) {
             Member member = entry.getKey();
             List<StudySession> mySessions = entry.getValue();
             
             try {
-                // 개별 회원의 리포트 생성 중 에러가 나더라도, 다른 회원 작업은 계속되어야 함 -> try-catch
-                reportService.generateAndSaveDailyReport(member, yesterday, mySessions);
+                // 주간 리포트 생성 (기간 정보 전달)
+                reportService.generateAndSaveWeeklyReport(member, lastMonday, lastSunday, mySessions);
             } catch (Exception e) {
                 log.error("리포트 생성 실패 - memberId: {}, error: {}", member.getMemberId(), e.getMessage());
-                // 필요 시 슬랙 알림이나 별도 에러 테이블 저장 등 추가 조치 가능
             }
         }
 
-        log.info("일간 리포트 생성 배치 종료");
+        log.info("주간 리포트 생성 배치 종료");
     }
 }

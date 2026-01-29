@@ -1,6 +1,6 @@
 package com.ssafy.virtudy.member.domain;
 
-import com.ssafy.virtudy.common.BaseTimeEntity;
+import com.ssafy.virtudy.global.BaseTimeEntity;
 import com.ssafy.virtudy.study.domain.StudyRoom;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -88,8 +88,8 @@ public class Member extends BaseTimeEntity {
     }
 
     public void updateProfile(String nickName, JobType jobType) {
-        this.nickName = nickName;
-        this.jobType = jobType;
+        if (nickName != null) this.nickName = nickName;
+        if (jobType != null) this.jobType = jobType;
     }
 
     public void setAvatar(Avatar avatar) {

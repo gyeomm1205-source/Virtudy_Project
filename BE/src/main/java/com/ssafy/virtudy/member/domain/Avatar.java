@@ -18,7 +18,6 @@ public class Avatar {
     private Long id ;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
     @JoinColumn(name = "member_id")
     private Member member;
 
