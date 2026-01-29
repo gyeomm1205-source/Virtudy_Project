@@ -73,13 +73,7 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
-// 1. 빌드 결과물 이름을 'app.jar'로 고정 (Docker가 찾을 수 있게 함)
-bootJar {
-	archiveFileName = 'app.jar'
-}
 
-// build.gradle 맨 아래 추가
 jar {
 	enabled = false
 }
-
