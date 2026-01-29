@@ -29,6 +29,17 @@ public class StompHeaderChannelInterceptor implements ChannelInterceptor {
                 accessor.getSessionAttributes().put("roomId", roomId);
             }
         }
+        // 2. [퇴장] DISCONNECT 요청일 때: 프론트가 준 study-time을 세션에 '잠깐 저장'
+        // (주의: 강제 종료 시에는 이 if문을 타지 않음 -> null 처리됨)
+        else if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
+            String studyTime = accessor.getFirstNativeHeader("study-time");
+
+            if (studyTime != null) {
+                log.info("STOMP Disconnect (Normal Exit): study-time={}", studyTime);
+                // 여기서 넣어줘야 Listener에서 꺼내 쓸 수 있음!
+                Objects.requireNonNull(accessor.getSessionAttributes()).put("study-time", studyTime);
+            }
+        }
         return message;
     }
 }

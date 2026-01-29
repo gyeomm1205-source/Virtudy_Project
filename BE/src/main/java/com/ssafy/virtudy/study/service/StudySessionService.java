@@ -43,7 +43,12 @@ public class StudySessionService {
                 .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));
 
         // [Fix] Ghost Session Logic: 기존 세션이 있다면 강제 종료 후 재입장 허용
-        studySessionRepository.findByMemberAndEndTimeIsNull(member).ifPresent(StudySession::close);
+        studySessionRepository.findByMemberAndEndTimeIsNull(member)
+                .ifPresent(
+                studySession -> {
+                    studySession.close(0);
+                }
+        );
 
         int currentUsers = studySessionRepository.findByRoomAndEndTimeIsNull(room).size();
         if (currentUsers >= MAX_USER) {
@@ -94,13 +99,13 @@ public class StudySessionService {
         return enterRoom(member, randomRoom.getRoomId());
     }
 
-    public void exitRoom(String memberId) {
+    public void exitRoom(String memberId, int sessionRealStudyTime) {
         Member member = memberRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
 
         StudySession session = studySessionRepository.findByMemberAndEndTimeIsNull(member)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_PARTICIPATE_ERROR));
 
-        session.close();
+        session.close(sessionRealStudyTime);
     }
 }
