@@ -73,4 +73,5 @@ management:
     tags:
       application: 'virtudy-server'
 
-
+gms:
+  key: ${GMS_KEY}
