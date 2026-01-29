@@ -1,4 +1,4 @@
-package com.ssafy.virtudy.common;
+package com.ssafy.virtudy.global;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;

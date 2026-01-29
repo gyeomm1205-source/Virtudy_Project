@@ -42,10 +42,17 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
 	// Swagger
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
 
 	// WebSocket
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+	// Aop
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+	// Prometheus
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
 
 	// JavaFaker => 실제 사람 이름과 같은 데이터 만들 수 있음.
 	implementation 'net.datafaker:datafaker:2.1.0'
@@ -55,14 +62,18 @@ dependencies {
 	// LiveKit
 	implementation 'io.livekit:livekit-server:0.5.10'
 
+	// Kafka
+	implementation 'org.springframework.kafka:spring-kafka'
+
+	// WebClient
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
 }
 
-// build.gradle 맨 아래 추가
+
 jar {
 	enabled = false
 }
-

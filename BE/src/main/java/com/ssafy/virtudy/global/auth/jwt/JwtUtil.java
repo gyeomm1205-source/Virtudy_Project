@@ -40,8 +40,8 @@ public class JwtUtil {
                         "tokenType", "ACCESS",
                         "userId", member.getMemberId(),
                         "email", member.getEmail(),
-                        "userName", member.getNickName(),
-                        "userProfileImgUrl", member.getAvatarImageUrl()
+                        "userName", member.getNickName()
+                        // "userProfileImgUrl", member.getAvatar()
                 ));
     }
 

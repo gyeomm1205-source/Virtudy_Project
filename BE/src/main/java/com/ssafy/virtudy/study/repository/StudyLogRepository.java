@@ -30,6 +30,6 @@ public interface StudyLogRepository extends JpaRepository<StudyLog, Long> {
      */
     @Query("SELECT sl FROM StudyLog sl WHERE sl.member.id = :memberId AND sl.detectedAt BETWEEN :start AND :end")
     List<StudyLog> findByMemberIdAndDateRange(@Param("memberId") Long memberId,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end);
+                                              @Param("start") LocalDateTime start,
+                                              @Param("end") LocalDateTime end);
 }

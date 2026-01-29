@@ -1,5 +1,6 @@
 package com.ssafy.virtudy.study.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ssafy.virtudy.study.domain.StudyEventType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
@@ -19,6 +20,7 @@ public class StudyLogRequest {
     @Schema(description = "상태 타입 (FOCUS, SLEEP, PHONE, AWAY)", requiredMode = Schema.RequiredMode.REQUIRED)
     private StudyEventType eventType;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS", timezone = "Asia/Seoul")
     @Schema(description = "이벤트 감지 시간 (ISO-8601 형식)", example = "2024-01-24T10:00:00", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime detectedAt;
 }
