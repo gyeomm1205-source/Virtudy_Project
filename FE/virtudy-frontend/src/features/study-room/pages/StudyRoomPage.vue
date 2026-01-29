@@ -286,7 +286,7 @@ onUnmounted(() => {
     height: 100vh;
     background-color: #f0f2f5;
     overflow: hidden;
-    padding-top: 80px; /* Nav바 높이만큼 여백 */
+    padding-top: 0; /* GlobalNavBar 숨김에 맞춰 여백 제거 */
     box-sizing: border-box;
 }
 

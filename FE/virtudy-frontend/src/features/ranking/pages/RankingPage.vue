@@ -2,89 +2,89 @@
   <div class="min-h-screen bg-[var(--color-syrup)] relative w-full flex flex-col">
     <GlobalNavBar />
 
-    <div class="flex-1 flex flex-col items-center pt-[5rem] pb-[8rem] w-full min-h-[calc(100vh-200px)]">
+    <div class="flex-1 flex flex-col pt-[4.5rem] pb-[6.5rem] w-full min-h-[calc(100vh-200px)] px-[4.75rem]">
+      <div class="w-full max-w-[74rem] mx-auto relative">
+        <button @click="goBack"
+          class="absolute -left-13 top-[2rem] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="var(--color-choco)" class="w-full h-full">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+        </button>
 
-      <button @click="goBack"
-        class="absolute left-[4.75rem] top-[7.4375rem] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-          stroke="var(--color-choco)" class="w-full h-full">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-        </svg>
-      </button>
+        <div class="flex items-end justify-start gap-[3.5rem] mt-[4.5rem] mb-[1rem]">
+          <!-- 랭킹 제목 -->
+          <h1 class="text-[var(--color-pancake)] text-[clamp(4rem,9.75rem,9.75rem)] font-['Ram'] font-medium leading-none tracking-[-1.17rem] mt-[6.5rem] -ml-[4rem]">
+            랭킹
+          </h1>
 
-      <div class="w-[61.375rem] flex items-end justify-between mb-[1rem] relative">
-
-        <h1
-          class="text-[var(--color-pancake)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] transform translate-y-[1rem]">
-          랭킹
-        </h1>
-
-        <div class="flex items-center gap-[1.5rem] mb-[1rem]">
-          <div
-            class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)] bg-[var(--color-cream)] shadow-md">
-            <img v-if="authStore.userInfo?.avatarImageUrl" :src="authStore.userInfo.avatarImageUrl" alt="프로필"
-              class="w-full h-full object-cover" />
-            <div v-else
-              class="w-full h-full flex items-center justify-center text-[var(--color-choco)] font-bold text-xl">
-              ME
+          <!-- 아바타와 순위 정보 -->
+          <div class="flex items-center gap-[1.5rem] translate-x-[1rem]">
+            <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)] bg-[var(--color-cream)] shadow-md ">
+              <img v-if="authStore.userInfo?.avatarImageUrl" :src="authStore.userInfo.avatarImageUrl" alt="프로필"
+                class="w-full h-full object-cover" />
+              <div v-else
+                class="w-full h-full flex items-center justify-center text-[var(--color-choco)] font-bold text-xl">
+                ME
+              </div>
             </div>
-          </div>
 
-          <div class="flex flex-col items-start">
-            <div class="flex items-end gap-[0.5rem]">
-              <span class="text-[var(--color-choco)] text-[2.625rem] font-['Ram'] font-medium leading-none">
-                {{ myRankInfo?.nickName || authStore.userInfo?.nickName || '방문자' }}
-              </span>
+            <div class="flex flex-col items-start">
+              <div class="flex items-end gap-[0.5rem] -mt-[5rem]">
+                <span class="text-[var(--color-choco)] text-[clamp(1.5rem,2.625rem,2.625rem)] font-['Ram'] font-medium leading-none">
+                  {{ myRankInfo?.nickName || authStore.userInfo?.nickName || '방문자' }}
+                </span>
 
-              <span class="text-[var(--color-choco)] text-[2rem] font-['Xcu'] font-normal pb-[0.2rem]">
-                <template v-if="rankType === 'team' && !myRankInfo">
-                  님의 스터디는...
+                <span class="text-[var(--color-choco)] text-[clamp(1rem,2rem,2rem)] font-['Xcu'] font-normal pb-[0.2rem]">
+                  <template v-if="rankType === 'team' && !myRankInfo">
+                    님의 스터디는...
+                  </template>
+                  <template v-else>
+                    {{ rankType === 'private' ? '님의 순위는...' : '팀의 스터디 순위는...' }}
+                  </template>
+                </span>
+              </div>
+
+              <div class="text-[var(--color-butter)] font-['Xcu'] font-normal leading-none drop-shadow-md mt-[-0.5rem] translate-x-[14rem]"
+                :class="myRankInfo?.rank ? 'text-[clamp(3rem,8.125rem,8.125rem)]' : 'text-[clamp(2rem,3.5rem,3.5rem)] translate-y-[1rem]'">
+                <template v-if="myRankInfo?.rank">
+                  {{ myRankInfo.rank }}위
                 </template>
+
                 <template v-else>
-                  {{ rankType === 'private' ? '님의 순위는...' : '팀의 스터디 순위는...' }}
+                  <span v-if="rankType === 'private'" class="tracking-tighter">
+                    환영합니다!
+                  </span>
+                  <span v-else class="tracking-tighter">
+                    최애 스터디가 없습니다!
+                  </span>
                 </template>
-              </span>
-            </div>
-
-            <div class="text-[var(--color-butter)] font-['Xcu'] font-normal leading-none drop-shadow-md mt-[-0.5rem]"
-              :class="myRankInfo?.rank ? 'text-[8.125rem]' : 'text-[3.5rem] translate-y-[1rem]'">
-              <template v-if="myRankInfo?.rank">
-                {{ myRankInfo.rank }}위
-              </template>
-
-              <template v-else>
-                <span v-if="rankType === 'private'" class="tracking-tighter">
-                  환영합니다!
-                </span>
-                <span v-else class="tracking-tighter">
-                  최애 스터디가 없습니다!
-                </span>
-              </template>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="w-[61.375rem] relative">
+      <!-- 탭과 검색바 -->
+        <div class="max-w-[61.375rem] w-full ml-26 mr-0 relative mb-[2rem] translate-x-[rem]">
 
         <div class="flex justify-between items-end mb-[-2px] relative z-10 px-[2rem]">
           <div class="flex gap-0">
             <button @click="changeType('private')" :class="[
-              'border-2 border-[var(--color-choco)] border-b-0 px-[2rem] py-[1.25rem] rounded-t-[1.875rem]',
-              rankType === 'private' ? 'bg-[var(--color-butter)] h-[4.5rem]' : 'bg-[var(--color-cream)] h-[3.8rem] mt-[0.7rem]'
-            ]">
+              'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
+              rankType === 'private' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
+            ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
               <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">개인</span>
             </button>
             <button @click="changeType('team')" :class="[
-              'border-2 border-[var(--color-choco)] border-b-0 px-[2rem] py-[1.25rem] rounded-t-[1.875rem] ml-[-2px]',
-              rankType === 'team' ? 'bg-[var(--color-butter)] h-[4.5rem]' : 'bg-[var(--color-cream)] h-[3.8rem] mt-[0.7rem]'
-            ]">
+              'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px] ml-[-2px]',
+              rankType === 'team' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
+            ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
               <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">팀</span>
             </button>
           </div>
 
           <div
-            class="w-[24.5rem] h-[2.5rem] border-2 border-[var(--color-choco)] bg-[var(--color-cream2)] flex items-center px-[0.5rem] gap-[0.5rem] mb-[0.5rem] shadow-[4px_4px_0px_0px_var(--color-choco)]">
+            class="w-[min(24.5625rem,40vw)] h-[2.0625rem] border-2 border-[var(--color-choco)] bg-[var(--color-cream2)] flex items-center px-[0.5rem] gap-[0.5rem] mb-[0.5rem] shadow-[4px_4px_0px_0px_var(--color-choco)]">
             <svg viewBox="0 0 21 21" class="w-[1.25rem] h-[1.25rem]">
               <path
                 d="M8 2C11.314 2 14 4.686 14 8C14 9.248 13.587 10.397 12.897 11.324L18.707 17.071C19.098 17.461 19.098 18.095 18.707 18.485C18.317 18.876 17.683 18.876 17.293 18.485L11.486 12.678C10.559 13.368 9.41 13.781 8.162 13.781C4.848 13.781 2.162 11.095 2.162 7.781C2.162 4.467 4.848 1.781 8.162 1.781Z"
@@ -156,15 +156,15 @@
         <div class="mt-[1.5rem] flex justify-center gap-[1rem]">
           <button @click="changePage(0)" :disabled="currentPage === 0"
             class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform">
-            <svg viewBox="0 0 20 20" class="w-full h-full stroke-[var(--color-choco)] stroke-2 fill-none">
-              <path d="M15 5L10 10L15 15" />
-              <path d="M11 5L6 10L11 15" />
+            <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
+              <path d="M13 5L8 10L13 15L12 16L6 10L12 4L13 5Z" />
+              <path d="M9 5L4 10L9 15L8 16L2 10L8 4L9 5Z" />
             </svg>
           </button>
           <button @click="changePage(Math.max(0, currentPage - 1))" :disabled="currentPage === 0"
             class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform">
-            <svg viewBox="0 0 20 20" class="w-full h-full stroke-[var(--color-choco)] stroke-2 fill-none">
-              <path d="M13 5L8 10L13 15" />
+            <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
+              <path d="M13 5L8 10L13 15L12 16L6 10L12 4L13 5Z" />
             </svg>
           </button>
 
@@ -179,21 +179,20 @@
           <button @click="changePage(Math.min(totalPages - 1, currentPage + 1))"
             :disabled="currentPage >= totalPages - 1"
             class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform">
-            <svg viewBox="0 0 20 20" class="w-full h-full stroke-[var(--color-choco)] stroke-2 fill-none">
-              <path d="M7 5L12 10L7 15" />
+            <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
+              <path d="M7 5L12 10L7 15L8 16L14 10L8 4L7 5Z" />
             </svg>
           </button>
           <button @click="changePage(totalPages - 1)" :disabled="currentPage >= totalPages - 1"
             class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform">
-            <svg viewBox="0 0 20 20" class="w-full h-full stroke-[var(--color-choco)] stroke-2 fill-none">
-              <path d="M5 5L10 10L5 15" />
-              <path d="M9 5L14 10L9 15" />
+            <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
+              <path d="M7 5L12 10L7 15L8 16L14 10L8 4L7 5Z" />
+              <path d="M11 5L16 10L11 15L12 16L18 10L12 4L11 5Z" />
             </svg>
           </button>
         </div>
-
+        </div>
       </div>
-
     </div>
 
     <GlobalFooter />

@@ -20,12 +20,14 @@ const router = createRouter({
     {
       path: '/study',
       name: 'study',
-      component: StudyRoomPage
+      component: StudyRoomPage,
+      meta: { hideGlobalNav: true }
     },
     {
       path: '/study/:roomId',
       name: 'StudyRoom',
-      component: StudyRoomPage
+      component: StudyRoomPage,
+      meta: { hideGlobalNav: true }
     },
     {
       path: '/',

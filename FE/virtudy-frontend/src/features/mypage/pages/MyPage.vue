@@ -113,10 +113,6 @@
             <h3 class="text-[var(--color-butter)] text-[2.625rem] font-['Ram'] font-medium leading-[3rem] tracking-[-0.0525rem] ml-[1rem]">
             미니 리포트
           </h3>
-
-          <button class="text-[var(--color-cream2)] text-[1.25rem] font-['PfStardust30S'] font-normal leading-none tracking-[-0.05rem] underline cursor-pointer mr-[1rem]">
-            리포트 상세보기
-          </button>
           </div>
     
           <!-- 공부시간/집중도 카드 -->
@@ -128,26 +124,31 @@
           </div>
           
           <!-- 오각형 그래프 -->
-          <div class="mb-[1.25rem]">
+          <div class="mb-[1.25rem] relative">
             <PentagonChart 
-            :endurance="reportData?.endurance || 0"
-            :focusDepth="reportData?.focusDepth || 0"
-            :regularity="reportData?.regularity || 0"
-            :stability="reportData?.stability || 0"
-            :willPower="reportData?.willPower || 0"
-          />
+              :endurance="reportData?.endurance || 0"
+              :focusDepth="reportData?.focusDepth || 0"
+              :regularity="reportData?.regularity || 0"
+              :stability="reportData?.stability || 0"
+              :willPower="reportData?.willPower || 0"
+            />
+            <div
+              v-if="!hasReport && !isLoading"
+              class="absolute inset-0 z-10 flex items-center justify-center rounded-[20px] bg-[rgba(255,253,245,0.7)] backdrop-blur-[2px]"
+            >
+              <p class="text-[var(--color-choco)] text-[1.4rem] font-['PfStardust30S'] text-center px-6 leading-snug">
+                첫 주간 리포트를 준비 중이에요. 오늘의 공부부터 시작해볼까요?
+              </p>
+            </div>
           </div>
         </div>
-        
-        <!-- 회원탈퇴 링크 -->
-        <button 
-          @click="handleWithdraw"
-          class="absolute right-[2.5rem] bottom-[2rem] text-[var(--color-syrup)] text-[0.75rem] font-['Pretendard'] font-normal leading-none tracking-[-0.03rem] underline cursor-pointer"
-        >
-          회원탈퇴
-        </button>
       </div>
     </div>
+
+    <!-- 회원탈퇴 링크 -->
+    <button class="absolute left-[calc(83.33%-38px)] top-[70.2rem] text-[var(--color-syrup)] text-[0.75rem] font-['Pretendard'] font-normal leading-none tracking-[-0.03rem] underline cursor-pointer">
+      회원탈퇴
+    </button>
 
     <!-- Global Footer -->
     <GlobalFooter class="absolute bottom-0 w-full left-0" />
@@ -166,8 +167,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/authStore';
 import { useMyPage } from '../logic/useMyPage';
 import { JOB_OPTIONS } from '../types/mypage.types';
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
@@ -176,17 +177,16 @@ import MiniReport from '@/shared/ui/MiniReport.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';  
 import ProfileEditModal from '../ui/ProfileEditModal.vue';
 import { useWeeklyReport } from  '@/features/report/logic/useWeeklyReport';
-import { authAPI } from '@/features/auth/api/authAPI';
 
 const router = useRouter();
-const authStore = useAuthStore();
 const { 
   userInfo, activeTab, isEditModalOpen, editForm, 
   openEditModal, closeEditModal, submitEdit 
 } = useMyPage();
 
 // useWeeklyReport 내부의 onMounted가 실행되면서 자동으로 '지난주' 데이터를 불러옵니다.
-const { reportData } = useWeeklyReport();
+const { reportData, isLoading } = useWeeklyReport();
+const hasReport = computed(() => Boolean(reportData.value && reportData.value.reportId));
 const goBack = () => {
   router.push({ name: 'user' });
 };
@@ -194,21 +194,6 @@ const goBack = () => {
 const goToReport = () => {
   activeTab.value = 'report';
   router.push({ name: 'report' });
-};
-
-const handleWithdraw = async () => {
-  const confirmed = confirm('정말 회원탈퇴 하시겠습니까?\n탈퇴 후에는 복구가 어렵습니다.');
-  if (!confirmed) return;
-
-  try {
-    await authAPI.withdraw();
-    authStore.clearAuth();
-    alert('회원탈퇴가 완료되었습니다.');
-    router.push({ name: 'guest' });
-  } catch (error) {
-    console.error('회원탈퇴 실패:', error);
-    alert('회원탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.');
-  }
 };
 </script>
 

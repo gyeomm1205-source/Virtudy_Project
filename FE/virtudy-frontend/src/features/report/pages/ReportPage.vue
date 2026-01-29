@@ -47,11 +47,24 @@
 
     <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem]">
       <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border">
+        <div
+          v-if="!hasReport && !isLoading"
+          class="absolute inset-0 z-20 flex items-center justify-center rounded-[1.25rem] bg-[rgba(255,253,245,0.75)] backdrop-blur-[2px]"
+        >
+          <div class="text-center px-10">
+            <p class="text-[var(--color-choco)] text-[2rem] font-['Xcu'] leading-snug">
+              아직 주간리포트가 없습니다.
+            </p>
+            <p class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S'] mt-3">
+              버터디와 함께 공부를 시작하세요!
+            </p>
+          </div>
+        </div>
         
-        <div class="absolute right-[3rem] top-[2rem] z-30">
+        <div class="absolute right-[3rem] top-[2rem]" :class="hasReport ? 'z-30' : 'z-10'">
           <button 
             @click="showCalendar = !showCalendar"
-            class="hover:scale-105 transition-transform flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-[#805143]"
+            class="hover:scale-105 transition-transform flex items-center gap-[0.178rem] bg-[#FFF2CC] px-[0.948rem] py-[0.474rem] rounded-[1.875rem]"
             style="
               color: #805143;
               font-family: 'PfStardust30S';
@@ -62,7 +75,32 @@
               letter-spacing: -0.05rem;
             "
           >
-            📅 {{ currentWeek.monday.toLocaleDateString() }} - {{ currentWeek.sunday.toLocaleDateString() }} ▼
+            <svg 
+              width="23" 
+              height="23" 
+              viewBox="0 0 23 23" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              class="shrink-0"
+            >
+              <path 
+                d="M6.375 2.5V5.25M16.625 2.5V5.25M3.0625 8H19.9375M5.25 3.9375H17.75C18.8546 3.9375 19.75 4.83289 19.75 5.9375V18.4375C19.75 19.5421 18.8546 20.4375 17.75 20.4375H5.25C4.14543 20.4375 3.25 19.5421 3.25 18.4375V5.9375C3.25 4.83289 4.14543 3.9375 5.25 3.9375Z" 
+                stroke="#805143" 
+                stroke-width="1.5" 
+                stroke-linecap="round" 
+                stroke-linejoin="round"
+              />
+            </svg>
+            {{ formatDateRange(currentWeek.monday, currentWeek.sunday) }}
+            <div class="relative shrink-0 w-[2rem] h-[1.25rem]">
+              <div class="absolute left-[0.125rem] top-[0.125rem] w-[1.75rem] h-[1rem]">
+                <img 
+                  alt="" 
+                  class="block max-w-none size-full" 
+                  src="http://localhost:3845/assets/fc82f790716939d8d7fb00be557667ae980832c8.svg" 
+                />
+              </div>
+            </div>
           </button>
 
           <div v-if="showCalendar" class="absolute top-10 right-0 shadow-xl rounded-[20px] z-40">
@@ -130,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useWeeklyReport } from '../logic/useWeeklyReport';
 
@@ -144,10 +182,27 @@ const showCalendar = ref(false);
 
 const { 
   reportData, 
+  isLoading,
   currentWeek, 
   baseDate, 
-  changeWeek 
+  changeWeek,
 } = useWeeklyReport();
+
+const hasReport = computed(() => Boolean(reportData.value && reportData.value.reportId));
+
+const formatDateRange = (startDate: Date, endDate: Date) => {
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  
+  const startDay = startDate.getDate();
+  const endDay = endDate.getDate();
+  const month = monthNames[startDate.getMonth()];
+  const year = startDate.getFullYear();
+  
+  return `${startDay} - ${endDay} ${month} ${year}`;
+};
 
 const formatStudyTime = (minutes: number | undefined) => {
   if (!minutes) return '0h 0m';
