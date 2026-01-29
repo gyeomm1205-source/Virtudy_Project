@@ -1,10 +1,6 @@
 package com.ssafy.virtudy.global.init;
 
-<<<<<<< HEAD
-import com.ssafy.virtudy.group.repository.RoomMemberRepository;
-=======
 import com.ssafy.virtudy.member.domain.Avatar;
->>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
 import com.ssafy.virtudy.member.domain.*;
 import com.ssafy.virtudy.member.repository.AvatarRepository;
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;

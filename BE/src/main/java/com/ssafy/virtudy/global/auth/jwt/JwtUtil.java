@@ -41,11 +41,7 @@ public class JwtUtil {
                         "userId", member.getMemberId(),
                         "email", member.getEmail(),
                         "userName", member.getNickName()
-<<<<<<< HEAD
-//                        "userProfileImgUrl", member.getAvatar()
-=======
                         // "userProfileImgUrl", member.getAvatar()
->>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
                 ));
     }
 

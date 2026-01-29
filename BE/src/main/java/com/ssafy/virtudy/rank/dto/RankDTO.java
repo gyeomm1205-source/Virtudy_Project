@@ -1,9 +1,5 @@
 package com.ssafy.virtudy.rank.dto;
 
-<<<<<<< HEAD
-import com.ssafy.virtudy.member.domain.Avatar;
-=======
->>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
 import com.ssafy.virtudy.member.dto.AvatarResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

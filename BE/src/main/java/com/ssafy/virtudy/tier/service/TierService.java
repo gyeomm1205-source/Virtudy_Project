@@ -185,11 +185,7 @@ public class TierService {
      * 점수에 따른 티어 등급을 계산합니다.
      */
     private String calculateTierRank(int score) {
-<<<<<<< HEAD
-        if (score >= 100000) return DIAMOND; 
-=======
         if (score >= 100000) return DIAMOND;
->>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
         if (score >= 70000) return PLATINUM;
         if (score >= 40000) return GOLD;
         if (score >= 20000) return SILVER;

@@ -38,7 +38,7 @@ export const useOAuthCallback = () => {
       const response = await authAPI.kakaoCallback(code);
 
       // 디버깅 코드 (나중에 지워야함)-------------------
-      console.log(response)
+      console.log('DEBUG 1 : ', response)
       // -----------------------------
 
       // 응답에서 토큰 및 신규/기존 유저 여부 추출
@@ -58,6 +58,12 @@ export const useOAuthCallback = () => {
             '로그인에 실패했습니다. 서버에서 인증 토큰을 받지 못했습니다.',
           );
         }
+
+        // 디버깅 코드 (나중에 지워야함)-------------------
+      console.log('DEBUG 2 : ', response)
+      // -----------------------------
+
+      
         // 토큰 저장 후 유저 페이지로
         authStore.setToken(accessToken);
         if (nickName) {

@@ -15,7 +15,6 @@ services:
       - "LIVEKIT_KEYS=${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-secret}"
     networks:
       - virtudy-network
-<<<<<<< HEAD
 
 
 #  # Redis for LiveKit (and potential other uses)
@@ -32,5 +31,3 @@ services:
 #  virtudy-network:
 #    driver: bridge
 
-=======
->>>>>>> 317f96e202cdb0fc59fa575fb5cd7806f9f6905d
