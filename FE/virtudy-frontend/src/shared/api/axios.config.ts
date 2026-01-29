@@ -10,7 +10,7 @@ declare module 'axios' {
 // 1. Axios 인스턴스 생성
 const instance = axios.create({
   // 운영 환경과 로컬 환경 주소를 유연하게 대처하기 위해 환경변수 사용 권장
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL + '/api' || '/api/api',
   withCredentials: true, // RT(HttpOnly Cookie)를 주고받기 위해 필수
   headers: {
     'Content-Type': 'application/json',
