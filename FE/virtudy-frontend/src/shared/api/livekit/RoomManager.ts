@@ -3,10 +3,15 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
-const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880'; // 환경변수 우선 사용
-const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+// const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880'; // 환경변수 우선 사용
+const LIVEKIT_URL = 'ws://i14a703.p.ssafy.io:7880'; // 환경변수 우선 사용
+
+// const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+const SOCKET_URL = 'https://i14a703.p.ssafy.io:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+
 // [추가] AI 서버 웹소켓 주소 (FastAPI 등 AI 서버의 웹소켓 엔드포인트)
-const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
+// const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
+const AI_SOCKET_URL = 'ws://i14a703.p.ssafy.io:8000/ws/analysis';
 
 export class RoomManager {
     private static instance: RoomManager;
