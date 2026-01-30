@@ -14,6 +14,7 @@
             :favorite-room-title="userInfo.favoriteRoomTitle || '최애 스터디 없음'"
             :pure-study-time="userInfo.dailyPureStudyTime"
             :focus-depth="userInfo.dailyFocusDepth"
+            @click-profile="handleProfileClick"
             :avatar-image-url="userInfo.avatarImageUrl"
           />
           
@@ -41,7 +42,6 @@
 </template>
 
 <script setup lang="ts">
-/* 스크립트 부분은 기존과 동일하므로 그대로 두시면 됩니다 */
 import { ref, onMounted, onActivated } from 'vue'; // [추가] onActivated
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore'; 
@@ -139,6 +139,23 @@ const handleCreateRoom = () => console.log("방 만들기");
 const handleShowRoomList = () => {
   router.push('/lobby');
 };
+
+// 아바타 클릭 핸들러
+const handleProfileClick = () => {
+  // 아바타 데이터가 비어있는지 확인
+  // (필수 파츠인 hairFront가 없으면 아바타가 없는 것으로 간주)
+  const hasAvatar = userInfo.value.avatar && userInfo.value.avatar.hairFront;
+
+  if (!hasAvatar) {
+    // 아바타가 없으면 생성 페이지로 이동
+    if (confirm("아직 아바타가 없습니다. 나만의 아바타를 만드시겠습니까? 🎨")) {
+        router.push('/avatar/create');
+    }
+  } else {
+    console.log("이미 아바타가 있습니다.");
+  }
+};
+
 
 // 데이터 불러오는 함수 분리
 const fetchUserData = async () => {

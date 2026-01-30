@@ -18,7 +18,7 @@ const SvgComponent = computed(() => {
   return defineAsyncComponent({
     // @/assets/avatar/ 경로에서 파일 로드
     loader: () => import(`@/assets/avatar/${props.category}_${props.option}.svg`),
-    errorComponent: { template: '' } // 에러 시 빈 화면 처리
+    // errorComponent: { template: '' } // 에러 시 빈 화면 처리
   });
 });
 
