@@ -100,4 +100,24 @@ public class Member extends BaseTimeEntity {
     public void updateStatus(MemberStatType status) {
         this.status = status;
     }
+
+    // 재가입 편의 메서드: setter 굳이 ? JPA dirty checking 으로도 충분히 가능할 듯 ㅇㅇ
+    public void rejoin(String nickName,
+                       JobType jobType,
+                       boolean isServiceAgreed,
+                       boolean isVideoAgreed,
+                       boolean isPersonalAgreed) {
+        this.nickName = nickName;
+        this.jobType = jobType;
+        this.isServiceAgreed = isServiceAgreed;
+        this.isVideoAgreed = isVideoAgreed;
+        this.isPersonalAgreed = isPersonalAgreed;
+        // 강제 초기화 부분
+        this.status = MemberStatType.ACTIVE; // 상태 부활!
+        this.avatarGenCount = 0; // 초기화 필요한 필드 리셋
+        this.avatar = null;
+        this.favoriteRoom = null;
+    }
+
+
 }

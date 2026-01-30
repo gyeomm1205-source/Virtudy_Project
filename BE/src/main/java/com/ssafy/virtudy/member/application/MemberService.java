@@ -32,7 +32,7 @@ public class MemberService {
         Report todayReport = reportRepository.findByMemberAndReportDate(member, yesterday)
                 .orElse(null);
 
-        MemberGameStat gameStat = memberGameStatRepository.findByMemberId(member.getId())
+        MemberGameStat gameStat = memberGameStatRepository.findByMember(member)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_GAME_STAT_NOT_FOUND_ERROR));
         int tierScore = gameStat.getTierScore();
         String tier = rankService.calculateTier(tierScore).name();
