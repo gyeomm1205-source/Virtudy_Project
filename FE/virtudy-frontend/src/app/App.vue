@@ -1,11 +1,15 @@
 <template>
-  <GlobalNavBar />
+  <GlobalNavBar v-if="showGlobalNav" />
   <RouterView />
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
+import { computed } from 'vue';
+import { RouterView, useRoute } from 'vue-router';
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
+
+const route = useRoute();
+const showGlobalNav = computed(() => !route.meta?.hideGlobalNav);
 </script>
 
 <style>
