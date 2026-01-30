@@ -36,9 +36,9 @@ const formatTime = (minutes: number) => {
   
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
-
+  //분이 딱 맞아떨어지면 시간만 표시(120분->2h)
   if (mins === 0) return `${hours}h`;
-  
+  //나머지가 있으면 분까지 리턴(135분->2h 15m)
   return `${hours}h ${mins}m`;
 };
 </script>

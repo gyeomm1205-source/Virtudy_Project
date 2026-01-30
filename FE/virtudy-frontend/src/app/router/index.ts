@@ -7,7 +7,7 @@ import UserPage from '@/features/main/pages/UserPage.vue';
 import OAuthCallbackPage from '@/features/auth/pages/OAuthCallbackPage.vue'; // 콜백 처리를 위한 페이지
 import TermsOfServicePage from '@/features/onboarding/pages/TermsOfServicePage.vue';
 import OnboardingSurveyPage from '@/features/onboarding/pages/OnboardingSurveyView.vue';
-import StudyRoom from '@/features/study-room/ui/StudyRoom.vue';
+import StudyRoomPage from '@/features/study-room/pages/StudyRoomPage.vue';
 import IntroductionPage from '@/features/introduction/pages/IntroductionPage.vue';
 import RankingPage from '@/features/ranking/pages/RankingPage.vue';
 import MyPage from '@/features/mypage/pages/MyPage.vue';
@@ -20,7 +20,14 @@ const router = createRouter({
     {
       path: '/study',
       name: 'study',
-      component: StudyRoom
+      component: StudyRoomPage,
+      meta: { hideGlobalNav: true }
+    },
+    {
+      path: '/study/:roomId',
+      name: 'StudyRoom',
+      component: StudyRoomPage,
+      meta: { hideGlobalNav: true }
     },
     {
       path: '/',
@@ -30,9 +37,9 @@ const router = createRouter({
         const authStore = useAuthStore();
         // 로그인 상태면 UserPage('/user')로, 아니면 GuestPage('/guest')로 보냄
         if (authStore.isLoggedIn) {
-          return { name: 'user' }; 
+          return { name: 'user' };
         } else {
-          return { name: 'guest' }; 
+          return { name: 'guest' };
         }
       }
     },
@@ -63,7 +70,7 @@ const router = createRouter({
       }
     },
     {
-      path: '/login/callback/kakao',
+      path: '/auth/kakao/callback',
       name: 'kakao-callback',
       component: OAuthCallbackPage
     },

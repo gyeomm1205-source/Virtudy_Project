@@ -8,7 +8,7 @@ export interface RankItem {
   rank: number;
   score: number;
   email: string;    // 본인 확인용 (유니크 키로 사용 가능)
-  avatar: AvatarConfig; 
+  avatar: AvatarConfig;
   tier: string;
 }
 

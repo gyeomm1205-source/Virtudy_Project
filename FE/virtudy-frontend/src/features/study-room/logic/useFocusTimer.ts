@@ -1,1 +1,53 @@
-// 집중 타이머 로직
+import { onUnmounted, ref, watch, type Ref } from 'vue';
+
+export function useFocusTimer(isDistracted: Ref<boolean>) {
+	const focusSeconds = ref(0);
+	const isRunning = ref(false);
+	let intervalId: ReturnType<typeof setInterval> | null = null;
+
+	const start = () => {
+		if (isRunning.value) return;
+		isRunning.value = true;
+		intervalId = setInterval(() => {
+			focusSeconds.value += 1;
+		}, 1000);
+	};
+
+	const pause = () => {
+		if (!isRunning.value) return;
+		isRunning.value = false;
+		if (intervalId) {
+			clearInterval(intervalId);
+			intervalId = null;
+		}
+	};
+
+	const reset = () => {
+		pause();
+		focusSeconds.value = 0;
+	};
+
+	watch(
+		isDistracted,
+		(blocked) => {
+			if (blocked) {
+				pause();
+			} else {
+				start();
+			}
+		},
+		{ immediate: true }
+	);
+
+	onUnmounted(() => {
+		pause();
+	});
+
+	return {
+		focusSeconds,
+		isRunning,
+		start,
+		pause,
+		reset,
+	};
+}

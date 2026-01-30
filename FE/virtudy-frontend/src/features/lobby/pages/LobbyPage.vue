@@ -21,11 +21,7 @@
       
       <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px]">
         <div class="absolute left-[54px] top-[83px] w-[146px] h-[146px] rounded-full overflow-hidden border-4 border-[var(--color-choco)]">
-          <img 
-            src="http://localhost:3845/assets/ae7ca0939b29738c16aee5cf86953e893d60c594.svg"
-            alt="프로필 사진"
-            class="w-full h-full object-cover"
-          />
+          프로필 사진
         </div>
         
         <div class="absolute top-[260px] w-full flex flex-col gap-[10px]">
@@ -46,11 +42,12 @@
       <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px]">
         <RoomList 
           :rooms="displayedRooms"
-          @roomClick="handleRoomClick"
+          :isMyRoomTab="currentFilter === 'myRooms'"  @roomClick="handleRoomClick"
           @filterChange="setFilter"
-          @sortChange="setSortBy"
           @search="onSearchInput"
-        />
+          @edit="handleEditRoom"      
+          @delete="handleDeleteRoom"
+          @toggleFavorite="handleToggleFavorite" />
       </div>
 
     </main>
@@ -59,11 +56,12 @@
       <GlobalFooter />
     </div>
 
-    <CreateRoomModal 
-      v-if="showModal" 
-      @close="showModal = false"
-      @success="fetchAllRooms" 
-    />
+  <CreateRoomModal 
+    v-if="showModal" 
+    :initialData="selectedRoom" 
+    @close="showModal = false"
+    @success="fetchAllRooms" 
+  />
 
   </div>
 </template>
@@ -77,12 +75,14 @@ import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
 import { useLobby } from '@/features/lobby/logic/useLobby';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI'; // 랜덤매칭용
-
+import type { RoomData } from '@/features/lobby/types/lobby.types'; // 방 데이터 타입
 // ✅ UI 컴포넌트 import
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RoomList from '@/shared/ui/RoomList.vue';
 import CreateRoomModal from '../ui/CreateRoomModal.vue'; // 새로 만든 모달
+
+import { maxMembers } from '@/shared/config/constants'; // 상수 import
 
 const router = useRouter();
 
@@ -95,13 +95,16 @@ const {
   myRooms, 
   // isLoading, // 로딩바 필요하면 사용
   fetchAllRooms, 
-  joinRoom 
+  joinRoom,
+  deleteRoom,
+  updateRoom,
+  toggleFavoriteRoom
 } = useLobby();
 
-// 2. UI 상태 관리
+// UI 상태 관리
 const showModal = ref(false); // 모달 표시 여부
+const selectedRoom = ref<RoomData | null>(null);
 const currentFilter = ref<string>('all'); // 'all' | 'my'
-const sortBy = ref<string>('popular');
 const searchQuery = ref<string>('');
 const currentPage = ref<number>(1);
 const ITEMS_PER_PAGE = 6;
@@ -115,7 +118,22 @@ const openCreateModal = () => {
     alert('로그인이 필요한 서비스입니다.');
     return;
   }
+  selectedRoom.value = null; // 생성 모드이므로 데이터 비우기
   showModal.value = true;
+};
+
+// 방 수정 버튼 클릭 
+const handleEditRoom = (room: any) => {
+  // RoomList에서 받은 room 데이터를 selectedRoom에 저장
+  // (RoomList의 room 타입과 RoomData 타입이 호환된다고 가정)
+  selectedRoom.value = room; 
+  showModal.value = true;
+};
+
+// ✅ 방 삭제 버튼 클릭
+const handleDeleteRoom = async (roomId: string) => {
+    // useLobby에서 가져온 deleteRoom 함수 사용
+    await deleteRoom(roomId);
 };
 
 // 랜덤 매칭
@@ -125,7 +143,7 @@ const handleRandomMatch = async () => {
     return;
   }
   try {
-    const { data } = await lobbyAPI.enterRandomRoom(userId.value);
+    const  data  = await lobbyAPI.enterRandomRoom(userId.value);
     // 입장 성공 -> 스터디룸으로 이동 (userId를 사용)
     router.push(`/study/${data.userId}?token=${data.liveKitToken}`);
   } catch (e) {
@@ -140,6 +158,8 @@ const handleRoomClick = async (room: any) => {
   await joinRoom(room.roomId);
 };
 
+
+
 // 탭 변경 (전체 <-> 내 스터디)
 const setFilter = (filter: string) => {
   currentFilter.value = filter;
@@ -148,17 +168,12 @@ const setFilter = (filter: string) => {
   fetchAllRooms(); // 탭 바꿀 때 데이터 갱신
 };
 
-const setSortBy = (sort: string) => {
-  sortBy.value = sort;
-  currentPage.value = 1;
-};
-
 const onSearchInput = (query: string) => {
   searchQuery.value = query;
   currentPage.value = 1;
 };
 
-// 3. Computed Properties (데이터 가공)
+// Computed Properties (데이터 가공)
 
 // 현재 탭에 맞는 데이터 소스 선택
 const targetSourceRooms = computed(() => {
@@ -178,16 +193,13 @@ const filteredRooms = computed(() => {
     );
   }
 
-  // 정렬
-  if (sortBy.value === 'popular') {
-    // API 필드명 currentUser 사용 (기존 currentMembers 대응)
-    filtered.sort((a, b) => (b.currentUser || 0) - (a.currentUser || 0));
-  } else if (sortBy.value === 'latest') {
-    // createdAt 필드가 없으므로 roomId 기반으로 정렬
-    filtered.sort((a, b) => b.roomId.localeCompare(a.roomId));
-  }
   return filtered;
 });
+
+// ✅ [NEW] 하트 클릭 핸들러
+const handleToggleFavorite = async (roomId: string) => {
+  await toggleFavoriteRoom(roomId);
+};
 
 // 페이지네이션 및 RoomList 컴포넌트 타입 매핑
 const displayedRooms = computed(() => {
@@ -200,8 +212,11 @@ const displayedRooms = computed(() => {
     roomId: room.roomId,
     title: room.title,
     currentMembers: room.currentUser,
-    maxMembers: 4, // 기본값으로 설정
-    createdAt: new Date().toISOString() // 현재 시간으로 설정
+    maxMembers: maxMembers,
+    createdAt: new Date().toISOString(), // 현재 시간으로 설정
+    owner: room.owner || false, 
+    description: room.description,
+    favorite: room.favorite || false // ✅ favorite 속성 추가
   }));
 });
 

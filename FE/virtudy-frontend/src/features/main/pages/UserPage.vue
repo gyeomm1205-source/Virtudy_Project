@@ -11,7 +11,7 @@
             :nick-name="userInfo.nickName"
             :tier-score="userInfo.tierScore"
             :tier="userInfo.tier"
-            :favorite-room-title="userInfo.favoriteRoomTitle"
+            :favorite-room-title="userInfo.favoriteRoomTitle || '최애 스터디 없음'"
             :pure-study-time="userInfo.dailyPureStudyTime"
             :focus-depth="userInfo.dailyFocusDepth"
             :avatar-image-url="userInfo.avatarImageUrl"
@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 /* 스크립트 부분은 기존과 동일하므로 그대로 두시면 됩니다 */
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onActivated } from 'vue'; // [추가] onActivated
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore'; 
 import { useMainRanking } from '@/features/ranking/logic/useMainRanking';
@@ -57,10 +57,11 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const userInfo = ref<UserProfileResponse>({
-  nickName: "닉네임",
+  userId: "",
+  nickName: "",
   email: "",
   jobType: "",
-  tier: "BRONZE",
+  tier: "",
   avatar: {
     hairFront: "",
     hairBack: "",
@@ -71,7 +72,7 @@ const userInfo = ref<UserProfileResponse>({
     clothesColor: "",
   },
   tierScore: 0,
-  favoriteRoomTitle: "최애스터디",
+  favoriteRoomTitle: "",
   dailyPureStudyTime: 0,
   dailyFocusDepth: 0,
   avatarImageUrl: "",
@@ -85,12 +86,21 @@ const handleShowRoomList = () => {
   router.push('/lobby');
 };
 
-onMounted(async () => {
+// 데이터 불러오는 함수 분리
+const fetchUserData = async () => {
+  // [추가] 랭킹 정보도 같이 갱신
   fetchTopRanks();
+  
   try {
     const data = await getMyProfile();
-    userInfo.value = data; 
+    // [중요] 받아온 데이터로 userInfo 덮어쓰기
+    // favoriteRoomTitle이 null이면 빈 문자열로 처리
+    userInfo.value = {
+      ...data,
+      favoriteRoomTitle: data.favoriteRoomTitle || "" 
+    };
     
+    // AuthStore 동기화 (필요시)
     if (authStore.userInfo) {
        authStore.setUserInfo({
          ...authStore.userInfo,
@@ -100,9 +110,17 @@ onMounted(async () => {
        });
     }
   } catch (error) {
-    if (authStore.userInfo) {
-      userInfo.value.nickName = authStore.userInfo.nickName;
-    }
+    console.error("프로필 로딩 실패:", error);
+    // 에러 시 처리 (기존 로직 유지)
   }
+};
+
+onMounted(() => {
+  fetchUserData();
+});
+
+// [추가] 페이지가 캐시되어 있다가 다시 활성화될 때도 데이터 갱신 (KeepAlive 사용 시 필수)
+onActivated(() => {
+  fetchUserData();
 });
 </script>

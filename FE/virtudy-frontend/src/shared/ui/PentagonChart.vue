@@ -1,28 +1,21 @@
 <template>
   <div class="bg-[var(--color-cream)] flex flex-col items-center justify-center h-[23.6875rem] p-[1.25rem] rounded-[1.875rem] relative shadow-md">
     <div class="h-[20.8125rem] w-[29.25rem] relative">
-      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[22rem] h-[22rem]">
-        <svg viewBox="45 0 190 190" class="w-full h-full">
-          <polygon points="139.5,20 213.5,86 185.5,172 93.5,172 65.5,86" fill="none" stroke="var(--color-syrup)" stroke-width="2" opacity="0.3"/>
-          <polygon points="139.5,40 193.5,96 175.5,152 103.5,152 85.5,96" fill="none" stroke="var(--color-syrup)" stroke-width="2" opacity="0.3"/>
-          <polygon points="139.5,60 173.5,106 165.5,132 113.5,132 105.5,106" fill="none" stroke="var(--color-syrup)" stroke-width="2" opacity="0.3"/>
-          <polygon points="139.5,80 153.5,116 155.5,112 123.5,112 125.5,116" fill="none" stroke="var(--color-syrup)" stroke-width="2" opacity="0.3"/>
-          
-          <polygon :points="dynamicPoints" fill="var(--color-butter)" stroke="var(--color-choco)" stroke-width="3" opacity="0.8"/>
-          
-          <line x1="139.5" y1="139.5" x2="139.5" y2="20" stroke="var(--color-syrup)" stroke-width="1" opacity="0.5"/>
-          <line x1="139.5" y1="139.5" x2="213.5" y2="86" stroke="var(--color-syrup)" stroke-width="1" opacity="0.5"/>
-          <line x1="139.5" y1="139.5" x2="185.5" y2="172" stroke="var(--color-syrup)" stroke-width="1" opacity="0.5"/>
-          <line x1="139.5" y1="139.5" x2="93.5" y2="172" stroke="var(--color-syrup)" stroke-width="1" opacity="0.5"/>
-          <line x1="139.5" y1="139.5" x2="65.5" y2="86" stroke="var(--color-syrup)" stroke-width="1" opacity="0.5"/>
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[29.25rem] h-[20.8125rem]">
+        <svg viewBox="0 0 468 333" class="w-full h-full">
+          <!-- 배경 라인들 -->
+          <image x="94.632" y="27.132" width="278.736" height="278.736" href="http://localhost:3845/assets/bef8bd2f915d200972958c31992fcafbcb35d61c.svg" />
+          <!-- 데이터 폴리곤 (동적) -->
+          <image x="153.166" y="166" stroke-width="3" width="161.667" height="111.494" href="http://localhost:3845/assets/f93ddba6c9bcc31ea8f652c30e902315bc50e2d0.svg" />
+          <polygon :points="dynamicPoints" fill="var(--color-butter)" opacity="0.7" style="transition: all 0.5s ease-in-out" />
         </svg>
       </div>
       
-      <p class="absolute left-1/2 top-0 -translate-x-1/2 text-[var(--color-syrup)] text-[1.5rem] font-['PfStardust30S']">지구력</p>
-      <p class="absolute right-8 top-[calc(50%-2.3rem)] text-[var(--color-syrup)] text-[1.5rem] font-['PfStardust30S']">집중력</p>
-      <p class="absolute right-[5rem] bottom-[1rem] text-[var(--color-syrup)] text-[1.5rem] font-['PfStardust30S']">규칙성</p>
-      <p class="absolute left-[5rem] bottom-[1rem] text-[var(--color-syrup)] text-[1.5rem] font-['PfStardust30S']">안정감</p>
-      <p class="absolute left-8 top-[calc(50%-2.3rem)] text-[var(--color-syrup)] text-[1.5rem] font-['PfStardust30S']">의지력</p>
+      <p class="absolute left-1/2 -top-3 -translate-x-1/2 text-[var(--color-syrup)] text-[1.744rem] font-['PfStardust30S'] tracking-[-0.07rem]">지구력</p>
+      <p class="absolute right-8 top-25 text-[var(--color-syrup)] text-[1.744rem] font-['PfStardust30S'] tracking-[-0.07rem]">집중력</p>
+      <p class="absolute left-[calc(50%+6rem)] bottom-5 text-[var(--color-syrup)] text-[1.744rem] font-['PfStardust30S'] tracking-[-0.07rem] text-center">규칙성</p>
+      <p class="absolute right-[calc(50%+6rem)] bottom-5 text-[var(--color-syrup)] text-[1.744rem] font-['PfStardust30S'] tracking-[-0.07rem] text-center">안정감</p>
+      <p class="absolute left-8 top-25 text-[var(--color-syrup)] text-[1.744rem] font-['PfStardust30S'] tracking-[-0.07rem] text-right">의지력</p>
     </div>
   </div>
 </template>
@@ -46,19 +39,16 @@ const props = withDefaults(defineProps<PentagonProps>(), {
   willPower: 50
 });
 
-// 차트 중심점 (SVG 좌표 기준, 눈대중으로 맞춘 중심)
-const CENTER = { x: 139.5, y: 139.5 }; // *주의: 제공된 SVG 그리드가 정오각형이 아니라 중심이 약간 아래에 있습니다. 
-// 시각적 중심을 맞추기 위해 Y값을 그리드 중심(대략 110 정도)에 맞춰야 정확하지만, 
-// 여기서는 제공된 SVG의 line x1, y1 시작점인 139.5를 따랐습니다. 
-// 만약 그리드와 어긋나면 CENTER.y 값을 105~110 사이로 조정하세요.
+// 차트 중심점 (새로운 viewBox 0 0 468 333 기준)
+const CENTER = { x: 234, y: 166.5 };
 
-// 각 꼭짓점의 최대 좌표 (값 100일 때)
+// 각 꼭짓점의 최대 좌표 (값 100일 때) - 정오각형
 const MAX_POINTS = [
-  { x: 139.5, y: 20 },  // Top (지구력)
-  { x: 213.5, y: 86 },  // Right-Top (집중력)
-  { x: 185.5, y: 172 }, // Right-Bottom (규칙성)
-  { x: 93.5, y: 172 },  // Left-Bottom (안정감)
-  { x: 65.5, y: 86 }    // Left-Top (의지력)
+  { x: 234, y: 27.132 },    // Top (지구력)
+  { x: 373.368, y: 113.632 }, // Right-Top (집중력) 
+  { x: 337.632, y: 300.265 }, // Right-Bottom (규칙성)
+  { x: 130.368, y: 300.265 }, // Left-Bottom (안정감)
+  { x: 94.632, y: 113.632 }   // Left-Top (의지력)
 ];
 
 // 값을 좌표로 변환하는 함수

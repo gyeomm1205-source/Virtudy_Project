@@ -1,7 +1,9 @@
 // WebRTC 연결, 미디어 제어 로직
 
-import { ref, onUnmounted } from 'vue';
+import { computed, ref, onUnmounted } from 'vue';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
+
+type FocusEventType = 'FOCUS' | 'SLEEP' | 'PHONE' | 'AWAY';
 
 export function useStudyRoom() {
     const roomManager = RoomManager.getInstance();
@@ -9,6 +11,9 @@ export function useStudyRoom() {
     const error = ref<string | null>(null);
     const messages = ref<any[]>([]);
     const remoteTracks = ref<{ participantId: string; track: any }[]>([]);
+    const focusEventType = ref<FocusEventType | null>(null);
+    // null이 아니고 FOCUS가 아니면 '딴짓 중(true)'으로 판단
+    const isDistracted = computed(() => focusEventType.value !== null && focusEventType.value !== 'FOCUS');
 
     /**
      * 방 입장 함수
@@ -25,10 +30,40 @@ export function useStudyRoom() {
             remoteTracks.value = [];
 
             // 이전 리스너 제거 (중복 방지)
-            roomManager.removeAllListeners();
+            // [Fix] useAiHandler 등 다른 훅에서 등록한 리스너까지 지워버리는 문제 발생
+            // 개별 리스너 관리는 각 컴포넌트/훅의 onUnmounted에서 처리하는 것이 맞음
+            // 우선 이 줄을 제거하여 AI 리스너가 살아남게 수정
+            // roomManager.removeAllListeners();
 
             // 메시지 수신 리스너 등록 (채팅, 시스템 메시지)
             roomManager.onMessage((payload) => {
+                // [Fix] AI 데이터(category 필드 있음)는 채팅에 추가하지 않음 (HEAD Logic)
+                if (payload && payload.category) {
+                    // (Optional) Map AI Data to Local Focus State for Avatar compatibility
+                    if (payload.category === 'STATUS' && typeof payload.value === 'string') {
+                        const val = payload.value as FocusEventType;
+                        if (['FOCUS', 'SLEEP', 'PHONE', 'AWAY'].includes(val)) {
+                            focusEventType.value = val;
+                        }
+                    }
+                    return;
+                }
+
+                // Origin/FE Logic (handling other AI formats if necessary, but ensuring chat is protected)
+                const directType = payload?.eventType || payload?.data?.eventType;
+                const signalType = payload?.type;
+
+                if (signalType === 'AI_EVENT' || signalType === 'AI_STATE' || directType) {
+                    const eventType = (directType || payload?.data?.state || payload?.data?.focusState) as FocusEventType | undefined;
+                    if (eventType === 'FOCUS' || eventType === 'SLEEP' || eventType === 'PHONE' || eventType === 'AWAY') {
+                        focusEventType.value = eventType;
+                    } else if (typeof payload?.data?.value === 'number') {
+                        focusEventType.value = payload.data.value === 1 ? 'SLEEP' : 'FOCUS';
+                    }
+                    // Do not push to chat
+                    return;
+                }
+
                 messages.value.push(payload);
             });
 
@@ -67,8 +102,8 @@ export function useStudyRoom() {
     };
 
     // 방 나가기
-    const leaveRoom = () => {
-        roomManager.leaveRoom();
+    const leaveRoom = (disconnectHeaders?: Record<string, string>) => {
+        roomManager.leaveRoom(disconnectHeaders);
         isConnected.value = false;
         messages.value = [];
         remoteTracks.value = [];
@@ -81,12 +116,13 @@ export function useStudyRoom() {
     };
 
     // 컴포넌트가 파괴될 때 자동으로 리소스 정리 (안전장치)
-    // 주의: SPA에서 페이지 이동 시에도 방을 유지해야 한다면 이 부분은 제거하거나 조건부로 처리해야 함
-    onUnmounted(() => {
-        if (isConnected.value) {
-            leaveRoom();
-        }
-    });
+    // [수정] onUnmounted 제거함 -> Page 컴포넌트에서 handleLeave를 통해 제어하도록 위임
+
+    // [추가] 테스트용: 강제로 AI 상태를 변경하는 함수
+    const setDebugState = (state: FocusEventType) => {
+        console.log(`🛠️ [DEBUG] 상태 강제 변경: ${state}`);
+        focusEventType.value = state;
+    };
 
     return {
         joinRoom,
@@ -96,5 +132,8 @@ export function useStudyRoom() {
         error,
         messages,
         remoteTracks,
+        focusEventType,
+        isDistracted,
+        setDebugState, // [추가] 디버그용 함수 반환
     };
 }
