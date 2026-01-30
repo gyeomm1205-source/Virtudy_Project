@@ -38,12 +38,22 @@ public class LoggingAspect {
         try {
             // proceed()를 호출하여 실제 메서드 실행
             Object returnObj = proceedingJoinPoint.proceed();
+            String returnType = "";
+            String returnValue = "";
+            // Null 체크 추가
+            if (returnObj != null) {
+                returnType = returnObj.getClass().getSimpleName();
+                returnValue = returnObj.toString();
+            } else {
+                returnType = "void or null";
+                returnValue = "null";
+            }
 
             long executionTime = System.currentTimeMillis() - start;
             log.info("<<<<< End Method: {} | Duration: {}ms", method.getName(), executionTime);
             // 메서드의 리턴값 로깅
-            log.info("return type = {}", returnObj.getClass().getSimpleName());
-            log.info("return value = {}", returnObj);
+            log.info("return type = {}", returnType);
+            log.info("return value = {}", returnValue);
 
             return returnObj;
         } catch (Exception e) {
