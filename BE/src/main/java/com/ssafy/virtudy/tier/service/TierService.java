@@ -129,7 +129,7 @@ public class TierService {
      * 기존 점수에 누적합니다.
      */
     private void updateMemberTierScore(Member member, int newScore) {
-        MemberGameStat stat = memberGameStatRepository.findByMemberId(member.getId())
+        MemberGameStat stat = memberGameStatRepository.findByMember(member)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_GAME_STAT_NOT_FOUND_ERROR));
 
         // 기존 점수에 누적 (accumulate)
@@ -170,7 +170,7 @@ public class TierService {
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
 
         // DB에서 최신 게임 스탯 조회 (없으면 0점으로 간주)
-        MemberGameStat stat = memberGameStatRepository.findByMemberId(member.getId())
+        MemberGameStat stat = memberGameStatRepository.findByMember(member)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_GAME_STAT_NOT_FOUND_ERROR));
 
         return TierResponse.builder()

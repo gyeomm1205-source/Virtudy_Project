@@ -36,9 +36,7 @@ public class MemberPreference {
     @Enumerated(EnumType.STRING)
     private ActiveTimeType activeTime; // 새벽/오전/오후/저녁
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private JobType jobType;
+
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -47,4 +45,15 @@ public class MemberPreference {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private StudyTimeCategoryType averageHours; // 1일 평균 공부시간
+
+    // 재가입 편의 메서드
+    public void updatePreference(StudyType studyType,
+                                 StudyTimeCategoryType targetHours,
+                                 ActiveTimeType activeTime,
+                                 StudyTimeCategoryType averageHours){
+        this.studyType = studyType;
+        this.targetHours = targetHours;
+        this.activeTime = activeTime;
+        this.averageHours = averageHours;
+    }
 }
