@@ -21,4 +21,6 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
 
 
     List<StudyRoom> findByTitle(String title);
+
+    List<StudyRoom> findByRoomId(String roomId);
 }
