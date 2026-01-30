@@ -37,7 +37,7 @@ async def make_avatar(
         "clothes_color": gpt_result.get("clothes_color")
     }
 
-    
+    print(avatar_data)
     # 4. DB 저장 (Upsert)
     existing_avatar = db.query(Avatar).filter(Avatar.member_id == user_id).first()
 
