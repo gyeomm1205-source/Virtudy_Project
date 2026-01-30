@@ -35,7 +35,12 @@
       
       <div class="fav-study-area">
         <p class="fav-text">
-          &lt; {{ favoriteRoomTitle }} &gt;
+          <template v-if="favoriteRoomTitle">
+            &lt; {{ favoriteRoomTitle }} &gt;
+          </template>
+          <template v-else>
+            ( 최애 스터디 없음 )
+          </template>
         </p>
       </div>
     </div>
@@ -67,7 +72,7 @@ interface UserProfileProps {
   nickName?: string;
   tierScore?: number;       // userScore -> tierScore
   tier?: string;
-  favoriteRoomTitle?: string; // favoriteStudy -> favoriteRoomTitle
+  favoriteRoomTitle: string; 
   // [중요] 백엔드에서 오는 데이터 이름 그대로 사용
   pureStudyTime?: number;   // studyHours -> pureStudyTime (분 단위 숫자)
   focusDepth?: number;      // concentration -> focusDepth (퍼센트 숫자) 
@@ -80,7 +85,7 @@ withDefaults(defineProps<UserProfileProps>(), {
   nickName: "닉네임",
   tierScore: 0,
   tier: "티어명",
-  favoriteRoomTitle: "최애스터디이름",
+  favoriteRoomTitle: "",
   pureStudyTime: 0,
   focusDepth: 0,
   avatarImageUrl: ""

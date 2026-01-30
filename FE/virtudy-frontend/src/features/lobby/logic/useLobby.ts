@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { lobbyAPI } from '../api/lobbyAPI';
+import { getMyProfile } from '@/features/mypage/api/mypageApi';
 import type { RoomData, CreateRoomReq, UpdateRoomReq, ApiErrorResponse } from '../types/lobby.types';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
@@ -26,12 +27,17 @@ export function useLobby() {
     isLoading.value = true;
     try {
       // 병렬 요청으로 속도 최적화
-      const [pubRes, myRes] = await Promise.all([
+      const [pubRes, myRes, profileRes] = await Promise.all([
         lobbyAPI.getPublicRooms(),
-        lobbyAPI.getMyRooms(userId.value)
+        lobbyAPI.getMyRooms(userId.value),
+        getMyProfile().catch(() => null)
       ]);
       publicRooms.value = pubRes.data;
-      myRooms.value = myRes.data;
+      const favoriteTitle = profileRes?.favoriteRoomTitle;
+      myRooms.value = myRes.data.map(room => ({
+        ...room,
+        favorite: Boolean(favoriteTitle && room.title === favoriteTitle)
+      }));
     } catch (error) {
       console.error('방 목록 로딩 실패', error);
     } finally {
@@ -128,33 +134,17 @@ export function useLobby() {
     const targetRoom = myRooms.value.find(r => r.roomId === roomId);
     if (!targetRoom) return;
 
-    // 2. 이미 최애방인 경우 -> 해제 (API 호출)
-    if (targetRoom.favorite) {
-       try {
-        await lobbyAPI.toggleFavorite(userId.value, roomId);
-        // 상태 업데이트 (낙관적 업데이트 or 다시 fetch)
-        targetRoom.favorite = false; 
-        // await fetchAllRooms(); // 확실하게 하려면 다시 조회
-      } catch (e: any) {
-        handleApiError(e);
-      }
-      return;
-    }
+    // 2. 이미 최애방이면 유지 (해제 기능 없음)
+    if (targetRoom.favorite) return;
 
-    // 3. 최애방이 아닌 경우 -> 설정 시도
-    // 3-1. 다른 최애방이 이미 있는지 확인
-    const existingFavorite = myRooms.value.find(r => r.favorite);
-    if (existingFavorite) {
-      alert('최애방은 하나만 설정가능합니다.');
-      return;
-    }
-
-    // 3-2. 최애방 설정 API 호출
+    // 3. 최애방 설정 API 호출 (다른 방으로 교체)
     try {
       await lobbyAPI.toggleFavorite(userId.value, roomId);
-      // 상태 업데이트
-      targetRoom.favorite = true;
-      // await fetchAllRooms(); 
+      // 상태 업데이트: 다른 방의 최애방 해제 후 선택 방만 설정
+      myRooms.value.forEach(room => {
+        room.favorite = room.roomId === roomId;
+      });
+      // await fetchAllRooms();
     } catch (e: any) {
       handleApiError(e);
     }
