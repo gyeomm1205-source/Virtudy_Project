@@ -42,13 +42,13 @@
       <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px]">
         <RoomList 
           :rooms="displayedRooms"
-          @roomClick="handleRoomClick"
+          :isMyRoomTab="currentFilter === 'myRooms'"  @roomClick="handleRoomClick"
           @filterChange="setFilter"
           @sortChange="setSortBy"
           @search="onSearchInput"
           @edit="handleEditRoom"      
           @delete="handleDeleteRoom"
-        />
+          @toggleFavorite="handleToggleFavorite" />
       </div>
 
     </main>
@@ -98,7 +98,8 @@ const {
   fetchAllRooms, 
   joinRoom,
   deleteRoom,
-  updateRoom
+  updateRoom,
+  toggleFavoriteRoom
 } = useLobby();
 
 // UI 상태 관리
@@ -160,6 +161,7 @@ const handleRoomClick = async (room: any) => {
 };
 
 
+
 // 탭 변경 (전체 <-> 내 스터디)
 const setFilter = (filter: string) => {
   currentFilter.value = filter;
@@ -209,6 +211,11 @@ const filteredRooms = computed(() => {
   return filtered;
 });
 
+// ✅ [NEW] 하트 클릭 핸들러
+const handleToggleFavorite = async (roomId: string) => {
+  await toggleFavoriteRoom(roomId);
+};
+
 // 페이지네이션 및 RoomList 컴포넌트 타입 매핑
 const displayedRooms = computed(() => {
   const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
@@ -223,7 +230,8 @@ const displayedRooms = computed(() => {
     maxMembers: maxMembers,
     createdAt: new Date().toISOString(), // 현재 시간으로 설정
     owner: room.owner || false, 
-    description: room.description
+    description: room.description,
+    favorite: room.favorite || false // ✅ favorite 속성 추가
   }));
 });
 

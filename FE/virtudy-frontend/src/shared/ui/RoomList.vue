@@ -75,7 +75,20 @@
           @click="onRoomClick(room)"
         >
           <div class="absolute right-[20px] top-[20px] flex items-center">
-            
+            <button 
+              v-if="isMyRoomTab" 
+              @click.stop="emit('toggleFavorite', room.roomId!)"
+              class="w-[24px] h-[24px] flex items-center justify-center hover:scale-110 transition-transform mr-[8px] z-20"
+              title="최애 스터디방 설정"
+            >
+              <svg v-if="room.favorite" viewBox="0 0 24 24" class="w-full h-full fill-[var(--color-choco)]">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" class="w-full h-full fill-none stroke-[var(--color-choco)] stroke-2">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+            </button>
+
             <div v-if="room.owner" class="flex gap-[8px] mr-[10px] z-10">
               <button 
                 @click.stop="emit('edit', room)" 
@@ -217,10 +230,12 @@ interface Room {
   createdAt: string;
   owner?: boolean;       // 방장 여부
   description?: string;  // 수정 시 필요할 수 있어서 추가
+  favorite?: boolean;    // [NEW] 최애방 여부 추가
 }
 
 interface RoomListProps {
   rooms?: Room[];
+  isMyRoomTab?: boolean; // [NEW] 내 방 탭인지 여부 prop 추가
 }
 
 const props = withDefaults(defineProps<RoomListProps>(), {
@@ -234,6 +249,7 @@ const emit = defineEmits<{
   search: [query: string];
   edit: [room: Room];        // 수정 버튼 클릭
   delete: [roomId: string];  // 삭제 버튼 클릭
+  toggleFavorite: [roomId: string]; // [NEW] 하트 클릭 이벤트 추가
 }>();
 
 // Reactive state

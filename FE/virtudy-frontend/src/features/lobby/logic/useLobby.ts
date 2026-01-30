@@ -117,6 +117,49 @@ export function useLobby() {
     }
   };
 
+  // ✅ [NEW] 최애방 설정 토글
+  const toggleFavoriteRoom = async (roomId: string) => {
+    if (!userId.value) {
+      alert('로그인이 필요한 서비스입니다.');
+      return;
+    }
+
+    // 1. 현재 내 방 목록에서 해당 방 찾기
+    const targetRoom = myRooms.value.find(r => r.roomId === roomId);
+    if (!targetRoom) return;
+
+    // 2. 이미 최애방인 경우 -> 해제 (API 호출)
+    if (targetRoom.favorite) {
+       try {
+        await lobbyAPI.toggleFavorite(userId.value, roomId);
+        // 상태 업데이트 (낙관적 업데이트 or 다시 fetch)
+        targetRoom.favorite = false; 
+        // await fetchAllRooms(); // 확실하게 하려면 다시 조회
+      } catch (e: any) {
+        handleApiError(e);
+      }
+      return;
+    }
+
+    // 3. 최애방이 아닌 경우 -> 설정 시도
+    // 3-1. 다른 최애방이 이미 있는지 확인
+    const existingFavorite = myRooms.value.find(r => r.favorite);
+    if (existingFavorite) {
+      alert('최애방은 하나만 설정가능합니다.');
+      return;
+    }
+
+    // 3-2. 최애방 설정 API 호출
+    try {
+      await lobbyAPI.toggleFavorite(userId.value, roomId);
+      // 상태 업데이트
+      targetRoom.favorite = true;
+      // await fetchAllRooms(); 
+    } catch (e: any) {
+      handleApiError(e);
+    }
+  };
+
   // 공통 에러 핸들러
   const handleApiError = (error: any) => {
     const errRes = error.response?.data as ApiErrorResponse;
@@ -135,6 +178,7 @@ export function useLobby() {
     createRoom,
     updateRoom,
     joinRoom,
-    deleteRoom
+    deleteRoom,
+    toggleFavoriteRoom
   };
 }

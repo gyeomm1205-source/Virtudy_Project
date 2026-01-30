@@ -40,6 +40,9 @@ export interface RoomData {
    * - true일 경우 수정/삭제 권한 부여
    */
   owner?: boolean; 
+
+  /** ✅ [NEW] 최애방 여부 (내 방 목록에서 사용) */
+  favorite?: boolean;
 }
 
 // ==========================================
