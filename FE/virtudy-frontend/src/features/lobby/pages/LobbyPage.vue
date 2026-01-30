@@ -42,13 +42,13 @@
       <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px]">
         <RoomList 
           :rooms="displayedRooms"
-          @roomClick="handleRoomClick"
+          :isMyRoomTab="currentFilter === 'myRooms'"  @roomClick="handleRoomClick"
           @filterChange="setFilter"
           @sortChange="setSortBy"
           @search="onSearchInput"
           @edit="handleEditRoom"      
           @delete="handleDeleteRoom"
-        />
+          @toggleFavorite="handleToggleFavorite" />
       </div>
 
     </main>
@@ -76,7 +76,7 @@ import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
 import { useLobby } from '@/features/lobby/logic/useLobby';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI'; // 랜덤매칭용
-
+import type { RoomData } from '@/features/lobby/types/lobby.types'; // 방 데이터 타입
 // ✅ UI 컴포넌트 import
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
@@ -98,7 +98,8 @@ const {
   fetchAllRooms, 
   joinRoom,
   deleteRoom,
-  updateRoom
+  updateRoom,
+  toggleFavoriteRoom
 } = useLobby();
 
 // UI 상태 관리
@@ -144,7 +145,7 @@ const handleRandomMatch = async () => {
     return;
   }
   try {
-    const { data } = await lobbyAPI.enterRandomRoom(userId.value);
+    const  data  = await lobbyAPI.enterRandomRoom(userId.value);
     // 입장 성공 -> 스터디룸으로 이동 (userId를 사용)
     router.push(`/study/${data.userId}?token=${data.liveKitToken}`);
   } catch (e) {
@@ -158,6 +159,7 @@ const handleRoomClick = async (room: any) => {
   // RoomList에서 넘어오는 room 객체의 ID 사용
   await joinRoom(room.roomId);
 };
+
 
 
 // 탭 변경 (전체 <-> 내 스터디)
@@ -209,6 +211,11 @@ const filteredRooms = computed(() => {
   return filtered;
 });
 
+// ✅ [NEW] 하트 클릭 핸들러
+const handleToggleFavorite = async (roomId: string) => {
+  await toggleFavoriteRoom(roomId);
+};
+
 // 페이지네이션 및 RoomList 컴포넌트 타입 매핑
 const displayedRooms = computed(() => {
   const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
@@ -223,7 +230,8 @@ const displayedRooms = computed(() => {
     maxMembers: maxMembers,
     createdAt: new Date().toISOString(), // 현재 시간으로 설정
     owner: room.owner || false, 
-    description: room.description
+    description: room.description,
+    favorite: room.favorite || false // ✅ favorite 속성 추가
   }));
 });
 

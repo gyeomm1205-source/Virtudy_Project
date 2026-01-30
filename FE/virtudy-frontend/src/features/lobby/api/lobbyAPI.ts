@@ -110,10 +110,17 @@ export const lobbyAPI = {
    * POST /api/sessions/enter/random
    */
   enterRandomRoom: async (userId: string) => {
-    return api.post<EnterSessionRes>(
-      '/sessions/enter/random', 
-      {}, 
+    const response = await api.post<EnterSessionRes>(
+      '/sessions/enter/random',
+      {},
       { headers: { 'X-MEMBER-ID': userId } }
     );
+
+    return {
+      userId: response.data.memberId,
+      nickName: response.data.nickName,
+      avatar: response.data.avatar,
+      liveKitToken: response.data.liveKitToken
+    };
   }
 };
