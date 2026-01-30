@@ -71,7 +71,7 @@ class TierServiceTest {
         MemberGameStat stat = createMemberGameStat(member, 45000, 100);
 
         given(memberRepository.findByMemberId(memberId)).willReturn(Optional.of(member));
-        given(memberGameStatRepository.findByMemberId(member.getId())).willReturn(Optional.of(stat));
+        given(memberGameStatRepository.findByMember(member)).willReturn(Optional.of(stat));
 
         // when
         TierResponse response = tierService.getMyTier(memberId);
@@ -96,7 +96,7 @@ class TierServiceTest {
         Member member = createMember(memberId);
 
         given(memberRepository.findByMemberId(memberId)).willReturn(Optional.of(member));
-        given(memberGameStatRepository.findByMemberId(member.getId())).willReturn(Optional.empty());
+        given(memberGameStatRepository.findByMember(member)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> tierService.getMyTier(memberId))
@@ -149,7 +149,7 @@ class TierServiceTest {
         given(studySessionRepository.findByEndTimeBetween(any(), any()))
                 .willReturn(Collections.singletonList(session));
         given(studyAnalysisService.analyzeSession(any())).willReturn(createAnalysisResult(60));
-        given(memberGameStatRepository.findByMemberId(member.getId())).willReturn(Optional.of(stat));
+        given(memberGameStatRepository.findByMember(member)).willReturn(Optional.of(stat));
         given(redisTemplate.opsForZSet()).willReturn(zSetOperations);
 
         // when
