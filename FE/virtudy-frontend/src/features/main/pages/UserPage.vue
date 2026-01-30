@@ -38,6 +38,11 @@
   </div>
 
   <MatchingModal v-if="isMatchingModalOpen" @close="cancelRandomMatch" />
+  <CreateRoomModal
+    v-if="isCreateRoomModalOpen"
+    @close="isCreateRoomModalOpen = false"
+    @success="isCreateRoomModalOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -56,6 +61,7 @@ import UserProfile from '@/shared/ui/UserProfile.vue';
 import StudyMenu from '@/shared/ui/StudyMenu.vue';
 import RankingSectionMini from '@/shared/ui/RankingSectionMini.vue';
 import MatchingModal from '@/shared/ui/MatchingModal.vue';
+import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -86,6 +92,7 @@ const { privateTop5, teamTop5, isLoading, fetchTopRanks } = useMainRanking();
 
 const isMatchingModalOpen = ref(false);
 const matchingAbortController = ref<AbortController | null>(null);
+const isCreateRoomModalOpen = ref(false);
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -135,7 +142,13 @@ const handleRandomMatch = async () => {
     matchingAbortController.value = null;
   }
 };
-const handleCreateRoom = () => console.log("방 만들기");
+const handleCreateRoom = () => {
+  if (!authStore.userId) {
+    alert('로그인이 필요합니다.');
+    return;
+  }
+  isCreateRoomModalOpen.value = true;
+};
 const handleShowRoomList = () => {
   router.push('/lobby');
 };
