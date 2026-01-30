@@ -1,6 +1,7 @@
 package com.ssafy.virtudy.rank.service;
 
 import com.ssafy.virtudy.global.aop.LogExecutionTime;
+import com.ssafy.virtudy.global.aop.Retry;
 import com.ssafy.virtudy.global.event.exception.BaseErrorCode;
 import com.ssafy.virtudy.global.event.exception.BaseException;
 import com.ssafy.virtudy.member.domain.Member;
@@ -34,11 +35,12 @@ public class RankService {
 
     private final RedisTemplate<String, String> redisTemplate;
 
-    private static final String RANK_PRIATE_KEY = "rank:private:season:1";
+    private static final String RANK_PRIVATE_KEY = "rank:private:season:1";
     private static final String RANK_TEAM_KEY = "rank:team:season:1";
     private static final String ROOMTYPE_PRIVATE = "private";
     private static final int PAGE_SIZE = 10;
 
+    @LogExecutionTime
     // 랭크 조회
     public List<RankDTO.Response> getRankRange(long start, long end, String type) {
         Set<ZSetOperations.TypedTuple<String>> tuples = null;
@@ -47,7 +49,7 @@ public class RankService {
         List<RankDTO.Response> responseList = new ArrayList<>();
 
         if (type.equals(ROOMTYPE_PRIVATE)) {
-            tuples = redisTemplate.opsForZSet().reverseRangeWithScores(RANK_PRIATE_KEY, start, end);
+            tuples = redisTemplate.opsForZSet().reverseRangeWithScores(RANK_PRIVATE_KEY, start, end);
 
             if (tuples == null || tuples.isEmpty()) return List.of();
 // 3. 필요한 사용자 ID 목록 추출 (Redis 결과에서 ID만 뽑기)
@@ -123,7 +125,7 @@ public class RankService {
 
         return responseList;
     }
-
+    @LogExecutionTime
     public RankDTO.Response getUserRankById(String userId, String type) {
         Member member = memberRepository.findByMemberId(userId)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
@@ -133,8 +135,8 @@ public class RankService {
         Double scoreVal;
         if (type.equals(ROOMTYPE_PRIVATE)) {
             nickName = member.getNickName();
-            rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_PRIATE_KEY, userId);
-            scoreVal = redisTemplate.opsForZSet().score(RANK_PRIATE_KEY, userId);
+            rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_PRIVATE_KEY, userId);
+            scoreVal = redisTemplate.opsForZSet().score(RANK_PRIVATE_KEY, userId);
             avatarDto = AvatarResponse.from(member.getAvatar());
         } else {
             // 최애 팀 깎고 와야됨.
@@ -143,6 +145,7 @@ public class RankService {
             if (studyRoom == null) {
                 return null;
             }
+
             Member owner = memberRepository.findByMemberId(studyRoom.getOwner().getMemberId())
                     .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
 
@@ -184,13 +187,13 @@ public class RankService {
                 userId = tempMember.getMemberId();
                 // 1. 내 등수 조회 (주의: 0등부터 시작함)
                 // "거꾸로(reverse) 세어봐. 점수 높은 게 1등이니까"
-                rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_PRIATE_KEY, userId);
+                rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_PRIVATE_KEY, userId);
 
                 if (rankIndex == null) {
                     continue;
                 }
                 // 2. 내 점수 조회
-                scoreVal = redisTemplate.opsForZSet().score(RANK_PRIATE_KEY, userId);
+                scoreVal = redisTemplate.opsForZSet().score(RANK_PRIVATE_KEY, userId);
 
                 nickName = name;
                 avatarDto = AvatarResponse.from(tempMember.getAvatar());
@@ -241,13 +244,13 @@ public class RankService {
         // 4. 결과 리턴
         return responseList;
     }
-
+    @LogExecutionTime
     public List<RankDTO.Response> getRankByPage(int page, String type) {
         long start = (long) page * PAGE_SIZE;
         long end = start + PAGE_SIZE - 1;
         return getRankRange(start, end, type);
     }
-
+    @LogExecutionTime
     public List<RankDTO.Response> getTop5Rank(String type) {
         return getRankRange(0, 4, type);
     }
@@ -281,18 +284,32 @@ public class RankService {
 
         List<MemberGameStat> stats = memberGameStatRepository.findAll();
         for (MemberGameStat stat : stats) {
-            redisTemplate.opsForZSet().add(tempPrivateKey, stat.getMember().getNickName(), stat.getTierScore());
+            redisTemplate.opsForZSet().add(tempPrivateKey, stat.getMember().getMemberId(), stat.getTierScore());
         }
 
         List<StudyRoom> studyRoomList = studyRoomRepository.findAll();
         for (StudyRoom studyRoom : studyRoomList) {
-            redisTemplate.opsForZSet().add(tempTeamKey, studyRoom.getTitle(), studyRoom.getRoomTierScore());
+            redisTemplate.opsForZSet().add(tempTeamKey, studyRoom.getRoomId(), studyRoom.getRoomTierScore());
         }
 
         // 임시 키를 진짜 키로 이름 변경 (덮어씌우기)
-        redisTemplate.rename(tempPrivateKey, RANK_PRIATE_KEY);
+        redisTemplate.rename(tempPrivateKey, RANK_PRIVATE_KEY);
         redisTemplate.rename(tempTeamKey, RANK_TEAM_KEY);
 
         log.info("랭킹 업데이트 완료(깜빡임 없음)");
+    }
+
+    // 기본값 (3회) 재시도
+    @Retry
+    public void refreshUserScore(String memberId, double newTotalScore) {
+        redisTemplate.opsForZSet().add(RANK_PRIVATE_KEY, memberId, newTotalScore);
+        log.info("User Rank Updated: id={}, score={}", memberId, newTotalScore);
+    }
+
+    // 기본값 (3회) 재시도
+    @Retry
+    public void refreshTeamScore(String teamId, double newTotalScore) {
+        redisTemplate.opsForZSet().add(RANK_TEAM_KEY, teamId, newTotalScore);
+        log.info("Team Rank Updated: id={}, score={}", teamId, newTotalScore);
     }
 }
