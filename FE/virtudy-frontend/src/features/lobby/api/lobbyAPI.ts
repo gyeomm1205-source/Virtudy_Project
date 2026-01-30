@@ -109,11 +109,11 @@ export const lobbyAPI = {
    * 9. 랜덤 스터디방 입장
    * POST /api/sessions/enter/random
    */
-  enterRandomRoom: async (userId: string) => {
+  enterRandomRoom: async (userId: string, signal?: AbortSignal) => {
     const response = await api.post<EnterSessionRes>(
       '/sessions/enter/random',
       {},
-      { headers: { 'X-MEMBER-ID': userId } }
+      { headers: { 'X-MEMBER-ID': userId }, signal }
     );
 
     return {
