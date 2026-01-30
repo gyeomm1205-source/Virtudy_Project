@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { jwtDecode } from 'jwt-decode'; // JWT 토큰 (userId) 확인용
 import api from '@/shared/api/axios.config'; // 설정된 axios 인스턴스
-import type { User } from '@/shared/types/common.types';
+import type { User, AvatarConfig } from '@/shared/types/common.types';
 
 
 export const useAuthStore = defineStore('auth', () => {
@@ -72,6 +72,27 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('userInfo');
   };
 
+  // 아바타 설정 부분 업데이트 
+  const setAvatarConfig = (newAvatar: AvatarConfig) => {
+    // 현재 로그인된 유저 정보가 없으면 중단
+    if (!userInfo.value) {
+      console.warn('⚠️ 로그인 정보가 없어 아바타를 저장할 수 없습니다.');
+      return;
+    }
+
+    // 스토어 상태(State) 업데이트
+    // 기존 userInfo 객체를 복사하고 avatar 부분만 교체
+    userInfo.value = {
+      ...userInfo.value,
+      avatar: newAvatar
+    };
+
+    // 로컬 스토리지 동기화 (새로고침 대비)
+    localStorage.setItem('userInfo', JSON.stringify(userInfo.value));
+    
+    console.log('✅ 아바타 정보가 스토어에 업데이트되었습니다.');
+  };
+
   // [추가] 백엔드에 내 정보 요청하는 함수
   const fetchUserInfo = async () => {
     if (!accessToken.value) return; // 토큰 없으면 요청 X
@@ -116,5 +137,6 @@ export const useAuthStore = defineStore('auth', () => {
     clearAuth,
     fetchUserInfo,
     validateToken,
+    setAvatarConfig,
   };
 });
