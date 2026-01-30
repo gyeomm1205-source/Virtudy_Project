@@ -44,7 +44,6 @@
           :rooms="displayedRooms"
           :isMyRoomTab="currentFilter === 'myRooms'"  @roomClick="handleRoomClick"
           @filterChange="setFilter"
-          @sortChange="setSortBy"
           @search="onSearchInput"
           @edit="handleEditRoom"      
           @delete="handleDeleteRoom"
@@ -106,7 +105,6 @@ const {
 const showModal = ref(false); // 모달 표시 여부
 const selectedRoom = ref<RoomData | null>(null);
 const currentFilter = ref<string>('all'); // 'all' | 'my'
-const sortBy = ref<string>('popular');
 const searchQuery = ref<string>('');
 const currentPage = ref<number>(1);
 const ITEMS_PER_PAGE = 6;
@@ -170,11 +168,6 @@ const setFilter = (filter: string) => {
   fetchAllRooms(); // 탭 바꿀 때 데이터 갱신
 };
 
-const setSortBy = (sort: string) => {
-  sortBy.value = sort;
-  currentPage.value = 1;
-};
-
 const onSearchInput = (query: string) => {
   searchQuery.value = query;
   currentPage.value = 1;
@@ -200,14 +193,6 @@ const filteredRooms = computed(() => {
     );
   }
 
-  // 정렬
-  if (sortBy.value === 'popular') {
-    // API 필드명 currentUser 사용 (기존 currentMembers 대응)
-    filtered.sort((a, b) => (b.currentUser || 0) - (a.currentUser || 0));
-  } else if (sortBy.value === 'latest') {
-    // createdAt 필드가 없으므로 roomId 기반으로 정렬
-    filtered.sort((a, b) => b.roomId.localeCompare(a.roomId));
-  }
   return filtered;
 });
 
