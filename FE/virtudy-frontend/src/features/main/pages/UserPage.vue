@@ -36,6 +36,8 @@
     
     <GlobalFooter />
   </div>
+
+  <MatchingModal v-if="isMatchingModalOpen" @close="cancelRandomMatch" />
 </template>
 
 <script setup lang="ts">
@@ -45,6 +47,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore'; 
 import { useMainRanking } from '@/features/ranking/logic/useMainRanking';
 import { getMyProfile } from '@/features/mypage/api/mypageApi';
+import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 import type { UserProfileResponse } from '@/features/mypage/types/mypage.types';
 
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
@@ -52,6 +55,7 @@ import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import UserProfile from '@/shared/ui/UserProfile.vue'; 
 import StudyMenu from '@/shared/ui/StudyMenu.vue';
 import RankingSectionMini from '@/shared/ui/RankingSectionMini.vue';
+import MatchingModal from '@/shared/ui/MatchingModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -80,7 +84,57 @@ const userInfo = ref<UserProfileResponse>({
 
 const { privateTop5, teamTop5, isLoading, fetchTopRanks } = useMainRanking();
 
-const handleRandomMatch = () => console.log("랜덤 매칭");
+const isMatchingModalOpen = ref(false);
+const matchingAbortController = ref<AbortController | null>(null);
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isCanceledError = (error: unknown) => {
+  const err = error as { code?: string; name?: string } | null;
+  return err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError';
+};
+
+const cancelRandomMatch = () => {
+  if (matchingAbortController.value) {
+    matchingAbortController.value.abort();
+    matchingAbortController.value = null;
+  }
+  isMatchingModalOpen.value = false;
+};
+
+const handleRandomMatch = async () => {
+  if (isMatchingModalOpen.value) return;
+  if (!authStore.userId) {
+    alert('로그인이 필요합니다.');
+    return;
+  }
+
+  isMatchingModalOpen.value = true;
+  const startedAt = Date.now();
+  const controller = new AbortController();
+  matchingAbortController.value = controller;
+
+  try {
+    const data = await lobbyAPI.enterRandomRoom(authStore.userId, controller.signal);
+    if (controller.signal.aborted) return;
+    const elapsed = Date.now() - startedAt;
+    await delay(Math.max(0, 3000 - elapsed));
+    if (controller.signal.aborted) return;
+    router.push(`/study/${data.userId}?token=${data.liveKitToken}`);
+  } catch (error) {
+    if (controller.signal.aborted || isCanceledError(error)) {
+      return;
+    }
+    console.error('랜덤 매칭 실패:', error);
+    const elapsed = Date.now() - startedAt;
+    await delay(Math.max(0, 3000 - elapsed));
+    if (controller.signal.aborted) return;
+    alert('입장 가능한 방이 없습니다.');
+  } finally {
+    isMatchingModalOpen.value = false;
+    matchingAbortController.value = null;
+  }
+};
 const handleCreateRoom = () => console.log("방 만들기");
 const handleShowRoomList = () => {
   router.push('/lobby');
