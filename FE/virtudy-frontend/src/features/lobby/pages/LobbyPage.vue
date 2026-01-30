@@ -76,7 +76,7 @@ import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
 import { useLobby } from '@/features/lobby/logic/useLobby';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI'; // 랜덤매칭용
-
+import type { RoomData } from '@/features/lobby/types/lobby.types'; // 방 데이터 타입
 // ✅ UI 컴포넌트 import
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
@@ -144,7 +144,7 @@ const handleRandomMatch = async () => {
     return;
   }
   try {
-    const { data } = await lobbyAPI.enterRandomRoom(userId.value);
+    const  data  = await lobbyAPI.enterRandomRoom(userId.value);
     // 입장 성공 -> 스터디룸으로 이동 (userId를 사용)
     router.push(`/study/${data.userId}?token=${data.liveKitToken}`);
   } catch (e) {
