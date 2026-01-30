@@ -143,12 +143,13 @@
               </span>
             </div>
 
-            <div class="w-[2rem] ml-[1rem] flex justify-center">
-              <svg viewBox="0 0 24 24" class="w-[1.5rem] h-[1.5rem]">
-                <path d="M5 16L3 8L9 10L12 6L15 10L21 8L19 16H5Z"
-                  :fill="(index < 3) ? 'var(--color-butter)' : 'var(--color-syrup)'" stroke="var(--color-choco)"
-                  stroke-width="1" />
-              </svg>
+            <div class="w-[5rem] ml-[1rem] flex justify-center text-center">
+              <span 
+                class="text-[1.25rem] font-['PfStardust30S'] transition-colors"
+                :class="getTierColorClass(item.tier)"
+              >
+                {{ item.tier }}
+              </span>
             </div>
           </div>
         </div>
@@ -238,5 +239,28 @@ onMounted(() => {
 const isMyself = (item: RankItem) => {
   if (!authStore.userInfo?.email) return false;
   return item.email === authStore.userInfo.email;
+};
+
+// [추가] 티어별 텍스트 색상 클래스 반환 함수(나중에 이미지로 바꿀 예정)
+const getTierColorClass = (tierName: string | undefined) => {
+  const tier = tierName?.toUpperCase() || '';
+
+  if (tier.includes('BRONZE')) {
+    return 'text-[#CD7F32]';
+  }
+  if (tier.includes('SILVER')) {
+    return 'text-[#C0C0C0]';
+  }
+  if (tier.includes('GOLD')) {
+    return 'text-[#FFD700]';
+  }
+  if (tier.includes('PLATINUM')) {
+    return 'text-[#00CED1]';
+  }
+  if (tier.includes('DIA')) {
+    return 'text-[#38BDF8]';
+  }
+  
+  return 'text-[var(--color-choco)]';
 };
 </script>
