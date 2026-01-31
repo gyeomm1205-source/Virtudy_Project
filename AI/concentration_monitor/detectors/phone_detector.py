@@ -13,9 +13,9 @@ class PhoneDetector:
         
         # Configuration (Using centralized Config but logic from root)
         self.fast_on_hold_sec = 0.2
-        self.phone_only_on_hold_sec = 0.3
+        self.phone_only_on_hold_sec = 0.1 # Reduced 0.3 -> 0.1 for faster detection
         self.off_hold_sec = 0.5    # Reduced from 1.5 to 0.5 for faster OFF transition
-        self.conf_th_phone_only = 0.15 # Corresponds to Config.PHONE_PRESENT_TH
+        # self.conf_th_phone_only removed (logic moved to process() with dual thresholds)
 
     def process(
         self,
@@ -26,17 +26,21 @@ class PhoneDetector:
     ) -> PhoneSignal:
         
         # 1. Inputs
-        phone_present = phone_conf >= Config.PHONE_PRESENT_TH
+        # [NEW] Dual Threshold Logic
+        # Candidate: Weakly detected (Needs corroboration like hand or head down)
+        phone_candidate = phone_conf >= Config.PHONE_CANDIDATE_TH
+        
+        # Confirmed: Strongly detected (Standalone)
+        phone_confirmed = phone_conf >= Config.PHONE_CONFIRMED_TH
+        
         looking_down = (head_pitch is not None and head_pitch > Config.PITCH_PHONE_USE_TH)
         
         # 2. Logic Conditions
-        # (A) Fast Condition: Phone + (Hand or Head Down)
-        # Note: In root file 'hand_near' was calculated by distance. 
-        # Here 'hand_interaction' is passed in (calculated in run_livekit via run.FeatureExtractor)
-        fast_condition = phone_present and (hand_interaction or looking_down)
+        # (A) Fast Condition: Candidate + (Hand or Head Down)
+        fast_condition = phone_candidate and (hand_interaction or looking_down)
         
-        # (B) Phone Only Condition: Phone + High Confidence
-        phone_only_condition = phone_present and (phone_conf >= self.conf_th_phone_only)
+        # (B) Phone Only Condition: Confirmed Phone
+        phone_only_condition = phone_confirmed
         
         now = time.time()
         
@@ -63,13 +67,23 @@ class PhoneDetector:
                 self.phone_only_on_start = None
                 
         else: # State is ON
+            # [NEW] Fast Focus (Recovery):
+            # If I look UP (not looking down) AND there is no strong phone signal -> Immediate OFF
+            # This fixes the "slow recovery" issue.
+            if (not looking_down) and (not phone_confirmed):
+                 self.state = "OFF"
+                 self._reset_timers()
+                 return PhoneSignal(
+                    phone_present=phone_candidate,
+                    phone_conf=phone_conf,
+                    phone_in_use_score=0.0,
+                    phone_in_use=False
+                 )
+
             # ---> Try to turn OFF
-            # OFF Condition: Phone gone OR (No hand interaction AND No looking down)
-            # Root logic: "off_condition = (not phone_present) or (not (hand_near or head_down))"
-            # This means if I just look up but phone is still there -> OFF? 
-            # Actually root logic says: if phone is gone OR behavior is gone -> Start counting OFF.
-            
-            off_condition = (not phone_present) or (not (hand_interaction or looking_down))
+            # OFF Condition: Phone candidate gone OR (No hand interaction AND No looking down)
+            # If even the weak candidate is gone, then it's definitely OFF.
+            off_condition = (not phone_candidate) or (not (hand_interaction or looking_down))
             
             if off_condition:
                 if self.off_start is None: self.off_start = now
@@ -84,7 +98,7 @@ class PhoneDetector:
         score = 1.0 if phone_in_use else 0.0
 
         return PhoneSignal(
-            phone_present=phone_present,
+            phone_present=phone_candidate,
             phone_conf=phone_conf,
             phone_in_use_score=score,
             phone_in_use=phone_in_use

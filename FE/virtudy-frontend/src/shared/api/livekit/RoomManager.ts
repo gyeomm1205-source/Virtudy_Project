@@ -45,7 +45,7 @@ export class RoomManager {
             const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
             console.log(liveKitToken); // Use variable to avoid unused warning
             const accessToken = localStorage.getItem('accessToken') || '';
-            
+
             // 토큰 검사
             if (!token) {
                 // 만약 토큰이 없다면 에러를 띄움 (백엔드가 주기 때문)
@@ -112,14 +112,14 @@ export class RoomManager {
             console.warn('[LiveKit] 연결이 끊어졌습니다.');
         });
 
-        // [추가] 데이터 메시지 수신 (AI 상태 정보 등)
         this.room.on(RoomEvent.DataReceived, (payload, participant, _kind, _topic) => {
             const strData = new TextDecoder().decode(payload);
             try {
                 const data = JSON.parse(strData);
                 console.log(`[LiveKit] 데이터 수신 (${participant?.identity}):`, data);
                 // 기존 메시지 리스너에게 전달 (useAiHandler 등에서 처리)
-                this.messageListeners.forEach(listener => listener(data));
+                // [수정] sender 정보(participant.identity)를 함께 전달
+                this.messageListeners.forEach(listener => listener(data, participant?.identity));
             } catch (e) {
                 console.warn('[LiveKit] 데이터 파싱 실패:', strData);
             }
@@ -146,7 +146,7 @@ export class RoomManager {
     }
 
     // 3. WebSocket(SockJS+Stomp) 연결 로직
-    
+
     // private connectWebSocket() {
     private connectWebSocket(token: String) {
         this.stompClient = new Client({
@@ -155,7 +155,7 @@ export class RoomManager {
                 memberId: this.userId,
                 roomId: this.roomId,
                 // [중요] JWT 토큰 추가 (Bearer 공백 주의)
-                Authorization: `Bearer ${token}`, 
+                Authorization: `Bearer ${token}`,
             },
             debug: (str) => {
                 // console.log(`[Stomp] ${str}`); // 디버깅 시에만 켜기 (로그 너무 많음)
@@ -237,13 +237,14 @@ export class RoomManager {
     }
 
     // 메시지 리스너 관리
-    private messageListeners: ((payload: any) => void)[] = [];
+    // [수정] listener 타입 변경: payload + senderId
+    private messageListeners: ((payload: any, senderId?: string) => void)[] = [];
     // 트랙 리스너 관리
     private trackListeners: ((track: RemoteTrack, participant: RemoteParticipant) => void)[] = [];
     private trackCleanupListeners: ((track: RemoteTrack, participant: RemoteParticipant) => void)[] = [];
 
     // 메시지 수신 이벤트 등록
-    onMessage(callback: (payload: any) => void) {
+    onMessage(callback: (payload: any, senderId?: string) => void) {
         this.messageListeners.push(callback);
     }
 
@@ -267,8 +268,8 @@ export class RoomManager {
     // 소켓 메시지 핸들러 (상태 업데이트)
     private handleSocketMessage(payload: any) {
         console.log('[Socket] 메시지 수신:', payload);
-        // 등록된 리스너들에게 알림
-        this.messageListeners.forEach(listener => listener(payload));
+        // 등록된 리스너들에게 알림 (SYSTEM 메시지이므로 senderId는 undefined 처리)
+        this.messageListeners.forEach(listener => listener(payload, undefined));
     }
 
     // 방 나가기 (Cleanup)
@@ -289,6 +290,30 @@ export class RoomManager {
         this.stompClient = null;
         this.messageListeners = []; // 리스너 초기화
         console.log('[RoomManager] 방 퇴장 및 리소스 정리 완료');
+    }
+
+    // [추가] 4. LiveKit 데이터 전송 (Broadcast)
+    // topic: 데이터 주제 (예: 'AI_STATUS')
+    // data: 전송할 객체
+    async sendLiveKitData(topic: string, data: any) {
+        if (!this.room || !this.room.localParticipant) {
+            console.warn('[RoomManager] 방에 연결되어 있지 않아 데이터를 보낼 수 없습니다.');
+            return;
+        }
+
+        try {
+            const strData = JSON.stringify({ topic, ...data });
+            const encoder = new TextEncoder();
+            const payload = encoder.encode(strData);
+
+            await this.room.localParticipant.publishData(payload, {
+                reliable: true, // 중요한 상태 정보이므로 reliable 전송
+                // topic: topic // (Optional) LiveKit 버전에 따라 topic 지원 여부 확인 필요, 여기선 payload에 포함
+            });
+            console.log(`📡 [LiveKit-Broadcast] ${topic} 전송 완료`, data);
+        } catch (e) {
+            console.error(`[LiveKit-Broadcast] 전송 실패:`, e);
+        }
     }
 
     // 제어 메시지 전송 헬퍼

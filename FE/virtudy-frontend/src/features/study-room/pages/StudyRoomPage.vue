@@ -34,6 +34,7 @@ const {
     error, 
     messages, 
     remoteTracks,
+    remoteParticipantStates, // [추가]
     isDistracted,
     setDebugState, 
 } = useStudyRoom();
@@ -205,14 +206,14 @@ onUnmounted(() => {
                             <div class="avatar-wrapper">
                                 <CharacterAvatar 
                                     :config="myAvatarConfig"
-                                    :aiDrowsy="0" 
-                                    :aiPhone="0" 
-                                    :aiAbsent="0"
+                                    :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
+                                    :aiPhone="getAiPhone(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
+                                    :aiAbsent="getAiAbsent(remoteParticipantStates[rt.participantId] || 'FOCUS')"
                                     :isBlinking="false"
                                     :mouthState="'closed'"
                                 />
                             </div>
-                            <span class="name-tag">{{ rt.participantId }}</span>
+                            <span class="name-tag">{{ rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
                         </div>
 
                     </div>
