@@ -123,11 +123,15 @@ const openCreateModal = () => {
 };
 
 // 방 수정 버튼 클릭 
-const handleEditRoom = (room: any) => {
-  // RoomList에서 받은 room 데이터를 selectedRoom에 저장
-  // (RoomList의 room 타입과 RoomData 타입이 호환된다고 가정)
-  selectedRoom.value = room; 
-  showModal.value = true;
+const handleEditRoom = async (room: any) => {
+  try {
+    const { data } = await lobbyAPI.getRoomDetail(room.roomId);
+    selectedRoom.value = data;
+    showModal.value = true;
+  } catch (error) {
+    console.error('방 상세 조회 실패:', error);
+    alert('방 정보를 불러오지 못했습니다.');
+  }
 };
 
 // ✅ 방 삭제 버튼 클릭
@@ -216,6 +220,7 @@ const displayedRooms = computed(() => {
     createdAt: new Date().toISOString(), // 현재 시간으로 설정
     owner: room.owner || false, 
     description: room.description,
+    type: room.type,
     favorite: room.favorite || false // ✅ favorite 속성 추가
   }));
 });
