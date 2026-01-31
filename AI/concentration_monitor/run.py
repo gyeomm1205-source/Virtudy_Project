@@ -7,6 +7,7 @@ import argparse
 
 print("[INFO] Loading System Libraries...")
 import mediapipe as mp
+import mediapipe.python.solutions
 from ultralytics import YOLO
 
 # 1. 로직 모듈 임포트 (기존 로직 그대로 사용)
@@ -34,7 +35,7 @@ class FeatureExtractor:
         self.mp_face = mp.solutions.face_mesh
         self.face = self.mp_face.FaceMesh(
             max_num_faces=1, refine_landmarks=True,
-            min_detection_confidence=0.5, min_tracking_confidence=0.5
+            min_detection_confidence=0.85, min_tracking_confidence=0.85
         )
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
@@ -46,6 +47,10 @@ class FeatureExtractor:
         except Exception as e:
             print(f"[WARN] YOLO Load Failed: {e}")
             self.yolo = None
+            
+        # Round 6: Static Filter Variables
+        self.prev_face_center = None
+        self.static_frames = 0
 
     def _calc_ear(self, landmarks, w, h):
         def dist(p1, p2):
@@ -75,6 +80,14 @@ class FeatureExtractor:
             ear, pitch = self._calc_ear(lm, w, h), self._calc_head_pitch(lm)
             face_pixel_center = (int((lm[234].x + lm[454].x)/2 * w), int((lm[10].y + lm[152].y)/2 * h))
             
+            # [Fix] Ghost Face Filter
+            # If EAR is suspiciously low (< 0.02), it's likely a non-human object (chair, wall pattern)
+            # incorrectly identified as a face. Real closed eyes are usually ~0.15-0.18.
+            # (User feedback: 0.05 was too high and filtered real sleep)
+            if ear < 0.02:
+                face_detected = False
+                # We interpret this as "No Face" (Absent) rather than "Sleep"
+            
         hand_res = self.hands.process(rgb)
         hand_centers = []
         if hand_res.multi_hand_landmarks:
@@ -84,13 +97,45 @@ class FeatureExtractor:
 
         phone_conf, phone_box = 0.0, None
         if self.yolo:
-            results = self.yolo(frame, verbose=False, classes=[67])
+            # [Fix] Revert to Phone Only (Round 6)
+            results = self.yolo(frame, verbose=False, classes=[67], conf=0.05)
             for r in results:
                 for box in r.boxes:
-                    if self.yolo_names[int(box.cls[0])] == 'cell phone':
-                        if float(box.conf[0]) > phone_conf:
-                            phone_conf = float(box.conf[0])
+                    cls_id = int(box.cls[0])
+                    conf = float(box.conf[0])
+                    # [DEBUG_INTERNAL] Print what YOLO sees locally
+                    print(f"[DEBUG_INTERNAL] YOLO saw class {cls_id} with conf {conf:.3f}")
+                    
+                    if cls_id == 67: # Cell phone
+                        if conf > phone_conf:
+                            phone_conf = conf
                             phone_box = list(map(int, box.xyxy[0]))
+        
+        # [Fix] Smart Hybrid Liveness Filter (Round 7)
+        # Combines Motion (Speed) + Blink (Safety Switch)
+        if face_detected and face_pixel_center:
+            is_blinking = (ear is not None and ear < 0.20)
+            
+            if self.prev_face_center:
+                dist = ((face_pixel_center[0] - self.prev_face_center[0])**2 + 
+                        (face_pixel_center[1] - self.prev_face_center[1])**2)**0.5
+                
+                # Condition to Reset: If user blinks OR moves > 1.5px
+                if is_blinking or dist > 1.5:
+                    self.static_frames = 0
+                else:
+                    self.static_frames += 1
+            
+            self.prev_face_center = face_pixel_center
+            
+            # Threshold: 5 seconds of ABSOLUTE stillness and NO blinks
+            # (Assuming ~20 FPS -> 100 frames)
+            if self.static_frames > 100:
+                face_detected = False # Treat as Ghost (Inanimate object)
+                ear, pitch = None, None
+        else:
+            self.static_frames = 0
+            self.prev_face_center = None
 
         hand_interaction = False
         if phone_box and hand_centers:

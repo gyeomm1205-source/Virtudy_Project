@@ -33,6 +33,8 @@ class FocusScorer:
         # Accumulate time
         if state == FocusState.FOCUSED:
             self.focused_sec += dt
+            # [NEW] Add reward for focusing
+            self.score += Config.REWARD_FOCUSED * dt
         elif state == FocusState.DROWSY:
             self.drowsy_sec += dt
         elif state == FocusState.PHONE:

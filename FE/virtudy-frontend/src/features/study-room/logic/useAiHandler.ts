@@ -9,34 +9,55 @@ export function useAiHandler() {
 
     // AI 데이터 수신 핸들러
     const handleMessage = (payload: any) => {
-        // payload가 AI 데이터 형식인지 확인
-        // 예: { category: 'STATUS', value: 'SLEEP' }
-        if (!payload || !payload.category) return;
+        // [수정] RoomManager에서 보낸 포장지(AI_EVENT) 확인
+        // 모양: { type: 'AI_EVENT', data: { eventType: 'FOCUS', value: 0 } }
 
-        // 타입 안전성을 위해 캐스팅
-        const aiData = payload as AiDataPayload;
-        console.log('🤖 [useAiHandler] Received:', aiData); // [DEBUG]
+        let aiData: AiDataPayload;
 
-        switch (aiData.category) {
+        if (payload && payload.type === 'AI_EVENT' && payload.data) {
+            // 1. 포장된 경우 (RoomManager 경유)
+            const innerData = payload.data;
+            // FE TypeDefinition(AiDataPayload)과 맞추기 위해 변환
+            // 받는 키: eventType, 보내는 코드의 키: category (Legacy)
+            // 여기서 매핑해준다.
+            aiData = {
+                category: innerData.eventType, // eventType ("FOCUS") -> category로 매핑
+                value: innerData.value
+            };
+        } else if (payload && payload.category) {
+            // 2. 혹시라도 포장 안 된 원본이 올 경우 (방어 코드)
+            aiData = payload as AiDataPayload;
+        } else {
+            return;
+        }
+
+        console.log('🤖 [useAiHandler] Parsed:', aiData); // [DEBUG]
+
+        switch (aiData.category) { // 이제 매핑된 category 사용
             case 'SCORE':
                 if (typeof aiData.value === 'number') {
                     aiStore.setConcentrationScore(aiData.value);
                 }
                 break;
 
+            case 'FOCUS':
+            case 'SLEEP':
+            case 'PHONE':
+            case 'AWAY':
+                // eventType 자체가 상태값이므로 그대로 사용
+                // (value는 0 or 1이지만, 상태 변경은 eventType 문자열로 수행)
+                aiStore.setFocusStatus(aiData.category as AiFocusStatus);
+                break;
+
+            // Legacy STATUS type handling (Just in case)
             case 'STATUS':
                 if (typeof aiData.value === 'string') {
-                    // 유효한 상태인지 확인 후 업데이트
                     const validStatuses: AiFocusStatus[] = ['FOCUS', 'SLEEP', 'PHONE', 'AWAY'];
                     if (validStatuses.includes(aiData.value as AiFocusStatus)) {
                         aiStore.setFocusStatus(aiData.value as AiFocusStatus);
                     }
                 }
                 break;
-
-            // [Modified] MOUTH, BLINK Removed for simplification as per user request
-            // case 'MOUTH': ...
-            // case 'BLINK': ...
         }
     };
 
