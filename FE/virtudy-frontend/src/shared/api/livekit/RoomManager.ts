@@ -44,7 +44,8 @@ export class RoomManager {
             const { LocalTokenGenerator } = await import('@/shared/lib/LocalTokenGenerator');
             const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
             console.log(liveKitToken); // Use variable to avoid unused warning
-
+            const accessToken = localStorage.getItem('accessToken') || '';
+            this.connectWebSocket(accessToken);
             // 토큰 검사
             if (!token) {
                 // 만약 토큰이 없다면 에러를 띄움 (백엔드가 주기 때문)
@@ -145,22 +146,21 @@ export class RoomManager {
     }
 
     // 3. WebSocket(SockJS+Stomp) 연결 로직
-    private connectWebSocket() {
+    private connectWebSocket(token: String) {
         this.stompClient = new Client({
-            // SockJS를 Factory로 주입
             webSocketFactory: () => new SockJS(SOCKET_URL),
             connectHeaders: {
                 memberId: this.userId,
                 roomId: this.roomId,
+                // [중요] JWT 토큰 추가 (Bearer 공백 주의)
+                Authorization: `Bearer ${token}`, 
             },
             debug: (str) => {
-                console.log(`[Stomp] ${str}`);
+                // console.log(`[Stomp] ${str}`); // 디버깅 시에만 켜기 (로그 너무 많음)
             },
-            reconnectDelay: 5000, // 자동 재연결 시도 (선택 사항)
+            reconnectDelay: 5000,
             onConnect: () => {
                 console.log('[Stomp] 소켓 연결 성공');
-
-                // 내 방의 제어 메시지 구독
                 this.stompClient?.subscribe(`/sub/room/${this.roomId}`, (message) => {
                     const payload = JSON.parse(message.body);
                     this.handleSocketMessage(payload);
