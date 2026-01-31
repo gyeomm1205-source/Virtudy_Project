@@ -47,7 +47,13 @@ export function useAiHandler() {
                 // eventType 자체가 상태값이므로 그대로 사용
                 // (value는 0 or 1이지만, 상태 변경은 eventType 문자열로 수행)
                 aiStore.setFocusStatus(aiData.category as AiFocusStatus);
+
+                // [추가] 내 상태 변경 시 방송 (Broadcast)
+                roomManager.sendLiveKitData('AI_STATUS', {
+                    status: aiData.category
+                });
                 break;
+
 
             // Legacy STATUS type handling (Just in case)
             case 'STATUS':
