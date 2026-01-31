@@ -3,10 +3,15 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
-const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880'; // 환경변수 우선 사용
-const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+// const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880'; // 환경변수 우선 사용
+const LIVEKIT_URL = 'wss://i14a703.p.ssafy.io'; // 환경변수 우선 사용
+
+// const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+const SOCKET_URL = 'https://i14a703.p.ssafy.io/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+
 // [추가] AI 서버 웹소켓 주소 (FastAPI 등 AI 서버의 웹소켓 엔드포인트)
-const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
+// const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
+const AI_SOCKET_URL = 'wss://i14a703.p.ssafy.io/ws/analysis';
 
 export class RoomManager {
     private static instance: RoomManager;
@@ -39,7 +44,8 @@ export class RoomManager {
             const { LocalTokenGenerator } = await import('@/shared/lib/LocalTokenGenerator');
             const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
             console.log(liveKitToken); // Use variable to avoid unused warning
-
+            const accessToken = localStorage.getItem('accessToken') || '';
+            
             // 토큰 검사
             if (!token) {
                 // 만약 토큰이 없다면 에러를 띄움 (백엔드가 주기 때문)
@@ -52,7 +58,7 @@ export class RoomManager {
             await this.connectLiveKit(token);
 
             // 1-3. WebSocket 연결 (컨트롤 플레인)
-            this.connectWebSocket();
+            this.connectWebSocket(accessToken);
             // [추가]1-4. 소켓 직통 연결 (집중도 데이터)
             this.connectAISocket();
 
@@ -140,22 +146,23 @@ export class RoomManager {
     }
 
     // 3. WebSocket(SockJS+Stomp) 연결 로직
-    private connectWebSocket() {
+    
+    // private connectWebSocket() {
+    private connectWebSocket(token: String) {
         this.stompClient = new Client({
-            // SockJS를 Factory로 주입
             webSocketFactory: () => new SockJS(SOCKET_URL),
             connectHeaders: {
                 memberId: this.userId,
                 roomId: this.roomId,
+                // [중요] JWT 토큰 추가 (Bearer 공백 주의)
+                Authorization: `Bearer ${token}`, 
             },
             debug: (str) => {
-                console.log(`[Stomp] ${str}`);
+                // console.log(`[Stomp] ${str}`); // 디버깅 시에만 켜기 (로그 너무 많음)
             },
-            reconnectDelay: 5000, // 자동 재연결 시도 (선택 사항)
+            reconnectDelay: 5000,
             onConnect: () => {
                 console.log('[Stomp] 소켓 연결 성공');
-
-                // 내 방의 제어 메시지 구독
                 this.stompClient?.subscribe(`/sub/room/${this.roomId}`, (message) => {
                     const payload = JSON.parse(message.body);
                     this.handleSocketMessage(payload);

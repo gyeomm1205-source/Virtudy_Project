@@ -44,7 +44,6 @@
           :rooms="displayedRooms"
           :isMyRoomTab="currentFilter === 'myRooms'"  @roomClick="handleRoomClick"
           @filterChange="setFilter"
-          @sortChange="setSortBy"
           @search="onSearchInput"
           @edit="handleEditRoom"      
           @delete="handleDeleteRoom"
@@ -106,7 +105,6 @@ const {
 const showModal = ref(false); // 모달 표시 여부
 const selectedRoom = ref<RoomData | null>(null);
 const currentFilter = ref<string>('all'); // 'all' | 'my'
-const sortBy = ref<string>('popular');
 const searchQuery = ref<string>('');
 const currentPage = ref<number>(1);
 const ITEMS_PER_PAGE = 6;
@@ -125,11 +123,15 @@ const openCreateModal = () => {
 };
 
 // 방 수정 버튼 클릭 
-const handleEditRoom = (room: any) => {
-  // RoomList에서 받은 room 데이터를 selectedRoom에 저장
-  // (RoomList의 room 타입과 RoomData 타입이 호환된다고 가정)
-  selectedRoom.value = room; 
-  showModal.value = true;
+const handleEditRoom = async (room: any) => {
+  try {
+    const { data } = await lobbyAPI.getRoomDetail(room.roomId);
+    selectedRoom.value = data;
+    showModal.value = true;
+  } catch (error) {
+    console.error('방 상세 조회 실패:', error);
+    alert('방 정보를 불러오지 못했습니다.');
+  }
 };
 
 // ✅ 방 삭제 버튼 클릭
@@ -170,11 +172,6 @@ const setFilter = (filter: string) => {
   fetchAllRooms(); // 탭 바꿀 때 데이터 갱신
 };
 
-const setSortBy = (sort: string) => {
-  sortBy.value = sort;
-  currentPage.value = 1;
-};
-
 const onSearchInput = (query: string) => {
   searchQuery.value = query;
   currentPage.value = 1;
@@ -200,14 +197,6 @@ const filteredRooms = computed(() => {
     );
   }
 
-  // 정렬
-  if (sortBy.value === 'popular') {
-    // API 필드명 currentUser 사용 (기존 currentMembers 대응)
-    filtered.sort((a, b) => (b.currentUser || 0) - (a.currentUser || 0));
-  } else if (sortBy.value === 'latest') {
-    // createdAt 필드가 없으므로 roomId 기반으로 정렬
-    filtered.sort((a, b) => b.roomId.localeCompare(a.roomId));
-  }
   return filtered;
 });
 
@@ -231,6 +220,7 @@ const displayedRooms = computed(() => {
     createdAt: new Date().toISOString(), // 현재 시간으로 설정
     owner: room.owner || false, 
     description: room.description,
+    type: room.type,
     favorite: room.favorite || false // ✅ favorite 속성 추가
   }));
 });

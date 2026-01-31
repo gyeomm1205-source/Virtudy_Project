@@ -33,16 +33,9 @@ const handleSubmit = async () => {
     return alert('방 제목을 입력해주세요! 📝');
   }
 
-  // 비공개 방인데 비밀번호가 없는 경우 체크
-  // (수정 모드일 때는 비밀번호를 안 바꾸면 빈 칸일 수 있으므로, 생성 모드이거나 비밀번호를 입력했을 때만 체크)
-  if (form.value.type === 'PRIVATE' && !form.value.password?.trim()) {
-    // 수정 모드이면서 비밀번호 입력 안 함 -> "기존 비밀번호 유지"로 간주하고 넘어갈 수도 있지만,
-    // 명세상 필수라면 입력을 강제해야 함. 여기서는 엄격하게 체크.
-    if (!isEditMode.value || (isEditMode.value && form.value.password !== undefined)) {
-       // 만약 수정 시 비밀번호 입력을 안 해도 된다면 이 조건문은 로직 수정 필요
-       // 현재는 "비공개 설정 시 비밀번호 필수" 유지
-      return alert('비공개 방은 비밀번호가 꼭 필요해요! 🔒');
-    }
+  // 비공개 방 생성 시 비밀번호 필수
+  if (!isEditMode.value && form.value.type === 'PRIVATE' && !form.value.password?.trim()) {
+    return alert('비공개 방은 비밀번호가 꼭 필요해요! 🔒');
   }
 
   let success = false;
@@ -105,24 +98,33 @@ const handleSubmit = async () => {
         </div>
 
         <div class="flex gap-4">
-          <label 
-            class="flex-1 cursor-pointer p-3 rounded-xl border-2 transition-all text-center font-bold"
-            :class="form.type === 'PUBLIC' 
-              ? 'bg-[var(--color-butter)] border-[var(--color-choco)] text-[var(--color-choco)]' 
-              : 'bg-gray-100 border-gray-300 text-gray-400'"
-          >
-            <input type="radio" v-model="form.type" value="PUBLIC" class="hidden">
-            📢 공개
-          </label>
-          <label 
-            class="flex-1 cursor-pointer p-3 rounded-xl border-2 transition-all text-center font-bold"
-            :class="form.type === 'PRIVATE' 
-              ? 'bg-[var(--color-butter)] border-[var(--color-choco)] text-[var(--color-choco)]' 
-              : 'bg-gray-100 border-gray-300 text-gray-400'"
-          >
-            <input type="radio" v-model="form.type" value="PRIVATE" class="hidden">
-            🔒 비공개
-          </label>
+          <template v-if="isEditMode">
+            <div
+              class="flex-1 p-3 rounded-xl border-2 text-center font-bold bg-[var(--color-butter)] border-[var(--color-choco)] text-[var(--color-choco)]"
+            >
+              {{ form.type === 'PUBLIC' ? '📢 공개' : '🔒 비공개' }}
+            </div>
+          </template>
+          <template v-else>
+            <label 
+              class="flex-1 cursor-pointer p-3 rounded-xl border-2 transition-all text-center font-bold"
+              :class="form.type === 'PUBLIC' 
+                ? 'bg-[var(--color-butter)] border-[var(--color-choco)] text-[var(--color-choco)]' 
+                : 'bg-gray-100 border-gray-300 text-gray-400'"
+            >
+              <input type="radio" v-model="form.type" value="PUBLIC" class="hidden">
+              📢 공개
+            </label>
+            <label 
+              class="flex-1 cursor-pointer p-3 rounded-xl border-2 transition-all text-center font-bold"
+              :class="form.type === 'PRIVATE' 
+                ? 'bg-[var(--color-butter)] border-[var(--color-choco)] text-[var(--color-choco)]' 
+                : 'bg-gray-100 border-gray-300 text-gray-400'"
+            >
+              <input type="radio" v-model="form.type" value="PRIVATE" class="hidden">
+              🔒 비공개
+            </label>
+          </template>
         </div>
 
         <transition name="slide-fade">

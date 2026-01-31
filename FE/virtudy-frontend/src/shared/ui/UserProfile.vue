@@ -2,7 +2,7 @@
   <div class="user-profile-card shadow-[4px_4px_0px_0px_var(--color-choco)]">
     <div class="profile-main">
       <div class="profile-image-wrapper">
-        <div class="image-container">
+        <div class="image-container" @click="emit('clickProfile')">
           <img 
             :src="profileFrameUrl" 
             alt="프로필 프레임"
@@ -35,7 +35,12 @@
       
       <div class="fav-study-area">
         <p class="fav-text">
-          &lt; {{ favoriteRoomTitle }} &gt;
+          <template v-if="favoriteRoomTitle">
+            &lt; {{ favoriteRoomTitle }} &gt;
+          </template>
+          <template v-else>
+            ( 최애 스터디 없음 )
+          </template>
         </p>
       </div>
     </div>
@@ -52,6 +57,11 @@
 <script setup lang="ts">
 import MiniReport from '@/shared/ui/MiniReport.vue'; 
 
+// 클릭 이벤트
+const emit = defineEmits<{
+  (e: 'clickProfile'): void
+}>();
+
 // [수정] 백엔드 명세와 동일한 필드명으로 Props 정의
 interface AvatarConfig {
   hairFront: string;
@@ -67,7 +77,7 @@ interface UserProfileProps {
   nickName?: string;
   tierScore?: number;       // userScore -> tierScore
   tier?: string;
-  favoriteRoomTitle?: string; // favoriteStudy -> favoriteRoomTitle
+  favoriteRoomTitle: string; 
   // [중요] 백엔드에서 오는 데이터 이름 그대로 사용
   pureStudyTime?: number;   // studyHours -> pureStudyTime (분 단위 숫자)
   focusDepth?: number;      // concentration -> focusDepth (퍼센트 숫자) 
@@ -80,7 +90,7 @@ withDefaults(defineProps<UserProfileProps>(), {
   nickName: "닉네임",
   tierScore: 0,
   tier: "티어명",
-  favoriteRoomTitle: "최애스터디이름",
+  favoriteRoomTitle: "",
   pureStudyTime: 0,
   focusDepth: 0,
   avatarImageUrl: ""
@@ -107,6 +117,24 @@ const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
   position: relative;
   height: 276px;
   width: 100%;
+}
+
+/* 클릭 가능한 영역 스타일 추가 */
+.image-container { 
+  position: relative; 
+  width: 146px; 
+  height: 146px; 
+  margin: 0 auto; 
+  top: 10px; 
+  
+  /* 마우스 커서 변경 및 호버 효과 */
+  cursor: pointer; 
+  transition: transform 0.2s ease; 
+}
+
+/* 마우스 올렸을 때 살짝 커지게 */
+.image-container:hover {
+  transform: scale(1.05);
 }
 
 .image-container { position: relative; width: 146px; height: 146px; margin: 0 auto; top: 10px; }

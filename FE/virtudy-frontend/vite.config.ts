@@ -37,7 +37,15 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
         secure: false
-      }
+      },
+      // '/fastapi'로 시작하는 요청이 오면 
+      // -> https://i14a703.p.ssafy.io 로 보낸다
+      '/fastapi': {
+        target: 'https://i14a703.p.ssafy.io',
+        // changeOrigin: true,
+        // secure: false, // HTTPS 인증서 에러 무시 (필요시)
+        rewrite: (path) => path.replace(/^\/fastapi/, '') // 경로 수정이 필요 없다면 주석 처리
+      },
     }
   }
 })
