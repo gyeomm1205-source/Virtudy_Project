@@ -254,6 +254,7 @@ onUnmounted(() => {
                                 <span class="user-name">{{ rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
                                 <span class="heart-icon" :style="{ color: getScoreColor(50) }">♥</span>
                             </div>
+                        </div>
                     </div>
                 </main>
 
