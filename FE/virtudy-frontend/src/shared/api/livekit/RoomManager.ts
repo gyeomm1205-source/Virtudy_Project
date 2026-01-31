@@ -45,7 +45,7 @@ export class RoomManager {
             const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
             console.log(liveKitToken); // Use variable to avoid unused warning
             const accessToken = localStorage.getItem('accessToken') || '';
-            this.connectWebSocket(accessToken);
+            
             // 토큰 검사
             if (!token) {
                 // 만약 토큰이 없다면 에러를 띄움 (백엔드가 주기 때문)
@@ -58,7 +58,7 @@ export class RoomManager {
             await this.connectLiveKit(token);
 
             // 1-3. WebSocket 연결 (컨트롤 플레인)
-            this.connectWebSocket();
+            this.connectWebSocket(accessToken);
             // [추가]1-4. 소켓 직통 연결 (집중도 데이터)
             this.connectAISocket();
 
@@ -146,6 +146,8 @@ export class RoomManager {
     }
 
     // 3. WebSocket(SockJS+Stomp) 연결 로직
+    
+    // private connectWebSocket() {
     private connectWebSocket(token: String) {
         this.stompClient = new Client({
             webSocketFactory: () => new SockJS(SOCKET_URL),
