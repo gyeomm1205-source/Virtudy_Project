@@ -48,6 +48,7 @@ const {
     messages, 
     remoteTracks,
     remoteParticipantStates, // [추가]
+    remoteParticipantScores, // [추가]
     isDistracted,
 } = useStudyRoom();
 
@@ -253,7 +254,7 @@ onUnmounted(() => {
                             </div>
                             <div class="user-info">
                                 <span class="user-name">{{ rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
-                                <span class="heart-icon" :style="{ color: getScoreColor(50) }">♥</span>
+                                <span class="heart-icon" :style="{ color: getScoreColor(remoteParticipantScores[rt.participantId] || 50) }">♥</span>
                             </div>
                         </div>
                     </div>
