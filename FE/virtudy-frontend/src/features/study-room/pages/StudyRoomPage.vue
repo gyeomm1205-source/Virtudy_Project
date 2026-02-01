@@ -54,7 +54,8 @@ const {
 // 3.1 AI 핸들러 & 타이머 연결 ([Merge] Both)
 useAiHandler();
 const aiStore = useStudyRoomAiStore();
-const { focusSeconds } = useFocusTimer(isDistracted);
+const canRunFocusTimer = computed(() => isConnected.value && !isDistracted.value);
+const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 
 // 4. 상태 변수
 const chatMessage = ref('');

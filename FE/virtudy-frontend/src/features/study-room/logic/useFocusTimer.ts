@@ -1,6 +1,6 @@
-import { onUnmounted, ref, watch, type Ref } from 'vue';
+import { nextTick, onUnmounted, ref, watch, type Ref } from 'vue';
 
-export function useFocusTimer(isDistracted: Ref<boolean>) {
+export function useFocusTimer(shouldRun: Ref<boolean>) {
 	const focusSeconds = ref(0);
 	const isRunning = ref(false);
 	let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -28,15 +28,16 @@ export function useFocusTimer(isDistracted: Ref<boolean>) {
 	};
 
 	watch(
-		isDistracted,
-		(blocked) => {
-			if (blocked) {
+		shouldRun,
+		async (run) => {
+			if (!run) {
 				pause();
-			} else {
-				start();
+				return;
 			}
+			await nextTick();
+			start();
 		},
-		{ immediate: true }
+		{ immediate: true, flush: 'post' }
 	);
 
 	onUnmounted(() => {
