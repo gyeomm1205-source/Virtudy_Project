@@ -146,7 +146,10 @@
     </div>
 
     <!-- 회원탈퇴 링크 -->
-    <button class="absolute left-[calc(83.33%-38px)] top-[70.2rem] text-[var(--color-syrup)] text-[0.75rem] font-['Pretendard'] font-normal leading-none tracking-[-0.03rem] underline cursor-pointer">
+    <button
+      @click="handleWithdraw"
+      class="absolute left-[calc(83.33%-38px)] top-[70.2rem] text-[var(--color-syrup)] text-[0.75rem] font-['Pretendard'] font-normal leading-none tracking-[-0.03rem] underline cursor-pointer"
+    >
       회원탈퇴
     </button>
 
@@ -177,8 +180,11 @@ import MiniReport from '@/shared/ui/MiniReport.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';  
 import ProfileEditModal from '../ui/ProfileEditModal.vue';
 import { useWeeklyReport } from  '@/features/report/logic/useWeeklyReport';
+import { authAPI } from '@/features/auth/api/authAPI';
+import { useAuthStore } from '@/stores/authStore';
 
 const router = useRouter();
+const authStore = useAuthStore();
 const { 
   userInfo, activeTab, isEditModalOpen, editForm, 
   openEditModal, closeEditModal, submitEdit 
@@ -194,6 +200,21 @@ const goBack = () => {
 const goToReport = () => {
   activeTab.value = 'report';
   router.push({ name: 'report' });
+};
+
+const handleWithdraw = async () => {
+  const confirmed = confirm('정말로 회원탈퇴 하시겠습니까? 이 작업은 되돌릴 수 없습니다.');
+  if (!confirmed) return;
+
+  try {
+    await authAPI.withdraw();
+    authStore.clearAuth();
+    alert('회원탈퇴가 완료되었습니다.');
+    router.push('/guest');
+  } catch (error) {
+    console.error('회원탈퇴 실패:', error);
+    alert('회원탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.');
+  }
 };
 </script>
 
