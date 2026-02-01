@@ -204,10 +204,18 @@ onUnmounted(() => {
                     </div>
                     
                     <div class="combined-timer-widget">
-                        <div class="timer-label">Title</div>
-                        <div class="timer-content">
+                        <!-- Window Frame -->
+                        <div class="window-frame">
+                            <div class="window-framing">
+                                <div class="window-title">
+                                    <span>Title</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timer Display -->
+                        <div class="timer-display">
                             <StudyTimer />
-                            <div class="divider">/</div>
                             <FocusTimer :seconds="focusSeconds" />
                         </div>
                     </div>
@@ -338,19 +346,60 @@ onUnmounted(() => {
 /* 타이머 */
 .combined-timer-widget { 
     position: absolute; 
-    top: 80px; /* 상단 정보 피해서 아래로 */
+    top: 100px; 
     right: 40px; 
-    background: white; 
-    padding: 15px; 
-    border-radius: 8px; 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
-    min-width: 200px; 
-    text-align: center; 
+    width: 323px;
+    height: 213.377px;
     z-index: 5; 
 }
-.timer-label { font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 10px; padding-bottom: 5px; text-align: left;}
-.timer-content { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.5rem; font-weight: bold; }
-.divider { color: #ccc; }
+
+.window-frame {
+    position: absolute;
+    width: 323px;
+    height: 200px;
+    right: -10px;
+    top: 80px;
+    background: #fff8e5;
+}
+
+.window-framing {
+    position: absolute;
+    background: #fff8e5;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #805143;
+    border-radius: 2px;
+    box-shadow: inset -1.029px -1.029px 0px 0px #000000,
+                inset 1.029px 1.029px 0px 0px #dbdbdb,
+                inset -2.057px -2.057px 0px 0px #808080,
+                inset 2.057px 2.057px 0px 0px #ffffff;
+}
+
+.window-title {
+    position: absolute;
+    height: 30.862px;
+    left: 3.09px;
+    right: 3.09px;
+    top: 3.09px;
+    background: #805143;
+    display: flex;
+    align-items: center;
+    padding-left: 4.11px;
+}
+
+.window-title span {
+    font-family: 'exqt', sans-serif;
+    font-size: 28.805px;
+    color: white;
+    font-weight: normal;
+    line-height: normal;
+}
+
+.timer-display {
+    position: absolute;
+    left: 45px;
+    top: 137px;
+}
 
 /* 아바타 스트립: 긴 바(Bar)*/
 .avatar-strip {
@@ -361,7 +410,7 @@ onUnmounted(() => {
     height: 50px; /* 바의 높이 */
     
     /* 긴 바의 배경색 */
-    background-color: #f3d2ac; 
+    background-color:#FFC497; 
     
     display: flex;
     flex-direction: row;
@@ -428,10 +477,9 @@ onUnmounted(() => {
 .chat-section { 
     flex: 1; 
     min-width: 300px; 
-    background-color: #ffeaa7;
+    background-color: #FFD966;
     display: flex; 
     flex-direction: column; 
-    border-left: 1px solid #ddd;
 }
 .chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
 .message-bubble { background: white; padding: 8px 12px; border-radius: 10px; max-width: 90%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }

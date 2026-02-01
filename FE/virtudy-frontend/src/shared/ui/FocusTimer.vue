@@ -13,15 +13,13 @@ const formattedTime = computed(() => {
   const s = props.seconds % 60;
 
   const pad = (num: number) => String(num).padStart(2, '0');
-  if (h === 0) return `${pad(m)}:${pad(s)}`;
+  // 항상 HH:MM:SS 형식으로 표시
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 });
 </script>
 
 <template>
   <div class="focus-timer">
-    <span class="icon">🎯</span>
-    <span class="label">집중 타이머</span>
     <span class="time">{{ formattedTime }}</span>
   </div>
 </template>
@@ -29,25 +27,20 @@ const formattedTime = computed(() => {
 <style scoped>
 .focus-timer {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
-  background-color: rgba(0, 0, 0, 0.1);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-family: 'Courier New', Courier, monospace;
-  font-weight: bold;
-  color: #2f3542;
-  border: 1px solid #ddd;
-}
-
-.label {
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding-bottom: 30px;
 }
 
 .time {
-  font-size: 1.2rem;
-  min-width: 80px;
+  font-family: 'exqt', sans-serif;
+  font-size: 37.497px;
+  color: #dfa67b;
+  font-weight: 500;
+  line-height: normal;
+  white-space: nowrap;
   text-align: center;
+  margin-left: 90px;
+  transform: scaleY(1.3);
 }
 </style>
