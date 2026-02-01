@@ -24,16 +24,16 @@ export default defineConfig({
       // 브라우저에서 /api로 시작하는 요청을 보내면 백엔드 서버(80)로 전달합니다.
       '/api': {
         // target: 'http://localhost:8080', // 로컬 백엔드(로컬에서 돌릴 땐 이걸로 해야함)
-        // target: 'http://i14a703.p.ssafy.io:8080', // 배포 서버
-        target: 'http://i14a703.p.ssafy.io:80', //진짜 배포 서버
+        target: 'http://i14a703.p.ssafy.io:8080', // 배포 서버
+        // target: 'http://i14a703.p.ssafy.io:80', //진짜 배포 서버
         changeOrigin: true,
         secure: false,
       },
       // [추가] WebSocket 요청도 백엔드로 프록시 (CORS 해결)
       '/ws': {
         // target: 'http://localhost:8081', // Interceptor가 8081을 요구하므로 8081로 연결(로컬에서 돌릴 땐 이걸로 해야함)
-        // target: 'http://i14a703.p.ssafy.io:8081', // 배포 서버 (8081)
-        target: 'http://i14a703.p.ssafy.io:80', //진짜 배포 서버
+        target: 'http://i14a703.p.ssafy.io:8081', // 배포 서버 (8081)
+        // target: 'http://i14a703.p.ssafy.io:80', //진짜 배포 서버
         changeOrigin: true,
         ws: true,
         secure: false

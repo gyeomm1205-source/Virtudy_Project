@@ -24,7 +24,7 @@ const authStore = useAuthStore();
 // 2. URL에서 정보 추출
 const roomId = route.params.roomId as string;
 const token = route.query.token as string;
-const userId = authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
+const userId = (route.query.userId as string) || authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
 //[추가] 사용자 닉네임 표시용
 const displayName = computed(() => authStore.userInfo?.nickName || userId);
 // [추가] AI Score(점수)에 따른 하트 색상 반환 함수
@@ -94,7 +94,8 @@ const mouthState = ref<'closed' | 'slightly_open' | 'wide_open'>('closed');
 
 onMounted(() => {
     const init = async () => {
-        if (!token || !roomId) {
+        // [수정] 로컬 테스트 지원: token이 없어도 userId가 URL에 있거나 로컬 환경이면 진행
+        if (!roomId) {
             alert('잘못된 접근입니다.');
             router.replace('/lobby');
             return;
