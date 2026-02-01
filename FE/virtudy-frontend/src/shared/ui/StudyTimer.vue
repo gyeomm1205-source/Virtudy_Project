@@ -14,8 +14,7 @@ const formattedTime = computed(() => {
   // 01:05:09 처럼 두 자리수 맞추기
   const pad = (num: number) => String(num).padStart(2, '0');
   
-  // 1시간 미만일 때는 MM:SS만 보여주기 (선택사항)
-  if (h === 0) return `${pad(m)}:${pad(s)}`;
+  // 항상 HH:MM:SS 형식으로 표시
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 });
 
@@ -34,7 +33,6 @@ onUnmounted(() => {
 
 <template>
   <div class="study-timer">
-    <span class="icon">⏱️</span>
     <span class="time">{{ formattedTime }}</span>
   </div>
 </template>
@@ -42,20 +40,23 @@ onUnmounted(() => {
 <style scoped>
 .study-timer {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
-  background-color: rgba(0, 0, 0, 0.1); /* 배경 살짝 어둡게 */
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-family: 'Courier New', Courier, monospace; /* 숫자 간격 일정한 폰트 추천 */
-  font-weight: bold;
-  color: #2f3542;
-  border: 1px solid #ddd;
+  width: 100%;
+  height: 100%;
 }
 
 .time {
-  font-size: 1.2rem;
-  min-width: 80px; /* 시간 글자수 바껴도 흔들림 방지 */
+  font-family: 'exqt', sans-serif;
+  font-size: 4.5rem;
+  color: #ffd966;
+  font-weight: 100;
+  line-height: 1;
+  letter-spacing: -2px;
+  white-space: nowrap;
   text-align: center;
+  margin-top: 10px;
+  margin-left: 20px;
+  transform: scaleY(1.3);
 }
 </style>
