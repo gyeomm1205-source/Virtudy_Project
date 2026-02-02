@@ -4,7 +4,15 @@ import cv2
 import numpy as np
 import json
 import time
-from livekit import api, rtc
+import multiprocessing
+import livekit
+
+import livekit
+import livekit.api as api
+import livekit.rtc as rtc
+
+
+
 
 # Reuse imports from core modules
 from run import FeatureExtractor
@@ -17,8 +25,8 @@ from fusion.state_fuser import StateFuser
 from scoring.focus_scorer import FocusScorer
 
 
-async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream):
-    print("[INFO] AI Processing Loop Started")
+async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: multiprocessing.Queue = None):
+    print("[INFO] AI Processing Loop Started", flush=True)
     
     # Initialize Logic
     extractor = FeatureExtractor() # Use original extractor
@@ -27,16 +35,14 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream):
     phone_det = PhoneDetector()
     fuser = StateFuser()
     scorer = FocusScorer()
-
-    # Restoration of thresholds
-    Config.PITCH_DROWSY_TH, Config.PITCH_PHONE_USE_TH = 0.45, 0.40
-    Config.EAR_DROWSY_TH = 0.18
+    last_valid_event = "FOCUS" # [NEW] To hold state during UNKNOWN
 
     frame_count = 0
     last_sent_time = 0
     SEND_INTERVAL = 0.1 # Send data every 100ms
 
     async for frame in video_stream:
+        start_time = time.time()
         frame_count += 1
         
         # Convert LiveKit VideoFrame to CV2 image
@@ -63,6 +69,10 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream):
         # Flip for processing 
         img = cv2.flip(img, 1)
         h, w, _ = img.shape
+        
+        # [DEBUG] Check resolution immediately
+        if frame_count <= 10:
+            print(f"[DEBUG] Frame Resolution: {w}x{h}", flush=True)
 
         # 1. Feature Extraction
         feats = extractor.process(img)
@@ -72,6 +82,22 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream):
         sig_drowsy = drowsy_det.process(feats["face_detected"], feats["ear"], feats["pitch"])
         sig_phone = phone_det.process(feats["phone_conf"], feats["face_detected"], feats["pitch"], feats["hand_interaction"])
         
+        # [DEBUG] Print raw values to debug detection failure
+        # [DEBUG] Print raw values to debug detection failure
+        if feats['face_detected']:
+             ear_val = feats['ear'] if feats['ear'] is not None else 0.0
+             pitch_val = feats['pitch'] if feats['pitch'] is not None else 0.0
+             phone_val = feats['phone_conf']
+             
+             # Calculate FPS/Latency
+             process_time = time.time() - start_time
+             fps = 1.0 / process_time if process_time > 0 else 0
+             
+             # Print THRESHOLD to confirm it updated
+             print(f"[DEBUG] EAR: {ear_val:.3f} (Th: {Config.EAR_DROWSY_TH}), Pitch: {pitch_val:.3f} (Th: {Config.PITCH_PHONE_USE_TH}), Phone: {phone_val:.3f}, FPS: {fps:.1f}", flush=True)
+        else:
+             print(f"[DEBUG] NO FACE DETECTED", flush=True)
+
         signals = FrameSignals(drowsy=sig_drowsy, absent=sig_abs, phone=sig_phone)
         decision = fuser.decide(signals)
         snap = scorer.update(decision.state)
@@ -80,44 +106,116 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream):
         current_time = time.time()
         if current_time - last_sent_time >= SEND_INTERVAL:
             # STATUS MAPPING
-            status_str = decision.state.name 
-            if status_str == "DROWSY": status_str = "SLEEP"
-            if status_str == "ABSENT": status_str = "AWAY"
-            if status_str == "FOCUSED": status_str = "FOCUS"
+            # Frontend Spec: 
+            # "FOCUS" : 0
+            # "SLEEP" : 1 (Drowsy)
+            # "PHONE" : 1
+            # "AWAY" : 1 (Absent/Empty)
             
-            # Send STATUS
-            await _send_data(room, "STATUS", status_str)
-            print(f"[DEBUG] Sent STATUS: {status_str}, SCORE: {int(snap.score)}")
+            raw_state = decision.state.name # FOCUSED, DROWSY, ABSENT, PHONE, UNKNOWN
             
-            # Send SCORE
-            await _send_data(room, "SCORE", int(snap.score))
+            # [NEW] Hold Last Valid State
+            if raw_state != "UNKNOWN":
+                event_type = raw_state
+                if raw_state == "FOCUSED": event_type = "FOCUS"
+                elif raw_state == "DROWSY": event_type = "SLEEP"
+                elif raw_state == "ABSENT": event_type = "AWAY"
+                last_valid_event = event_type
+            else:
+                event_type = last_valid_event # Maintain previous
+            
+            # Value Logic
+            value = 0 if event_type == "FOCUS" else 1
+
+            # Send STATUS Event (Strict JSON Spec)
+            # We pass 'event_type' as category, but _send_data will now ensure it maps to 'eventType'
+            await _send_data(room, event_type, value, queue)
+            
+            # Send SCORE Event (Separate)
+            await _send_data(room, "SCORE", int(snap.score), queue)
 
             last_sent_time = current_time
 
-async def _send_data(room: rtc.Room, category: str, value):
+async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None):
+    # 1. Send via LiveKit
     payload = json.dumps({"category": category, "value": value})
     data = payload.encode('utf-8')
     await room.local_participant.publish_data(data, reliable=False)
 
-async def main(url: str, token: str):
+    # 2. Send via Queue (to Frontend Socket)
+    # 2. Send via Queue (to Frontend Socket)
+    if queue:
+        try:
+            # Frontend Logic:
+            # - Expects { eventType: "FOCUS", value: 0 }
+            # - Expects { eventType: "SCORE", value: 85 }
+            
+            queue_payload = {"eventType": category, "value": value}
+            queue.put(queue_payload)
+            print(f"[DEBUG] Queue Put: {category} -> {value}") # Explicit print
+        except Exception as e:
+            print(f"[WARN] Queue put failed: {e}")
+
+async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
+    print(f"[DEBUG] run_bot started! Connecting to: {url}", flush=True)
     room = rtc.Room()
     
     @room.on("track_subscribed")
     def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
         if track.kind == rtc.TrackKind.KIND_VIDEO:
-            print(f"[INFO] Subscribed to Video Track from {participant.identity}")
+            print(f"[INFO] Subscribed to Video Track from {participant.identity}", flush=True)
             video_stream = rtc.VideoStream(track)
-            asyncio.create_task(ai_process_loop(room, video_stream))
+            asyncio.create_task(ai_process_loop(room, video_stream, queue))
 
-    print(f"[INFO] Connecting to LiveKit Room...")
-    await room.connect(url, token)
-    print(f"[INFO] Connected to {room.name}")
+    @room.on("track_published")
+    def on_track_published(publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
+        print(f"[DEBUG] Track Published: {publication.kind} from {participant.identity}", flush=True)
 
-    # Keep alive
+    @room.on("participant_connected")
+    def on_participant_connected(participant: rtc.RemoteParticipant):
+        print(f"[DEBUG] Participant Connected: {participant.identity}", flush=True)
+
+    print(f"[INFO] Connecting to LiveKit Room...", flush=True)
     try:
+        await room.connect(url, token)
+        print(f"[INFO] Connected to {room.name}", flush=True)
+
+        # [CRITICAL Fix] Check for EXISTING participants/tracks
+        # If user is already in room, 'track_published' might not fire, but they are in room.remote_participants
+        print(f"[DEBUG] Checking for existing participants... (Count: {len(room.remote_participants)})", flush=True)
+        
+        for identity, participant in room.remote_participants.items():
+            print(f"[DEBUG] Found existing participant: {identity}", flush=True)
+            for track_sid, publication in participant.track_publications.items():
+                print(f"[DEBUG] Found existing track: {publication.kind} (Subscribed: {publication.subscribed})", flush=True)
+                # If already subscribed but logic didn't trigger (unlikely but safe)
+                if publication.subscribed and publication.track and publication.kind == rtc.TrackKind.KIND_VIDEO:
+                     print(f"[INFO] Found existing subscribed video, starting loop for {identity}", flush=True)
+                     video_stream = rtc.VideoStream(publication.track)
+                     asyncio.create_task(ai_process_loop(room, video_stream, queue))
+        
+        # Keep alive & Monitor
+        empty_room_start = None
+        
         while True:
             await asyncio.sleep(1)
-    except KeyboardInterrupt:
+            count = len(room.remote_participants)
+            
+            if count == 0:
+                if empty_room_start is None:
+                    empty_room_start = time.time()
+                elif time.time() - empty_room_start > 1.0:
+                    print(f"[INFO] Room empty for 1 second. Disconnecting...", flush=True)
+                    break
+            else:
+                empty_room_start = None
+
+            # Periodic check for debug
+            if count > 0:
+                 print(f"[DEBUG] Room Status: {count} participants connected.", flush=True)
+    except Exception as e:
+        print(f"[ERROR] Connection failed: {e}")
+    finally:
         await room.disconnect()
 
 if __name__ == "__main__":
@@ -126,4 +224,4 @@ if __name__ == "__main__":
     parser.add_argument("--token", required=True, help="LiveKit Token")
     args = parser.parse_args()
     
-    asyncio.run(main(args.url, args.token))
+    asyncio.run(run_bot(args.url, args.token))

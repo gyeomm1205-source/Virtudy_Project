@@ -27,29 +27,22 @@
           </span>
         </button>
       </div>
+
+      <button
+        v-if="currentFilter === 'myRooms'"
+        @click="toggleFavoriteSelect"
+        class="absolute right-0 top-[14px] border-2 border-[var(--color-choco)] border-solid px-[18px] py-[6px] rounded-[20px] bg-[var(--color-butter2)] shadow-[4px_4px_0px_0px_var(--color-choco)] hover:scale-105 transition-transform"
+      >
+        <span class="text-[var(--color-choco)] text-[18px] font-['PfStardust30S'] font-normal leading-none">
+          최애방 선택하기
+        </span>
+      </button>
       
-      <div class="absolute left-[334px] top-[29px] flex gap-[40px]">
-        <button 
-          @click="setSortBy('popular')"
-          :class="[
-            'text-[20px] font-[PfStardust30S] font-normal leading-none tracking-[-0.8px]',
-            sortBy === 'popular' ? 'text-[var(--color-cream2)]' : 'text-[var(--color-cream2)] opacity-70'
-          ]"
-        >
-          사람많은순
-        </button>
-        <button 
-          @click="setSortBy('latest')"
-          :class="[
-            'text-[20px] font-[PfStardust30S] font-normal leading-none tracking-[-0.8px]',
-            sortBy === 'latest' ? 'text-[var(--color-cream2)]' : 'text-[var(--color-cream2)] opacity-70'
-          ]"
-        >
-          최신순
-        </button>
-      </div>
-      
-      <div class="absolute right-0 top-[14px] w-[219px] border-2 border-[var(--color-choco)] border-solid bg-[var(--color-cream2)] h-[33px] flex items-center px-[7px] gap-[10px]" style="box-shadow: 3.667px 3.667px 0px 0px var(--color-choco);">
+      <div 
+        v-if="currentFilter === 'all'"
+        class="absolute right-0 top-[14px] w-[219px] border-2 border-[var(--color-choco)] border-solid bg-[var(--color-cream2)] h-[33px] flex items-center px-[7px] gap-[10px]" 
+        style="box-shadow: 3.667px 3.667px 0px 0px var(--color-choco);"
+      >
         <div class="w-[21px] h-[21px] flex items-center justify-center">
           <svg viewBox="0 0 21 21" class="w-[19.636px] h-[19.636px]">
             <path d="M8 2C11.314 2 14 4.686 14 8C14 9.248 13.587 10.397 12.897 11.324L18.707 17.071C19.098 17.461 19.098 18.095 18.707 18.485C18.317 18.876 17.683 18.876 17.293 18.485L11.486 12.678C10.559 13.368 9.41 13.781 8.162 13.781C4.848 13.781 2.162 11.095 2.162 7.781C2.162 4.467 4.848 1.781 8.162 1.781Z" fill="var(--color-choco)"/>
@@ -75,7 +68,21 @@
           @click="onRoomClick(room)"
         >
           <div class="absolute right-[20px] top-[20px] flex items-center">
-            
+            <button 
+              v-if="isMyRoomTab && (selectingFavorite || room.favorite)" 
+              @click.stop="onFavoriteClick(room.roomId!)"
+              class="w-[24px] h-[24px] flex items-center justify-center hover:scale-110 transition-transform mr-[8px] z-20"
+              title="최애 스터디방 설정"
+              style="display: none;"
+            >
+              <svg v-if="room.favorite" viewBox="0 0 24 24" class="w-full h-full fill-[var(--color-choco)]">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" class="w-full h-full fill-none stroke-[var(--color-choco)] stroke-2">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+            </button>
+
             <div v-if="room.owner" class="flex gap-[8px] mr-[10px] z-10">
               <button 
                 @click.stop="emit('edit', room)" 
@@ -97,6 +104,20 @@
               {{ room.currentMembers || 0 }}/{{ room.maxMembers || 6 }}
             </p>
           </div>
+
+          <button 
+            v-if="isMyRoomTab && (selectingFavorite || room.favorite)" 
+            @click.stop="onFavoriteClick(room.roomId!)"
+            class="absolute right-[20px] bottom-[20px] w-[24px] h-[24px] flex items-center justify-center hover:scale-110 transition-transform z-20"
+            title="최애 스터디방 설정"
+          >
+            <svg v-if="room.favorite" viewBox="0 0 24 24" class="w-full h-full fill-[var(--color-choco)]">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" class="w-full h-full fill-none stroke-[var(--color-choco)] stroke-2">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+          </button>
           
           <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%]">
             <p class="text-[var(--color-choco)] text-[32px] font-['Xcu'] font-medium leading-tight text-center truncate">
@@ -217,10 +238,12 @@ interface Room {
   createdAt: string;
   owner?: boolean;       // 방장 여부
   description?: string;  // 수정 시 필요할 수 있어서 추가
+  favorite?: boolean;    // [NEW] 최애방 여부 추가
 }
 
 interface RoomListProps {
   rooms?: Room[];
+  isMyRoomTab?: boolean; // [NEW] 내 방 탭인지 여부 prop 추가
 }
 
 const props = withDefaults(defineProps<RoomListProps>(), {
@@ -230,15 +253,15 @@ const props = withDefaults(defineProps<RoomListProps>(), {
 const emit = defineEmits<{
   roomClick: [room: Room];
   filterChange: [filter: string];
-  sortChange: [sortBy: string];
   search: [query: string];
   edit: [room: Room];        // 수정 버튼 클릭
   delete: [roomId: string];  // 삭제 버튼 클릭
+  toggleFavorite: [roomId: string]; // [NEW] 하트 클릭 이벤트 추가
 }>();
 
 // Reactive state
 const currentFilter = ref<string>('all');
-const sortBy = ref<string>('popular');
+const selectingFavorite = ref(false);
 const searchQuery = ref<string>('');
 const currentPage = ref<number>(1);
 const ITEMS_PER_PAGE = 6;
@@ -254,17 +277,11 @@ const filteredRooms = computed(() => {
     // 필요한 경우 내 방 필터링 로직 추가
   }
   
-  if (searchQuery.value.trim()) {
+  if (currentFilter.value === 'all' && searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(room => 
       room.title.toLowerCase().includes(query)
     );
-  }
-  
-  if (sortBy.value === 'popular') {
-    filtered.sort((a, b) => b.currentMembers - a.currentMembers);
-  } else if (sortBy.value === 'latest') {
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
   
   return filtered;
@@ -292,13 +309,10 @@ const visiblePages = computed(() => {
 const setFilter = (filter: string) => {
   currentFilter.value = filter;
   currentPage.value = 1;
+  if (filter !== 'myRooms') {
+    selectingFavorite.value = false;
+  }
   emit('filterChange', filter);
-};
-
-const setSortBy = (sort: string) => {
-  sortBy.value = sort;
-  currentPage.value = 1;
-  emit('sortChange', sort);
 };
 
 const onSearch = () => {
@@ -308,6 +322,16 @@ const onSearch = () => {
 
 const onRoomClick = (room: Room) => {
   emit('roomClick', room);
+};
+
+const toggleFavoriteSelect = () => {
+  selectingFavorite.value = !selectingFavorite.value;
+};
+
+const onFavoriteClick = (roomId: string) => {
+  if (!selectingFavorite.value) return;
+  emit('toggleFavorite', roomId);
+  selectingFavorite.value = false;
 };
 
 const goToPage = (page: number) => {

@@ -15,6 +15,6 @@ export interface AiStatus {
 
 // Payload structure for Data Messages received from LiveKit
 export interface AiDataPayload {
-    category: 'SCORE' | 'STATUS' | 'MOUTH' | 'BLINK';
+    category: 'SCORE' | 'STATUS' | 'MOUTH' | 'BLINK' | 'FOCUS' | 'SLEEP' | 'PHONE' | 'AWAY';
     value: string | number | boolean;
 }

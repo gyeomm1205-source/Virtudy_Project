@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
 // [Merge] Combined Imports
@@ -11,9 +11,13 @@ import StudyTimer from '@/shared/ui/StudyTimer.vue';
 import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
+import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 // HEAD Imports
 import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
+
+import { getScoreColor } from '../logic/scoreUtils'; 
+import PipDashboard from '../ui/PipDashboard.vue';
 
 // 1. 라우터 및 스토어 설정
 const route = useRoute();
@@ -24,6 +28,8 @@ const authStore = useAuthStore();
 const roomId = route.params.roomId as string;
 const token = route.query.token as string;
 const userId = authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
+//[추가] 사용자 닉네임 표시용
+const displayName = computed(() => authStore.userInfo?.nickName || userId);
 
 // 3. 로직 훅
 const { 
@@ -34,18 +40,141 @@ const {
     error, 
     messages, 
     remoteTracks,
+    remoteParticipantStates,
     isDistracted,
-    setDebugState, 
 } = useStudyRoom();
 
 // 3.1 AI 핸들러 & 타이머 연결 ([Merge] Both)
 useAiHandler();
 const aiStore = useStudyRoomAiStore();
-const { focusSeconds } = useFocusTimer(isDistracted);
+const canRunFocusTimer = computed(() => isConnected.value && !isDistracted.value);
+const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 
 // 4. 상태 변수
 const chatMessage = ref('');
 const localVideoRef = ref<HTMLVideoElement | null>(null);
+//[추가] 방 정보
+const roomTitle = ref('');
+const roomDescription = ref('');
+
+// -------------------------------------------------------------
+// 🪟 Document PIP 관련 로직
+// -------------------------------------------------------------
+const isPipActive = ref(false);
+const pipDashboardRef = ref<HTMLElement | null>(null); 
+const pipSourceContainerRef = ref<HTMLElement | null>(null);
+let pipWindow: Window | null = null;
+
+// 코드 복사 버튼 관련 상태
+const isHoveringCopyButton = ref(false);
+const showCopyTooltip = ref(false);
+const tooltipMessage = ref('코드 복사');
+
+// [PIP용 데이터] 팀원 정보 가공 (ID와 상태 점수를 넘김)
+// 실제 팀원 점수 데이터가 있다면 이곳에 매핑 (현재는 Mock 65점)
+const teammatesData = computed(() => {
+    return remoteTracks.value.map(rt => ({
+        id: rt.participantId,
+        score: 65 // 예시: 팀원은 보통(노랑) 상태로 가정
+    }));
+});
+
+const togglePip = async () => {
+    if (isPipActive.value && pipWindow) {
+        pipWindow.close();
+        return;
+    }
+
+    if (!('documentPictureInPicture' in window)) {
+        alert('이 기능은 Chrome/Edge 최신 버전에서만 지원됩니다.');
+        return;
+    }
+
+    try {
+        // 이미지 비율 고려하여 세로형 창 생성
+        // @ts-ignore
+        pipWindow = await window.documentPictureInPicture.requestWindow({
+            width: 200, 
+            height: 280,
+        });
+
+        if (!pipWindow) return;
+
+        // 스타일 복사
+        [...document.styleSheets].forEach((styleSheet) => {
+            try {
+                const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+                const style = document.createElement('style');
+                style.textContent = cssRules;
+                pipWindow!.document.head.appendChild(style);
+            } catch (e) {
+                if (styleSheet.href) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = styleSheet.href;
+                    pipWindow!.document.head.appendChild(link);
+                }
+            }
+        });
+
+        // DOM 이동
+        if (pipDashboardRef.value) {
+            pipWindow.document.body.append(pipDashboardRef.value);
+            // PIP 창 바디 스타일 (여백 제거)
+            pipWindow.document.body.style.margin = '0';
+        }
+
+        isPipActive.value = true;
+
+        // PIP 종료 시 원복
+        pipWindow.addEventListener('pagehide', () => {
+            if (pipDashboardRef.value && pipSourceContainerRef.value) {
+                pipSourceContainerRef.value.append(pipDashboardRef.value);
+            }
+            isPipActive.value = false;
+            pipWindow = null;
+        });
+
+    } catch (err) {
+        console.error('PIP Error:', err);
+    }
+};
+
+// 코드 복사 관련 함수들
+const handleCopyCode = async () => {
+    try {
+        await navigator.clipboard.writeText(roomId);
+        tooltipMessage.value = '복사 완료!';
+        showCopyTooltip.value = true;
+        
+        setTimeout(() => {
+            showCopyTooltip.value = false;
+            tooltipMessage.value = '코드 복사';
+        }, 2000);
+    } catch (err) {
+        console.error('복사 실패:', err);
+        tooltipMessage.value = '복사 실패';
+        showCopyTooltip.value = true;
+        setTimeout(() => {
+            showCopyTooltip.value = false;
+            tooltipMessage.value = '코드 복사';
+        }, 2000);
+    }
+};
+
+const handleCopyMouseEnter = () => {
+    isHoveringCopyButton.value = true;
+    if (!showCopyTooltip.value) {
+        showCopyTooltip.value = true;
+    }
+};
+
+const handleCopyMouseLeave = () => {
+    isHoveringCopyButton.value = false;
+    if (tooltipMessage.value === '코드 복사') {
+        showCopyTooltip.value = false;
+    }
+};
 
 // =================================================================
 // 🧪 [테스트/아바타] 설정
@@ -68,7 +197,7 @@ const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
 const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
 const getAiAbsent = (status: string) => (status === 'AWAY' ? 1 : 0);
 
-// [NEW] 눈 깜빡임 & 입모양 상태 (기본값)
+// 눈 깜빡임 & 입모양 상태 (기본값)
 const isBlinking = ref(false); 
 const mouthState = ref<'closed' | 'slightly_open' | 'wide_open'>('closed');
 
@@ -82,6 +211,18 @@ onMounted(() => {
             alert('잘못된 접근입니다.');
             router.replace('/lobby');
             return;
+        }
+        if (!authStore.userInfo) {
+            await authStore.fetchUserInfo(); //입장시 유저 정보 로드
+        }
+        try {
+            const { data } = await lobbyAPI.getRoomDetail(roomId);
+            roomTitle.value = data.title || roomId;
+            roomDescription.value = data.description || '방 설명이 없습니다.';
+        } catch (detailError) {
+            console.warn('방 정보 조회 실패:', detailError);
+            roomTitle.value = roomId;
+            roomDescription.value = '';
         }
         console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
         await joinRoom(roomId, userId, token);
@@ -138,10 +279,17 @@ onUnmounted(() => {
 
 <template>
     <div class="page-container">
-        <!-- 타이머 오버레이 -->
-        <div style="position: absolute; top: 10px; right: 800px; z-index: 9999; display: flex; gap: 10px;">
-            <StudyTimer />
-            <FocusTimer :seconds="focusSeconds" />
+        <!-- pip 로직 추가 -->
+        <div ref="pipSourceContainerRef" style="display: none;">
+            <div ref="pipDashboardRef" class="pip-content-root">
+                <PipDashboard 
+                    :focusSeconds="focusSeconds"
+                    :myAvatarConfig="myAvatarConfig"
+                    :aiScore="aiStore.concentrationScore"
+                    :aiStatus="aiStore.focusStatus"
+                    :teammates="teammatesData"
+                />
+            </div>
         </div>
 
         <div v-if="!isConnected" class="loading-overlay">
@@ -159,25 +307,80 @@ onUnmounted(() => {
         </div>
 
         <div v-else class="room-layout">
-            <header class="room-header">
-                <h2>📚 스터디룸: {{ roomId }}</h2>
-                <div class="header-controls">
-                    <span class="user-badge">👤 {{ userId }}</span>
-                    <button @click="handleLeave" class="btn-leave">나가기</button>
-                </div>
-            </header>
+            
+            <div class="content-wrapper">
+                
+                <main class="main-window-area">
+                    
+                    <div class="room-info-overlay">
+                        <h2 class="room-title">{{ roomTitle }}</h2>
+                        <p v-if="roomDescription" class="room-description">{{ roomDescription }}</p>
+                        <div class="ai-score-debug">
+                            <span>🤖 AI Score: {{ Math.round(aiStore.concentrationScore) }}점</span>
+                            <div class="mini-bar">
+                                <div class="fill" :style="{ width: aiStore.concentrationScore + '%', background: aiStore.concentrationScore < 50 ? 'red' : 'green' }"></div>
+                            </div>
+                        </div>
+                    </div>
 
-            <main class="room-content">
-                <section class="video-section">
-                    <div class="video-grid">
+                    <div class="room-controls-overlay">
+                        <span class="member-count">👤 {{ remoteTracks.length + 1 }}/6</span>
                         
-                        <!-- 로컬 유저 (나) -->
-                        <div class="video-card local">
-                            <!-- 실제 비디오는 숨기고 AI 분석용으로만 송출 -->
+                        <!-- Pixel/Solid/Copy 버튼 -->
+                        <div class="copy-button-container">
+                            <button 
+                                @click="handleCopyCode"
+                                @mouseenter="handleCopyMouseEnter"
+                                @mouseleave="handleCopyMouseLeave"
+                                class="btn-copy-pixel"
+                                :class="{ 'hover': isHoveringCopyButton }"
+                            >
+                                <!-- 새로운 Pixel/Solid/Copy SVG 디자인 -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M16 20V22H15V23H3V22H2V6H3V5H6V20H16Z" :fill="isHoveringCopyButton ? '#805143' : '#FFF2CC'"/>
+                                    <path d="M22 7V18H21V19H8V18H7V2H8V1H16V7H22Z" :fill="isHoveringCopyButton ? '#805143' : '#FFF2CC'"/>
+                                    <path d="M22 5V6H17V1H18V2H19V3H20V4H21V5H22Z" :fill="isHoveringCopyButton ? '#805143' : '#FFF2CC'"/>
+                                </svg>
+                            </button>
+                            
+                            <!-- 툴팁 -->
+                            <div v-if="showCopyTooltip" class="copy-tooltip">
+                                {{ tooltipMessage }}
+                                <div class="tooltip-arrow"></div>
+                            </div>
+                        </div>
+                        
+                        <button @click="handleLeave" class="btn-leave">나가기</button>
+                    </div>
+                    
+                    <div class="combined-timer-widget">
+                        <!-- Window Frame -->
+                        <div class="window-frame">
+                            <div class="window-framing">
+                                <div class="window-title">
+                                    <span>Title</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timer Display -->
+                        <div class="timer-display">
+                            <StudyTimer />
+                            <FocusTimer :seconds="focusSeconds" />
+                        </div>
+                        <div class="pip-btn-area">
+                            <button @click="togglePip" class="btn-pip" :class="{ active: isPipActive }">
+                                {{ isPipActive ? 'PIP 종료' : '미니 모드 (PIP)' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="avatar-strip">
+                        
+                        <div class="avatar-card local">
                             <video ref="localVideoRef" autoplay muted playsinline class="hidden-video"></video>
                             
-                            <!-- 아바타 표시 (AI 상태 연동) -->
-                            <div class="avatar-wrapper">
+                            <div class="avatar-display">
                                 <CharacterAvatar 
                                     :config="myAvatarConfig"
                                     :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
@@ -187,52 +390,40 @@ onUnmounted(() => {
                                     :mouthState="mouthState"
                                 />
                             </div>
-                            <span class="name-tag">나 (Me) - {{ aiStore.focusStatus }}</span>
+                            
+                            <div class="user-info">
+                                <span class="user-name">나 ({{ displayName }})</span>
+                                <span class="heart-icon" :style="{ color: getScoreColor(aiStore.concentrationScore) }">♥</span>
+                            </div>
                         </div>
 
-                        <!-- 리모트 유저 (상대방) -->
-                        <div v-for="rt in remoteTracks" :key="rt.participantId" class="video-card remote">
-                            <!-- 상대방 비디오도 일단 숨기고 아바타? (상대 상태 데이터가 없으면 비디오 보여야 함) 
-                                 [FIX] 상대방은 비디오를 보여주거나, 상대방 상태 데이터가 있다면 아바타를 보여줘야 함.
-                                 일단 origin/fe 로직(무조건 아바타)을 따르되, 데이터가 없으면 기본값. 
-                                 하지만 리모트 비디오가 오는데 굳이 숨기나? -> origin/fe 의도를 따름. -->
+                        <div v-for="rt in remoteTracks" :key="rt.participantId" class="avatar-card remote">
                             <video 
                                 :ref="(el) => { if(el) rt.track.attach(el as HTMLMediaElement) }"
                                 autoplay playsinline 
                                 class="hidden-video"
                             ></video>
-
-                            <div class="avatar-wrapper">
+                            
+                            <div class="avatar-display">
                                 <CharacterAvatar 
                                     :config="myAvatarConfig"
-                                    :aiDrowsy="0" 
-                                    :aiPhone="0" 
-                                    :aiAbsent="0"
+                                    :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
+                                    :aiPhone="getAiPhone(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
+                                    :aiAbsent="getAiAbsent(remoteParticipantStates[rt.participantId] || 'FOCUS')"
                                     :isBlinking="false"
                                     :mouthState="'closed'"
                                 />
                             </div>
-                            <span class="name-tag">{{ rt.participantId }}</span>
+                            <div class="user-info">
+                                <span class="user-name">{{ rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
+                                <span class="heart-icon" :style="{ color: getScoreColor(50) }">♥</span>
+                            </div>
                         </div>
-
                     </div>
-                </section>
-
-                <!-- AI 상태 디버깅/표시 패널 (HEAD 유지) -->
-                <div class="ai-status-panel">
-                    <h3>🤖 AI Score</h3>
-                    <div class="status-item">
-                        <span class="label">집중도:</span>
-                        <div class="score-bar">
-                            <div class="fill" :style="{ width: aiStore.concentrationScore + '%', background: aiStore.concentrationScore < 50 ? 'red' : 'green' }"></div>
-                        </div>
-                        <span class="value">{{ Math.round(aiStore.concentrationScore) }}점</span>
-                    </div>
-                </div>
+                </main>
 
                 <aside class="chat-section">
-                    <div class="chat-header"><h3>💬 채팅</h3></div>
-                    <div class="chat-messages">
+                    <div class="chat-header-simple">채팅창 영역</div> <div class="chat-messages">
                         <div v-for="(msg, idx) in messages" :key="idx" class="message-bubble" :class="{ 'my-msg': msg.sender === userId, 'sys-msg': msg.type !== 'CHAT' }">
                             <div v-if="msg.type === 'CHAT'">
                                 <span class="sender">{{ msg.sender }}</span>
@@ -246,79 +437,292 @@ onUnmounted(() => {
                         <button @click="handleSendChat">전송</button>
                     </div>
                 </aside>
-            </main>
+
+            </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-/* 페이지 기본 설정 (Nav바 가림 해결) */
+
+/* 페이지 전체 컨테이너 */
 .page-container {
     width: 100vw;
     height: 100vh;
     background-color: #f0f2f5;
     overflow: hidden;
-    padding-top: 0; /* GlobalNavBar 숨김에 맞춰 여백 제거 */
-    box-sizing: border-box;
 }
 
-/* 로딩 & 스피너 */
+/* 로딩 오버레이 */
 .loading-overlay { display: flex; justify-content: center; align-items: center; height: 100%; background: rgba(255,255,255,0.9); }
 .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* 레이아웃 구조 */
 .room-layout { display: flex; flex-direction: column; height: 100%; }
-.room-header { height: 60px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
-.room-content { flex: 1; display: flex; overflow: hidden; }
 
-/* 버튼 & 뱃지 */
+/* [수정] 컨텐츠 래퍼: 전체 화면 차지 */
+.content-wrapper { display: flex; flex: 1; height: 100vh; overflow: hidden; }
+
+/* 메인 윈도우 */
+.main-window-area { flex: 3; position: relative; background-color: #a29bfe; overflow: hidden; }
+/* [NEW] 좌측 상단 방 정보 오버레이 */
+.room-info-overlay {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 20;
+    color: white; /* 배경에 따라 색상 조정 */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+.room-title { margin: 0; font-size: 1.5rem; margin-bottom: 5px; }
+.room-description {
+    margin: 0 0 6px 0;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+.ai-score-debug { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 4px; }
+.mini-bar { width: 50px; height: 6px; background: #ccc; border-radius: 3px; overflow: hidden; }
+.mini-bar .fill { height: 100%; transition: width 0.3s; }
+
+/* [NEW] 우측 상단 컨트롤 오버레이 */
+.room-controls-overlay {
+    position: absolute;
+    top: 20px;
+    right: 20px; /* 타이머 위치 고려해서 조정 필요 */
+    z-index: 20;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
 .btn-leave { background: #ff4757; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.user-badge { font-weight: bold; margin-right: 10px; color: #555; }
+.member-count { color: white; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
 
-/* 비디오 영역 */
-.video-section { flex: 3; background-color: #2f3542; padding: 20px; overflow-y: auto; }
-.video-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; justify-content: center; }
-
-.video-card {
+/* Pixel/Solid/Copy 버튼 스타일 */
+.copy-button-container {
     position: relative;
-    background: radial-gradient(circle, #ffffff 0%, #dfe4ea 100%);
-    border-radius: 12px;
-    overflow: hidden;
-    aspect-ratio: 16 / 9;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    display: inline-block;
 }
 
-.video-card.local { border: 3px solid #2ed573; }
-.hidden-video { display: none; } /* 실제 비디오 숨김 (AI 분석용으로 Backstage에서 돌아감) */
+.btn-copy-pixel {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
 
-/* 아바타 래퍼 */
-.avatar-wrapper { width: 70%; height: 70%; margin: 5% auto; } 
-.name-tag { position: absolute; bottom: 10px; left: 10px; background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.9rem; z-index: 10; }
+.btn-copy-pixel svg {
+    transition: all 0.2s ease;
+}
 
-/* AI 상태 패널 */
-.ai-status-panel {
-    width: 200px;
-    background: #2c3e50;
+/* 툴팁 스타일 */
+.copy-tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
     color: white;
-    padding: 15px;
-    border-left: 1px solid #444;
-    overflow-y: auto;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: tooltipFadeIn 0.2s ease-in-out;
 }
-.ai-status-panel h3 { margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 10px; font-size: 1rem; }
-.status-item { margin-bottom: 15px; }
-.status-item .label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px; }
-.score-bar { background: #555; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 4px; }
-.score-bar .fill { height: 100%; transition: width 0.3s, background-color 0.3s; }
 
-/* 채팅 영역 */
-.chat-section { flex: 1; min-width: 300px; max-width: 400px; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; }
-.chat-header { padding: 15px; border-bottom: 1px solid #eee; background: #f8f9fa; }
-.chat-messages { flex: 1; overflow-y: auto; padding: 15px; background: #f1f2f6; display: flex; flex-direction: column; gap: 10px; }
+.tooltip-arrow {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #333;
+}
+
+@keyframes tooltipFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+/* 타이머 */
+.combined-timer-widget { 
+    position: absolute; 
+    top: 100px; 
+    right: 40px; 
+    width: 323px;
+    height: 213.377px;
+    z-index: 5; 
+}
+
+.window-frame {
+    position: absolute;
+    width: 323px;
+    height: 200px;
+    right: -10px;
+    top: 80px;
+    background: #fff8e5;
+}
+
+.window-framing {
+    position: absolute;
+    background: #fff8e5;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #805143;
+    border-radius: 2px;
+    box-shadow: inset -1.029px -1.029px 0px 0px #000000,
+                inset 1.029px 1.029px 0px 0px #dbdbdb,
+                inset -2.057px -2.057px 0px 0px #808080,
+                inset 2.057px 2.057px 0px 0px #ffffff;
+}
+
+.window-title {
+    position: absolute;
+    height: 30.862px;
+    left: 3.09px;
+    right: 3.09px;
+    top: 3.09px;
+    background: #805143;
+    display: flex;
+    align-items: center;
+    padding-left: 4.11px;
+}
+
+.window-title span {
+    font-family: 'exqt', sans-serif;
+    font-size: 28.805px;
+    color: white;
+    font-weight: normal;
+    line-height: normal;
+}
+
+.timer-display {
+    position: absolute;
+    left: 45px;
+    top: 137px;
+}
+
+.pip-btn-area {
+    margin-top: 12px;
+    border-top: 1px solid #f1f2f6;
+    padding-top: 10px;
+}
+.btn-pip {
+    background: #4b6584;
+    color: white;
+    border: none;
+    padding: 8px 0;
+    width: 100%;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+.btn-pip:hover { background: #778ca3; }
+.btn-pip.active { background: #2ed573; }
+
+/* 아바타 스트립: 긴 바(Bar)*/
+.avatar-strip {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50px; /* 바의 높이 */
+    
+    /* 긴 바의 배경색 */
+    background-color:#FFC497; 
+    
+    display: flex;
+    flex-direction: row;
+    align-items: center; /* 텍스트 수직 중앙 정렬 */
+    padding-left: 20px; /* 왼쪽 여백 */
+    gap: 0; /* 아바타 카드 간격 없음 (딱 붙음) */
+    
+    /* 중요: 아바타가 바 위로 튀어나와도 잘리지 않도록 함 */
+    overflow-y: visible; 
+    z-index: 10;
+}
+.avatar-strip::-webkit-scrollbar { display: none; }
+
+/* 아바타 카드: 아바타+텍스트를 담는 투명 컨테이너 */
+.avatar-card {
+    position: relative;
+    width: 150px; /* 한 명이 차지하는 너비 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* 아바타가 겹치지 않고 나란히 */
+    flex-shrink: 0;
+}
+
+/*아바타 이미지: 바 위로 올려서 배치 */
+.avatar-display {
+    position: absolute;
+    bottom: 100px; 
+    width: 140px;
+    height: 140px;
+}
+
+/* 텍스트*/
+.user-info {
+    /* 바 내부 중앙 정렬 */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    
+    color: #fff; /* 글자색 */
+    font-weight: bold;
+    font-size: 1rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    /* 배경(strip)보다는 위 */
+    z-index: 15; 
+}
+
+.user-name {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.heart-icon { 
+    font-size: 1.2rem; 
+    transition: color 0.5s ease; /* 색상 변경 시 부드럽게 */
+    margin-left: 2px;
+}
+
+.hidden-video { display: none; }
+
+/* 채팅 */
+.chat-section { 
+    flex: 1; 
+    min-width: 300px; 
+    background-color: #FFD966;
+    display: flex; 
+    flex-direction: column; 
+}
+.chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
 .message-bubble { background: white; padding: 8px 12px; border-radius: 10px; max-width: 90%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
 .message-bubble.my-msg { align-self: flex-end; background: #7bed9f; }
 .message-bubble.sys-msg { align-self: center; background: none; box-shadow: none; color: #888; font-size: 0.8rem; }
-.chat-input-area { padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 10px; background: white; }
-.chat-input-area input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
-.chat-input-area button { padding: 0 20px; border: none; border-radius: 20px; background: #3742fa; color: white; cursor: pointer; }
+.chat-input-area { padding: 15px; display: flex; gap: 10px; flex-shrink: 0; }
+.chat-input-area input { flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #ddd; }
+.chat-input-area button { padding: 0 20px; border-radius: 4px; border: none; background: #333; color: white; cursor: pointer; }
 </style>

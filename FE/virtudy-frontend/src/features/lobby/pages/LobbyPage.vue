@@ -42,13 +42,12 @@
       <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px]">
         <RoomList 
           :rooms="displayedRooms"
-          @roomClick="handleRoomClick"
+          :isMyRoomTab="currentFilter === 'myRooms'"  @roomClick="handleRoomClick"
           @filterChange="setFilter"
-          @sortChange="setSortBy"
           @search="onSearchInput"
           @edit="handleEditRoom"      
           @delete="handleDeleteRoom"
-        />
+          @toggleFavorite="handleToggleFavorite" />
       </div>
 
     </main>
@@ -98,14 +97,14 @@ const {
   fetchAllRooms, 
   joinRoom,
   deleteRoom,
-  updateRoom
+  updateRoom,
+  toggleFavoriteRoom
 } = useLobby();
 
 // UI 상태 관리
 const showModal = ref(false); // 모달 표시 여부
 const selectedRoom = ref<RoomData | null>(null);
 const currentFilter = ref<string>('all'); // 'all' | 'my'
-const sortBy = ref<string>('popular');
 const searchQuery = ref<string>('');
 const currentPage = ref<number>(1);
 const ITEMS_PER_PAGE = 6;
@@ -124,11 +123,15 @@ const openCreateModal = () => {
 };
 
 // 방 수정 버튼 클릭 
-const handleEditRoom = (room: any) => {
-  // RoomList에서 받은 room 데이터를 selectedRoom에 저장
-  // (RoomList의 room 타입과 RoomData 타입이 호환된다고 가정)
-  selectedRoom.value = room; 
-  showModal.value = true;
+const handleEditRoom = async (room: any) => {
+  try {
+    const { data } = await lobbyAPI.getRoomDetail(room.roomId);
+    selectedRoom.value = data;
+    showModal.value = true;
+  } catch (error) {
+    console.error('방 상세 조회 실패:', error);
+    alert('방 정보를 불러오지 못했습니다.');
+  }
 };
 
 // ✅ 방 삭제 버튼 클릭
@@ -160,17 +163,13 @@ const handleRoomClick = async (room: any) => {
 };
 
 
+
 // 탭 변경 (전체 <-> 내 스터디)
 const setFilter = (filter: string) => {
   currentFilter.value = filter;
   currentPage.value = 1;
   searchQuery.value = '';
   fetchAllRooms(); // 탭 바꿀 때 데이터 갱신
-};
-
-const setSortBy = (sort: string) => {
-  sortBy.value = sort;
-  currentPage.value = 1;
 };
 
 const onSearchInput = (query: string) => {
@@ -198,16 +197,13 @@ const filteredRooms = computed(() => {
     );
   }
 
-  // 정렬
-  if (sortBy.value === 'popular') {
-    // API 필드명 currentUser 사용 (기존 currentMembers 대응)
-    filtered.sort((a, b) => (b.currentUser || 0) - (a.currentUser || 0));
-  } else if (sortBy.value === 'latest') {
-    // createdAt 필드가 없으므로 roomId 기반으로 정렬
-    filtered.sort((a, b) => b.roomId.localeCompare(a.roomId));
-  }
   return filtered;
 });
+
+// ✅ [NEW] 하트 클릭 핸들러
+const handleToggleFavorite = async (roomId: string) => {
+  await toggleFavoriteRoom(roomId);
+};
 
 // 페이지네이션 및 RoomList 컴포넌트 타입 매핑
 const displayedRooms = computed(() => {
@@ -223,7 +219,9 @@ const displayedRooms = computed(() => {
     maxMembers: maxMembers,
     createdAt: new Date().toISOString(), // 현재 시간으로 설정
     owner: room.owner || false, 
-    description: room.description
+    description: room.description,
+    type: room.type,
+    favorite: room.favorite || false // ✅ favorite 속성 추가
   }));
 });
 

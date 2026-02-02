@@ -3,10 +3,15 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
-const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880'; // 환경변수 우선 사용
-const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+// const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880'; // 환경변수 우선 사용
+const LIVEKIT_URL = 'wss://i14a703.p.ssafy.io'; // 환경변수 우선 사용
+
+// const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+const SOCKET_URL = 'https://i14a703.p.ssafy.io/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+
 // [추가] AI 서버 웹소켓 주소 (FastAPI 등 AI 서버의 웹소켓 엔드포인트)
-const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
+// const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
+const AI_SOCKET_URL = 'wss://i14a703.p.ssafy.io/ws/analysis';
 
 export class RoomManager {
     private static instance: RoomManager;
@@ -39,6 +44,7 @@ export class RoomManager {
             const { LocalTokenGenerator } = await import('@/shared/lib/LocalTokenGenerator');
             const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
             console.log(liveKitToken); // Use variable to avoid unused warning
+            const accessToken = localStorage.getItem('accessToken') || '';
 
             // 토큰 검사
             if (!token) {
@@ -52,7 +58,7 @@ export class RoomManager {
             await this.connectLiveKit(token);
 
             // 1-3. WebSocket 연결 (컨트롤 플레인)
-            this.connectWebSocket();
+            this.connectWebSocket(accessToken);
             // [추가]1-4. 소켓 직통 연결 (집중도 데이터)
             this.connectAISocket();
 
@@ -106,14 +112,14 @@ export class RoomManager {
             console.warn('[LiveKit] 연결이 끊어졌습니다.');
         });
 
-        // [추가] 데이터 메시지 수신 (AI 상태 정보 등)
         this.room.on(RoomEvent.DataReceived, (payload, participant, _kind, _topic) => {
             const strData = new TextDecoder().decode(payload);
             try {
                 const data = JSON.parse(strData);
                 console.log(`[LiveKit] 데이터 수신 (${participant?.identity}):`, data);
                 // 기존 메시지 리스너에게 전달 (useAiHandler 등에서 처리)
-                this.messageListeners.forEach(listener => listener(data));
+                // [수정] sender 정보(participant.identity)를 함께 전달
+                this.messageListeners.forEach(listener => listener(data, participant?.identity));
             } catch (e) {
                 console.warn('[LiveKit] 데이터 파싱 실패:', strData);
             }
@@ -140,22 +146,23 @@ export class RoomManager {
     }
 
     // 3. WebSocket(SockJS+Stomp) 연결 로직
-    private connectWebSocket() {
+
+    // private connectWebSocket() {
+    private connectWebSocket(token: String) {
         this.stompClient = new Client({
-            // SockJS를 Factory로 주입
             webSocketFactory: () => new SockJS(SOCKET_URL),
             connectHeaders: {
                 memberId: this.userId,
                 roomId: this.roomId,
+                // [중요] JWT 토큰 추가 (Bearer 공백 주의)
+                Authorization: `Bearer ${token}`,
             },
             debug: (str) => {
-                console.log(`[Stomp] ${str}`);
+                // console.log(`[Stomp] ${str}`); // 디버깅 시에만 켜기 (로그 너무 많음)
             },
-            reconnectDelay: 5000, // 자동 재연결 시도 (선택 사항)
+            reconnectDelay: 5000,
             onConnect: () => {
                 console.log('[Stomp] 소켓 연결 성공');
-
-                // 내 방의 제어 메시지 구독
                 this.stompClient?.subscribe(`/sub/room/${this.roomId}`, (message) => {
                     const payload = JSON.parse(message.body);
                     this.handleSocketMessage(payload);
@@ -230,13 +237,14 @@ export class RoomManager {
     }
 
     // 메시지 리스너 관리
-    private messageListeners: ((payload: any) => void)[] = [];
+    // [수정] listener 타입 변경: payload + senderId
+    private messageListeners: ((payload: any, senderId?: string) => void)[] = [];
     // 트랙 리스너 관리
     private trackListeners: ((track: RemoteTrack, participant: RemoteParticipant) => void)[] = [];
     private trackCleanupListeners: ((track: RemoteTrack, participant: RemoteParticipant) => void)[] = [];
 
     // 메시지 수신 이벤트 등록
-    onMessage(callback: (payload: any) => void) {
+    onMessage(callback: (payload: any, senderId?: string) => void) {
         this.messageListeners.push(callback);
     }
 
@@ -260,8 +268,8 @@ export class RoomManager {
     // 소켓 메시지 핸들러 (상태 업데이트)
     private handleSocketMessage(payload: any) {
         console.log('[Socket] 메시지 수신:', payload);
-        // 등록된 리스너들에게 알림
-        this.messageListeners.forEach(listener => listener(payload));
+        // 등록된 리스너들에게 알림 (SYSTEM 메시지이므로 senderId는 undefined 처리)
+        this.messageListeners.forEach(listener => listener(payload, undefined));
     }
 
     // 방 나가기 (Cleanup)
@@ -282,6 +290,30 @@ export class RoomManager {
         this.stompClient = null;
         this.messageListeners = []; // 리스너 초기화
         console.log('[RoomManager] 방 퇴장 및 리소스 정리 완료');
+    }
+
+    // [추가] 4. LiveKit 데이터 전송 (Broadcast)
+    // topic: 데이터 주제 (예: 'AI_STATUS')
+    // data: 전송할 객체
+    async sendLiveKitData(topic: string, data: any) {
+        if (!this.room || !this.room.localParticipant) {
+            console.warn('[RoomManager] 방에 연결되어 있지 않아 데이터를 보낼 수 없습니다.');
+            return;
+        }
+
+        try {
+            const strData = JSON.stringify({ topic, ...data });
+            const encoder = new TextEncoder();
+            const payload = encoder.encode(strData);
+
+            await this.room.localParticipant.publishData(payload, {
+                reliable: true, // 중요한 상태 정보이므로 reliable 전송
+                // topic: topic // (Optional) LiveKit 버전에 따라 topic 지원 여부 확인 필요, 여기선 payload에 포함
+            });
+            console.log(`📡 [LiveKit-Broadcast] ${topic} 전송 완료`, data);
+        } catch (e) {
+            console.error(`[LiveKit-Broadcast] 전송 실패:`, e);
+        }
     }
 
     // 제어 메시지 전송 헬퍼

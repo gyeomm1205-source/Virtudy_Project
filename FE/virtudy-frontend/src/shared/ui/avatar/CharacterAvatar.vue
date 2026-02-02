@@ -51,7 +51,7 @@ const currentPose = computed(() => {
   // 1. 자리를 비움 (1) -> 의자는 그대로(studying 자세)지만 투명해짐
   if (props.aiAbsent === 1) return 'studying';
 
-  // 2. 졸음 (1) -> 엎드려 잠
+  // 2. 졸음 (1) -> 눈 감음
   if (props.aiDrowsy === 1) return 'sleeping';
 
   // 3. 핸드폰 (1) -> 폰 들기

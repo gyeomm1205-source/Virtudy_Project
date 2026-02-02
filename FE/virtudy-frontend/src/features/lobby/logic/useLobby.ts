@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { lobbyAPI } from '../api/lobbyAPI';
+import { getMyProfile } from '@/features/mypage/api/mypageApi';
 import type { RoomData, CreateRoomReq, UpdateRoomReq, ApiErrorResponse } from '../types/lobby.types';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
@@ -26,12 +27,17 @@ export function useLobby() {
     isLoading.value = true;
     try {
       // 병렬 요청으로 속도 최적화
-      const [pubRes, myRes] = await Promise.all([
+      const [pubRes, myRes, profileRes] = await Promise.all([
         lobbyAPI.getPublicRooms(),
-        lobbyAPI.getMyRooms(userId.value)
+        lobbyAPI.getMyRooms(userId.value),
+        getMyProfile().catch(() => null)
       ]);
       publicRooms.value = pubRes.data;
-      myRooms.value = myRes.data;
+      const favoriteTitle = profileRes?.favoriteRoomTitle;
+      myRooms.value = myRes.data.map(room => ({
+        ...room,
+        favorite: Boolean(favoriteTitle && room.title === favoriteTitle)
+      }));
     } catch (error) {
       console.error('방 목록 로딩 실패', error);
     } finally {
@@ -117,6 +123,33 @@ export function useLobby() {
     }
   };
 
+  // ✅ [NEW] 최애방 설정 토글
+  const toggleFavoriteRoom = async (roomId: string) => {
+    if (!userId.value) {
+      alert('로그인이 필요한 서비스입니다.');
+      return;
+    }
+
+    // 1. 현재 내 방 목록에서 해당 방 찾기
+    const targetRoom = myRooms.value.find(r => r.roomId === roomId);
+    if (!targetRoom) return;
+
+    // 2. 이미 최애방이면 유지 (해제 기능 없음)
+    if (targetRoom.favorite) return;
+
+    // 3. 최애방 설정 API 호출 (다른 방으로 교체)
+    try {
+      await lobbyAPI.toggleFavorite(userId.value, roomId);
+      // 상태 업데이트: 다른 방의 최애방 해제 후 선택 방만 설정
+      myRooms.value.forEach(room => {
+        room.favorite = room.roomId === roomId;
+      });
+      // await fetchAllRooms();
+    } catch (e: any) {
+      handleApiError(e);
+    }
+  };
+
   // 공통 에러 핸들러
   const handleApiError = (error: any) => {
     const errRes = error.response?.data as ApiErrorResponse;
@@ -135,6 +168,7 @@ export function useLobby() {
     createRoom,
     updateRoom,
     joinRoom,
-    deleteRoom
+    deleteRoom,
+    toggleFavoriteRoom
   };
 }

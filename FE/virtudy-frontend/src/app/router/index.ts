@@ -13,6 +13,7 @@ import RankingPage from '@/features/ranking/pages/RankingPage.vue';
 import MyPage from '@/features/mypage/pages/MyPage.vue';
 import LobbyPage from '@/features/lobby/pages/LobbyPage.vue';
 import ReportPage from '@/features/report/pages/ReportPage.vue';
+import AvatarCreationPage from '@/features/avatar/pages/AvatarCreationPage.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -143,6 +144,21 @@ const router = createRouter({
         if (!authStore.isLoggedIn) {
           return { name: 'guest' };
         }
+      }
+    },
+    // 아바타 생성 라우트
+    {
+      path: '/avatar/create',
+      name: 'avatar-create',
+      component: AvatarCreationPage,
+      // 로그인한 유저만 접근 가능하도록 설정
+      beforeEnter: (to, from, next) => {
+        const authStore = useAuthStore();
+        if (!authStore.isLoggedIn) {
+          alert('로그인이 필요한 서비스입니다.');
+          return next({ name: 'guest' });
+        }
+        return next();
       }
     },
     {

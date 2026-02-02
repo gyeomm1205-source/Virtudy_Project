@@ -5,21 +5,24 @@ class Config:
     ABSENT_TRUE_RATIO = 0.8     # Ratio of frames to confirm absence
 
     # --- Drowsy ---
-    EAR_DROWSY_TH = 0.20        # Threshold for Eye Aspect Ratio (closed eyes)
-    PITCH_DROWSY_TH = 15.0      # Threshold for Head Pitch (looking down considerably)
-    DROWSY_WINDOW = 15
-    DROWSY_TRUE_RATIO = 0.7
+    EAR_DROWSY_TH = 0.23        # Threshold for Eye Aspect Ratio (Adjusted for user)
+    EAR_AWAKE_TH = 0.30         # [NEW] Fast Awake Threshold (Lowered 0.35 -> 0.30 for faster recovery)
+    PITCH_DROWSY_TH = 0.45      # Threshold for Head Pitch (Ratio, not degrees)
+    DROWSY_WINDOW = 13          # User requested size (Robust against blinks)
+    DROWSY_TRUE_RATIO = 0.8     # High ratio -> Hard to enter sleep (blink safe), Fast to exit (wake up)
 
     # --- Phone ---
-    PHONE_PRESENT_TH = 0.40     # YOLO confidence threshold
+    PHONE_CANDIDATE_TH = 0.20   # [NEW] Moderate candidate (0.15 was too sensitive to noise)
+    PHONE_CONFIRMED_TH = 0.30   # [NEW] Easier confirmation
     PHONE_USE_WINDOW = 15
     PHONE_USE_TRUE_RATIO = 0.7
     
     # Head down threshold for phone usage (can be more sensitive than drowsy)
-    PITCH_PHONE_USE_TH = 10.0   
+    PITCH_PHONE_USE_TH = 0.35   # [NEW] Reverted to 0.35 (0.40 was too strict)   
 
     # --- Scoring ---
-    # Penalty per second
+    # Penalty/Reward per second
+    REWARD_FOCUSED = 1.0        # [NEW] Reward for focusing
     PENALTY_FOCUSED = 0.0
     PENALTY_DROWSY = 3.0
     PENALTY_PHONE = 2.0

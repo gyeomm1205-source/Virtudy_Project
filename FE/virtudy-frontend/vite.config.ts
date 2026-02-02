@@ -23,20 +23,39 @@ export default defineConfig({
     proxy: {
       // 브라우저에서 /api로 시작하는 요청을 보내면 백엔드 서버(80)로 전달합니다.
       '/api': {
+<<<<<<< HEAD
         // target: 'http://i14a703.p.ssafy.io:80',
         target: 'http://localhost:8080/', // 로컬 백엔드 테스트용
+=======
+        // target: 'http://localhost:8080', // 로컬 백엔드(로컬에서 돌릴 땐 이걸로 해야함)
+        // target: 'http://i14a703.p.ssafy.io:8080', // 배포 서버
+        target: 'http://i14a703.p.ssafy.io:80', //진짜 배포 서버
+>>>>>>> ff96a1d637e7cba0b9efcaf7216a2484c9f34992
         changeOrigin: true,
         secure: false,
-        // 백엔드 API 경로가 /api로 시작하므로 rewrite는 하지 않습니다.
       },
       // [추가] WebSocket 요청도 백엔드로 프록시 (CORS 해결)
       '/ws': {
+<<<<<<< HEAD
         // target: 'http://i14a703.p.ssafy.io:80',
         target: 'http://localhost:8081', // Interceptor가 8081을 요구하므로 8081로 연결
+=======
+        // target: 'http://localhost:8081', // Interceptor가 8081을 요구하므로 8081로 연결(로컬에서 돌릴 땐 이걸로 해야함)
+        // target: 'http://i14a703.p.ssafy.io:8081', // 배포 서버 (8081)
+        target: 'http://i14a703.p.ssafy.io:80', //진짜 배포 서버
+>>>>>>> ff96a1d637e7cba0b9efcaf7216a2484c9f34992
         changeOrigin: true,
         ws: true,
         secure: false
-      }
+      },
+      // '/fastapi'로 시작하는 요청이 오면 
+      // -> https://i14a703.p.ssafy.io 로 보낸다
+      '/fastapi': {
+        target: 'https://i14a703.p.ssafy.io',
+        // changeOrigin: true,
+        // secure: false, // HTTPS 인증서 에러 무시 (필요시)
+        rewrite: (path) => path.replace(/^\/fastapi/, '') // 경로 수정이 필요 없다면 주석 처리
+      },
     }
   }
 })
