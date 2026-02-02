@@ -14,11 +14,7 @@ class PhoneDetector:
         # Configuration (Using centralized Config but logic from root)
         self.fast_on_hold_sec = 0.2
         self.phone_only_on_hold_sec = 0.1 # Reduced 0.3 -> 0.1 for faster detection
-<<<<<<< HEAD
         self.off_hold_sec = 0.2    # Reduced from 0.5 to 0.2 for faster OFF transition
-=======
-        self.off_hold_sec = 0.5    # Reduced from 1.5 to 0.5 for faster OFF transition
->>>>>>> origin/ai
         # self.conf_th_phone_only removed (logic moved to process() with dual thresholds)
 
     def process(
@@ -26,12 +22,8 @@ class PhoneDetector:
         phone_conf: float,          
         face_detected: bool,
         head_pitch: Optional[float],
-<<<<<<< HEAD
         hand_interaction: bool,
         hand_near_face: bool = False     
-=======
-        hand_interaction: bool     
->>>>>>> origin/ai
     ) -> PhoneSignal:
         
         # 1. Inputs
@@ -46,12 +38,8 @@ class PhoneDetector:
         
         # 2. Logic Conditions
         # (A) Fast Condition: Candidate + (Hand or Head Down)
-<<<<<<< HEAD
         # [Plus] Proxy: Hand Near Face + Looking Down (Even if phone not detected)
         fast_condition = (phone_candidate and (hand_interaction or looking_down)) or (hand_near_face and looking_down)
-=======
-        fast_condition = phone_candidate and (hand_interaction or looking_down)
->>>>>>> origin/ai
         
         # (B) Phone Only Condition: Confirmed Phone
         phone_only_condition = phone_confirmed
@@ -72,13 +60,9 @@ class PhoneDetector:
                 self.fast_on_start = None
                 
             # (B) Phone Only ON (Fallback)
-<<<<<<< HEAD
             # [Fix] Even if phone is confirmed, we want some activity (head or hand)
             # to avoid triggering on a phone just lying on the desk.
             if self.state == "OFF" and phone_only_condition and (hand_interaction or hand_near_face or looking_down):
-=======
-            if self.state == "OFF" and phone_only_condition:
->>>>>>> origin/ai
                 if self.phone_only_on_start is None: self.phone_only_on_start = now
                 if now - self.phone_only_on_start >= self.phone_only_on_hold_sec:
                     self.state = "ON"

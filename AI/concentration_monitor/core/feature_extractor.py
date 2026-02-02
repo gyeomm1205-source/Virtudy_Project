@@ -16,10 +16,7 @@ class FeatureExtractor:
             max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5
         )
         try:
-<<<<<<< HEAD
             # Lower internal YOLO conf to catch occluded phones
-=======
->>>>>>> origin/ai
             self.yolo = YOLO("yolov8n.pt")
             self.yolo_names = self.yolo.names
         except Exception as e:
@@ -58,18 +55,8 @@ class FeatureExtractor:
             ear, pitch = self._calc_ear(lm, w, h), self._calc_head_pitch(lm)
             face_pixel_center = (int((lm[234].x + lm[454].x)/2 * w), int((lm[10].y + lm[152].y)/2 * h))
             
-<<<<<<< HEAD
             # [Fix] Removed EAR < 0.02 ghost check as it causes AWAY during deep sleep
             pass
-=======
-            # [Fix] Ghost Face Filter
-            # If EAR is suspiciously low (< 0.02), it's likely a non-human object (chair, wall pattern)
-            # incorrectly identified as a face. Real closed eyes are usually ~0.15-0.18.
-            # (User feedback: 0.05 was too high and filtered real sleep)
-            if ear < 0.02:
-                face_detected = False
-                # We interpret this as "No Face" (Absent) rather than "Sleep"
->>>>>>> origin/ai
             
         hand_res = self.hands.process(rgb)
         hand_centers = []
@@ -80,14 +67,9 @@ class FeatureExtractor:
 
         phone_conf, phone_box = 0.0, None
         if self.yolo:
-<<<<<<< HEAD
             # [Fix] Expand classes to caught misclassified phones (63:laptop, 65:remote, 66:keyboard)
             # and lower conf to 0.03 for extreme responsiveness
             results = self.yolo(frame, verbose=False, classes=[67, 63, 65, 66], conf=0.03)
-=======
-            # [Fix] Revert to Phone Only (Round 6)
-            results = self.yolo(frame, verbose=False, classes=[67], conf=0.05)
->>>>>>> origin/ai
             for r in results:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
@@ -109,18 +91,12 @@ class FeatureExtractor:
                 dist = ((face_pixel_center[0] - self.prev_face_center[0])**2 + 
                         (face_pixel_center[1] - self.prev_face_center[1])**2)**0.5
                 
-<<<<<<< HEAD
                 # Condition to Reset: If user blinks OR moves > 1.0px (More sensitive)
                 if is_blinking or dist > 1.0:
-=======
-                # Condition to Reset: If user blinks OR moves > 1.5px
-                if is_blinking or dist > 1.5:
->>>>>>> origin/ai
                     self.static_frames = 0
                 else:
                     self.static_frames += 1
             
-<<<<<<< HEAD
             if self.static_frames > 100:
                 # [Fix] Enhanced Liveness: If eyes are even slightly closed or pitch is high,
                 # it's definitely a person. Never treat as ghost in these states.
@@ -129,20 +105,10 @@ class FeatureExtractor:
                 else:
                     face_detected = False 
                     ear, pitch = None, None
-=======
-            self.prev_face_center = face_pixel_center
-            
-            # Threshold: 5 seconds of ABSOLUTE stillness and NO blinks
-            # (Assuming ~20 FPS -> 100 frames)
-            if self.static_frames > 100:
-                face_detected = False # Treat as Ghost (Inanimate object)
-                ear, pitch = None, None
->>>>>>> origin/ai
         else:
             self.static_frames = 0
             self.prev_face_center = None
 
-<<<<<<< HEAD
         hand_near_face = False
         if face_pixel_center and hand_centers:
             fx, fy = face_pixel_center
@@ -156,24 +122,14 @@ class FeatureExtractor:
         if phone_box and hand_centers:
             px, py = (phone_box[0] + phone_box[2]) // 2, (phone_box[1] + phone_box[3]) // 2
             thresh = (w**2 + h**2)**0.5 * 0.2
-=======
-        hand_interaction = False
-        if phone_box and hand_centers:
-            px, py = (phone_box[0] + phone_box[2]) // 2, (phone_box[1] + phone_box[3]) // 2
-            thresh = (w**2 + h**2)**0.5 * 0.3
->>>>>>> origin/ai
             for hx, hy in hand_centers:
                 if ((px-hx)**2 + (py-hy)**2)**0.5 < thresh:
                     hand_interaction = True; break
 
         return {
             "face_detected": face_detected, "ear": ear, "pitch": pitch,
-<<<<<<< HEAD
             "phone_conf": phone_conf, 
             "hand_interaction": hand_interaction,
             "hand_near_face": hand_near_face,
-=======
-            "phone_conf": phone_conf, "hand_interaction": hand_interaction,
->>>>>>> origin/ai
             "debug": {"face_center": face_pixel_center, "phone_box": phone_box, "hand_centers": hand_centers}
         }
