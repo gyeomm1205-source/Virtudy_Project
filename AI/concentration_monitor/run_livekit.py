@@ -15,7 +15,8 @@ import livekit.rtc as rtc
 
 
 # Reuse imports from core modules
-from run import FeatureExtractor
+# Reuse imports from core modules
+from core.feature_extractor import FeatureExtractor
 from core.types import FrameSignals, FocusState
 from core.config import Config
 from detectors.absence_detector import AbsenceDetector
@@ -164,6 +165,8 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
     def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
         if track.kind == rtc.TrackKind.KIND_VIDEO:
             print(f"[INFO] Subscribed to Video Track from {participant.identity}", flush=True)
+            # [Fix] Request High Quality Video for AI Analysis
+            # publication.set_video_quality(rtc.VideoQuality.HIGH) # Unsupported in v1.0.23
             video_stream = rtc.VideoStream(track)
             asyncio.create_task(ai_process_loop(room, video_stream, queue))
 
@@ -191,6 +194,8 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                 # If already subscribed but logic didn't trigger (unlikely but safe)
                 if publication.subscribed and publication.track and publication.kind == rtc.TrackKind.KIND_VIDEO:
                      print(f"[INFO] Found existing subscribed video, starting loop for {identity}", flush=True)
+                     # [Fix] Request High Quality Video for AI Analysis
+                     publication.set_video_quality(rtc.VideoQuality.HIGH)
                      video_stream = rtc.VideoStream(publication.track)
                      asyncio.create_task(ai_process_loop(room, video_stream, queue))
         

@@ -15,7 +15,6 @@ import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 // HEAD Imports
 import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
-
 import { getScoreColor } from '../logic/scoreUtils'; 
 import PipDashboard from '../ui/PipDashboard.vue';
 
@@ -27,7 +26,7 @@ const authStore = useAuthStore();
 // 2. URL에서 정보 추출
 const roomId = route.params.roomId as string;
 const token = route.query.token as string;
-const userId = authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
+const userId = (route.query.userId as string) || authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
 //[추가] 사용자 닉네임 표시용
 const displayName = computed(() => authStore.userInfo?.nickName || userId);
 
@@ -41,6 +40,7 @@ const {
     messages, 
     remoteTracks,
     remoteParticipantStates,
+    remoteParticipantScores, // [추가]
     isDistracted,
 } = useStudyRoom();
 
@@ -207,7 +207,8 @@ const mouthState = ref<'closed' | 'slightly_open' | 'wide_open'>('closed');
 
 onMounted(() => {
     const init = async () => {
-        if (!token || !roomId) {
+        // [수정] 로컬 테스트 지원: token이 없어도 userId가 URL에 있거나 로컬 환경이면 진행
+        if (!roomId) {
             alert('잘못된 접근입니다.');
             router.replace('/lobby');
             return;
@@ -416,7 +417,7 @@ onUnmounted(() => {
                             </div>
                             <div class="user-info">
                                 <span class="user-name">{{ rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
-                                <span class="heart-icon" :style="{ color: getScoreColor(50) }">♥</span>
+                                <span class="heart-icon" :style="{ color: getScoreColor(remoteParticipantScores[rt.participantId] || 50) }">♥</span>
                             </div>
                         </div>
                     </div>

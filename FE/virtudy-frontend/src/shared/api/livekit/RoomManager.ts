@@ -3,15 +3,12 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
-// const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880'; // 환경변수 우선 사용
-const LIVEKIT_URL = 'wss://i14a703.p.ssafy.io'; // 환경변수 우선 사용
-
-// const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
-const SOCKET_URL = 'https://i14a703.p.ssafy.io/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+// 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
+const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://127.0.0.1:8081/ws';
 
 // [추가] AI 서버 웹소켓 주소 (FastAPI 등 AI 서버의 웹소켓 엔드포인트)
-// const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
-const AI_SOCKET_URL = 'wss://i14a703.p.ssafy.io/ws/analysis';
+const AI_SOCKET_URL = import.meta.env.VITE_AI_SOCKET_URL || 'ws://127.0.0.1:8000/ws/analysis';
 
 export class RoomManager {
     private static instance: RoomManager;
@@ -43,19 +40,16 @@ export class RoomManager {
             // [수정] 프론트엔드 로컬 토큰 생성기 사용 (백엔드 미구현 대응)
             const { LocalTokenGenerator } = await import('@/shared/lib/LocalTokenGenerator');
             const liveKitToken = await LocalTokenGenerator.generateToken(roomId, userId);
-            console.log(liveKitToken); // Use variable to avoid unused warning
+
+            // 토큰 결정: 인자로 받은 토큰이 없으면 로컬 생성 토큰 사용
+            const finalToken = token || liveKitToken;
+
             const accessToken = localStorage.getItem('accessToken') || '';
 
-            // 토큰 검사
-            if (!token) {
-                // 만약 토큰이 없다면 에러를 띄움 (백엔드가 주기 때문)
-                throw new Error('LiveKit 입장 토큰이 없습니다.');
-            }
-
-            console.log(`[RoomManager] 토큰 확인 완료. LiveKit 연결을 시작합니다.`);
+            console.log(`[RoomManager] 토큰 확인 완료 (${token ? 'External' : 'Local'}). LiveKit 연결을 시작합니다.`);
 
             // 1-2. LiveKit 연결 (미디어 플레인)
-            await this.connectLiveKit(token);
+            await this.connectLiveKit(finalToken);
 
             // 1-3. WebSocket 연결 (컨트롤 플레인)
             this.connectWebSocket(accessToken);
@@ -108,8 +102,8 @@ export class RoomManager {
             this.handleTrackUnsubscribed(track, publication, participant);
         });
 
-        this.room.on(RoomEvent.Disconnected, () => {
-            console.warn('[LiveKit] 연결이 끊어졌습니다.');
+        this.room.on(RoomEvent.Disconnected, (reason) => {
+            console.warn('[LiveKit] 연결이 끊어졌습니다. Reason:', reason);
         });
 
         this.room.on(RoomEvent.DataReceived, (payload, participant, _kind, _topic) => {
@@ -296,8 +290,10 @@ export class RoomManager {
     // topic: 데이터 주제 (예: 'AI_STATUS')
     // data: 전송할 객체
     async sendLiveKitData(topic: string, data: any) {
-        if (!this.room || !this.room.localParticipant) {
-            console.warn('[RoomManager] 방에 연결되어 있지 않아 데이터를 보낼 수 없습니다.');
+        // [Fix] Check ConnectionState.Connected explicitly
+        if (!this.room || !this.room.localParticipant || this.room.state !== 'connected') { // String literal check due to enum import complexity or check LiveKit docs
+            // LiveKit RoomState: 'disconnected' | 'connected' | 'reconnecting' | 'connecting'
+            console.warn(`[RoomManager] LiveKit 미연결 상태(${this.room?.state})라 데이터를 보낼 수 없습니다.`, topic);
             return;
         }
 
@@ -307,12 +303,12 @@ export class RoomManager {
             const payload = encoder.encode(strData);
 
             await this.room.localParticipant.publishData(payload, {
-                reliable: true, // 중요한 상태 정보이므로 reliable 전송
-                // topic: topic // (Optional) LiveKit 버전에 따라 topic 지원 여부 확인 필요, 여기선 payload에 포함
+                reliable: true,
             });
             console.log(`📡 [LiveKit-Broadcast] ${topic} 전송 완료`, data);
         } catch (e) {
-            console.error(`[LiveKit-Broadcast] 전송 실패:`, e);
+            console.warn(`[LiveKit-Broadcast] 전송 실패 (일시적 오류 가능성):`, e);
+            // Error explicitly handled, no need to throw
         }
     }
 

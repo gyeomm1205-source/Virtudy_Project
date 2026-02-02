@@ -13,6 +13,16 @@ logger = logging.getLogger("AI_Server")
 
 app = FastAPI()
 
+# [Fix] Add CORS Middleware to allow connections from Frontend
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for testing
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Global dictionary to store queues: {room_id: Queue}
 # multiprocessing.Manager will be initialized in main block if needed, 
 # but for simplicity with uvicorn workers, we need a way to share.
