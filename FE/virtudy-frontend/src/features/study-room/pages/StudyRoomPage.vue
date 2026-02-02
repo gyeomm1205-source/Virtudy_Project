@@ -379,7 +379,7 @@ onUnmounted(() => {
                     </div>
 
                     <div class="room-controls-overlay">
-                        <span class="member-count">👤 {{ remoteTracks.length + 1 }}/6</span>
+                        <span class="member-count">{{ remoteTracks.length + 1 }}/6명</span>
 
                         <button
                             v-if="isRoomOwner"
@@ -548,11 +548,37 @@ onUnmounted(() => {
     color: white; /* 배경에 따라 색상 조정 */
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
-.room-title { margin: 0; font-size: 1.5rem; margin-bottom: 5px; }
+/* 방 제목: 피그마 h4 디자인 정확 구현 */
+.room-title {
+    margin: 0;
+    color: #FFF2CC;
+    
+    /* pixel Shadow */
+    text-shadow: 4px 4px 0 #805143;
+    
+    /* h4 */
+    font-family: Ram;
+    font-size: 2.25rem;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    
+    white-space: nowrap;
+    margin-bottom: 6px;
+}
+
+/* 방 설명: 피그마 p 디자인 정확 구현 */
 .room-description {
-    margin: 0 0 6px 0;
-    font-size: 0.95rem;
-    opacity: 0.9;
+    margin-left: 10px;
+    font-family: "PF Stardust S";
+    font-size: 24px; /* 1.5rem */
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 0;
+    color: #805143; /* Text & Stroke (Choco) */
+    white-space: nowrap;
+    margin-bottom: 6px;
 }
 .ai-score-debug { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 4px; }
 .mini-bar { width: 50px; height: 6px; background: #ccc; border-radius: 3px; overflow: hidden; }
@@ -565,25 +591,78 @@ onUnmounted(() => {
     right: 20px; /* 타이머 위치 고려해서 조정 필요 */
     z-index: 20;
     display: flex;
-    gap: 10px;
+    gap: 40px;
     align-items: center;
 }
-.btn-leave { background: #ff4757; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.member-count { color: white; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+/* 나가기 버튼: 피그마 디자인 정확 구현 */
+.btn-leave {
+    background: #FFD966; /* Primary (Butter) */
+    border: 2px solid #805143; /* Text & Stroke (Choco) */
+    color: #805143;
+    padding: 12px 32px;
+    border-radius: 2px;
+    cursor: pointer;
+    
+    /* 피그마 폰트 스타일 */
+    font-family: 'Quicksand', 'PF Stardust S', sans-serif;
+    font-weight: 400;
+    font-size: 24px;
+    line-height: normal;
+    white-space: nowrap;
+    
+    /* 픽셀 그림자 효과 */
+    box-shadow: 4px 4px 0px 0px #805143;
+    
+    /* 정확한 크기 */
+    width: 92px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    transition: all 0.1s ease;
+}
 
-/* 설정 버튼 스타일 */
+.btn-leave:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px 0px #805143;
+}
+
+.btn-leave:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+}
+/* 멤버 수 표시: 피그마 디자인 정확 구현 */
+.member-count {
+    color: var(--text-stroke-choco, #805143);
+    /* p */
+    font-family: "PF Stardust S";
+    font-size: 1.5rem;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    white-space: nowrap;
+    /* 숫자 일관성을 위한 속성 */
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    letter-spacing: 0;
+}
+
+/* 설정 버튼 스타일: 피그마 디자인 정확 구현 */
 .btn-settings {
     background: transparent;
     border: none;
     cursor: pointer;
     padding: 0;
-    color: #FFF2CC;
-    font-family: 'PF Stardust S', sans-serif;
+    font-family: 'Quicksand', 'PF Stardust S', sans-serif;
     font-weight: 400;
     font-size: 24px;
+    line-height: normal;
+    color: #805143; /* Text & Stroke (Choco) */
+    white-space: nowrap;
+    transition: all 0.2s ease;
     line-height: 1;
     transition: all 0.2s ease;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 .btn-settings:hover {
