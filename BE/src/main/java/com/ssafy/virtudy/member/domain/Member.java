@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.util.ArrayList;
@@ -77,10 +78,12 @@ public class Member extends BaseTimeEntity {
      */
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @Builder.Default // 빌더 패턴 사용 시 리스트 초기화 방지
+    @BatchSize(size = 100) // N+1 문제 완화를 위한 Batch Fetching
     private List<MemberPreference> preferences = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @Builder.Default
+    @BatchSize(size = 100) // N+1 문제 완화를 위한 Batch Fetching
     private List<MemberGameStat> gameStats = new ArrayList<>();
 
     public void setFavoriteRoom(StudyRoom studyRoom) {
