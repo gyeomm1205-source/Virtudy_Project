@@ -38,7 +38,7 @@ ultralytics-thop>=2.0.18
 numpy>=2.0.0,<2.3.0
 mediapipe==0.10.14
 # ✅ OpenCV는 'contrib' 하나만 사용 (opencv-python / headless 직접 설치 금지)
-opencv-contrib-python==4.13.0.90
+opencv-python-headless
 pillow==12.1.0
 av==16.1.0
 
