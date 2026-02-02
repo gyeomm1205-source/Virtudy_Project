@@ -1,8 +1,6 @@
 # --- [웹 프레임워크 & 유틸리티] ---
 fastapi==0.128.0
 uvicorn==0.40.0
-# starlette는 fastapi가 맞춰주니 굳이 박지 않는 걸 추천(충돌 예방)
-# starlette==0.50.0
 pydantic==2.12.5
 python-dotenv==1.2.1
 python-multipart==0.0.22
@@ -25,28 +23,34 @@ aiosqlite
 # --- [AI & 머신러닝 코어] ---
 torch==2.10.0
 torchvision==0.25.0
-ultralytics==8.4.9
 openai==2.15.0
 scipy==1.17.0
 pandas
 polars==1.37.1
 
+# --- [Ultralytics deps만 (중요: ultralytics 본체는 --no-deps로 별도 설치)] ---
+matplotlib>=3.3.0
+psutil>=5.8.0
+ultralytics-thop>=2.0.18
+
 # --- [미디어 처리 (MediaPipe & OpenCV)] ---
-# opencv-python-headless==4.13.x는 numpy>=2 요구하므로 여기도 2.x로 통일
+# OpenCV 4.13.x가 numpy>=2 를 요구하므로 numpy 2.x로 맞춤
 numpy>=2.0.0,<2.3.0
 mediapipe==0.10.14
-opencv-python-headless==4.13.0.90
+# ✅ OpenCV는 'contrib' 하나만 사용 (opencv-python / headless 직접 설치 금지)
+opencv-contrib-python==4.13.0.90
 pillow==12.1.0
 av==16.1.0
 
 # --- [LiveKit & 통신] ---
-# ✅ 핵심: livekit-agents / plugins-openai를 1.0.x 라인으로 내리기 (otel 1.25 유지 목적)
 livekit==1.0.23
-livekit-agents==1.0.23
 livekit-api==1.1.0
-livekit-plugins-openai==1.0.23
 livekit-protocol==1.1.2
 grpcio==1.76.0
+
+# ✅ agents / plugins-openai는 1.0.x 라인으로 (otel 1.25 고정 유지 목적)
+livekit-agents==1.0.23
+livekit-plugins-openai==1.0.23
 
 # --- [비동기 지원] ---
 aiofiles==25.1.0
@@ -55,13 +59,13 @@ anyio==4.12.1
 greenlet==3.3.1
 sniffio==1.3.1
 
-# --- [충돌 방지 구간] ---
-# mediapipe가 protobuf<5를 요구하는 케이스가 많아서(특히 배포환경) 4.x로 고정 유지
+# --- [충돌 방지 핵심 구간] ---
 protobuf>=4.25.3,<5.0.0
-types-protobuf==6.32.1.20251210
+# ✅ types-protobuf는 livekit-agents 요구조건 때문에 반드시 <5
+types-protobuf>=4.24,<5
 googleapis-common-protos==1.52.0
 
-# ✅ opentelemetry는 1.25로 유지 (livekit-agents를 1.0.x로 내렸으니 충돌 안 남)
+# ✅ OpenTelemetry: 1.25로 고정 (protobuf<5 유지 목적)
 opentelemetry-api==1.25.0
 opentelemetry-exporter-otlp==1.25.0
 opentelemetry-exporter-otlp-proto-common==1.25.0
@@ -71,14 +75,14 @@ opentelemetry-proto==1.25.0
 opentelemetry-sdk==1.25.0
 opentelemetry-semantic-conventions
 
-# --- 기타 의존성 ---
-certifi
-charset-normalizer
-distro
-idna
-jiter
-packaging
-typing_extensions
-typing-inspection
-zipp
+# --- 기타 ---
 absl-py==2.3.1
+certifi==2026.1.4
+charset-normalizer==3.4.4
+distro==1.9.0
+idna==3.11
+jiter==0.12.0
+packaging==25.0
+typing_extensions==4.15.0
+typing-inspection==0.4.2
+zipp==3.23.0
