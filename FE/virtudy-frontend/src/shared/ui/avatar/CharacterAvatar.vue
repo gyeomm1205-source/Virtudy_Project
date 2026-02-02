@@ -1,12 +1,12 @@
 // 아바타 전체 렌더링 컴포넌트입니다
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
 import AvatarPart from './AvatarPart.vue';
 
 // ----------------------------------------------------------------------
-// 1. Props 정의
+// Props 정의
 // ----------------------------------------------------------------------
 const props = defineProps<{
   config: AvatarConfig; // 백엔드 외형 정보
@@ -15,14 +15,88 @@ const props = defineProps<{
   aiDrowsy?: number;  // 1: 졸음/잠, 0: 깸
   aiAbsent?: number;  // 1: 자리 비움, 0: 있음
   aiPhone?: number;   // 1: 핸드폰 사용, 0: 안 함
-  
-  // [Placeholder] 아직 데이터 형식이 미정인 부분
-  isBlinking?: boolean; 
-  mouthState?: 'closed' | 'slightly_open' | 'wide_open';
 }>();
 
 // ----------------------------------------------------------------------
-// 2. 데이터 정제 (외형 설정 매핑)
+// 내부 애니메이션 상태 (Auto Animation State)
+// ----------------------------------------------------------------------
+const autoBlink = ref(false); // 내부적으로 계산된 눈 감음 여부
+const autoMouth = ref<'closed' | 'slightly_open' | 'wide_open'>('closed'); // 내부 입 모양
+
+// 타이머 ID 저장소 (컴포넌트 해제 시 정리용)
+let blinkTimeoutId: number | undefined;
+let mouthIntervalId: number | undefined;
+
+// 눈 깜빡임 루프 함수 (재귀 호출)
+const startBlinkLoop = () => {
+  // 다음 깜빡임까지 대기 시간: 2초 ~ 7초 사이 랜덤
+  const nextBlinkTime = Math.random() * 5000 + 2000;
+
+  blinkTimeoutId = window.setTimeout(() => {
+    autoBlink.value = true; // 눈 감기
+
+    // 150ms 후 눈 뜨기
+    setTimeout(() => {
+      autoBlink.value = false;
+      // ----------------------------------------------------
+      // [Double Blink Logic] 
+      // 30% 확률로 눈을 뜨자마자 다시 한 번 깜빡임
+      // ----------------------------------------------------
+      const isDoubleBlink = Math.random() < 0.3; 
+
+      if (isDoubleBlink) {
+        // 아주 짧은 찰나(50ms) 대기 후 다시 감기
+        setTimeout(() => {
+          autoBlink.value = true; // 두 번째 감기
+          
+          // 다시 150ms 후 완전히 뜨기
+          setTimeout(() => {
+            autoBlink.value = false;
+            startBlinkLoop(); // 모든 동작 끝, 다음 루프 예약
+          }, 150);
+        }, 50);
+      } else {
+        // 더블 블링크 당첨 안 됨 -> 바로 다음 루프 예약
+        startBlinkLoop();
+      }
+    }, 150);
+  }, nextBlinkTime);
+};
+
+// 입 움직임 루프 함수 (setInterval 사용)
+const startMouthLoop = () => {
+  // 10초마다 실행
+  mouthIntervalId = window.setInterval(() => {
+    // 30% 확률로 입을 벌림 (공부 중 혼잣말 등)
+    const shouldOpen = Math.random() > 0.7; 
+
+    if (shouldOpen) {
+      // 입 벌리기 (slightly_open)
+      autoMouth.value = 'slightly_open';
+      
+      // 유지 시간: 3~6초 랜덤 (3000ms + 0~3000ms)
+      const duration = 3000 + Math.random() * 3000;
+      
+      setTimeout(() => {
+        autoMouth.value = 'closed';
+      }, duration);
+    }
+  }, 10000); // 10초 주기
+};
+
+// 생명주기 훅: 마운트 시 시작, 언마운트 시 종료
+onMounted(() => {
+  startBlinkLoop();
+  startMouthLoop();
+});
+
+onUnmounted(() => {
+  clearTimeout(blinkTimeoutId);
+  clearInterval(mouthIntervalId);
+});
+
+// ----------------------------------------------------------------------
+// 데이터 정제 (외형 설정 매핑)
 // ----------------------------------------------------------------------
 const removePrefix = (value: string, prefix: string) => {
   if (!value || value === 'none') return 'none';
@@ -43,7 +117,7 @@ const safeGlasses = computed(() => {
 });
 
 // ----------------------------------------------------------------------
-// 3. 상태 로직 구현 (AI 신호 0/1 처리)
+// 상태 로직 구현 (AI 신호 0/1 처리)
 // ----------------------------------------------------------------------
 
 // [포즈 Pose] 우선순위: 부재 > 졸음 > 핸드폰 > 기본(공부)
@@ -65,16 +139,18 @@ const currentPose = computed(() => {
 const currentEye = computed(() => {
   // 1. 졸음 상태(1)면 무조건 감은 눈
   if (props.aiDrowsy === 1) return 'closed';
-  
-  // 2. 깜빡임 신호가 오면 감은 눈
-  if (props.isBlinking) return 'closed';
 
-  // 3. 평소엔 설정된 눈 ("eyes_cat" -> "cat")
+  if (autoBlink.value) return 'closed'; // 2. 자동 깜빡임 중이면 감은 눈
+
+  // 2. 평소엔 설정된 눈 ("eyes_cat" -> "cat")
   return removePrefix(props.config.eyes, 'eyes_');
 });
 
-// [입 Mouth] 아직 데이터가 없으므로 Props 그대로 사용 (기본값 closed)
-const currentMouth = computed(() => props.mouthState || 'closed');
+// [입 Mouth] 내부 타이머 값 사용
+const currentMouth = computed(() => {
+  // 내부 타이머가 만든 상태 반환 ('closed', 'slightly_open' 등)
+  return autoMouth.value;
+});
 
 // [투명도] 자리 비움(aiAbsent === 1)일 때만 반투명
 const containerStyle = computed(() => ({
