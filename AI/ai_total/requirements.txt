@@ -24,7 +24,8 @@ flatbuffers==25.12.19
 fonttools==4.61.1
 frozenlist==1.8.0
 fsspec==2026.1.0
-googleapis-common-protos==1.72.0
+# googleapis-common-protos==1.72.0  # 버전 잠금 해제 (유연성 확보)
+googleapis-common-protos
 greenlet==3.3.1
 grpcio==1.76.0
 h11==0.16.0
@@ -59,14 +60,18 @@ numpy==2.2.6
 openai==2.15.0
 opencv-contrib-python==4.13.0.90
 opencv-python==4.13.0.90
-opentelemetry-api==1.39.1
-opentelemetry-exporter-otlp==1.39.1
-opentelemetry-exporter-otlp-proto-common==1.39.1
-opentelemetry-exporter-otlp-proto-grpc==1.39.1
-opentelemetry-exporter-otlp-proto-http==1.39.1
-opentelemetry-proto==1.39.1
-opentelemetry-sdk==1.39.1
-opentelemetry-semantic-conventions==0.60b1
+
+# --- 충돌 해결을 위한 버전 잠금 해제 ---
+opentelemetry-api
+opentelemetry-exporter-otlp
+opentelemetry-exporter-otlp-proto-common
+opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-exporter-otlp-proto-http
+opentelemetry-proto
+opentelemetry-sdk
+opentelemetry-semantic-conventions
+# -----------------------------------
+
 opt_einsum==3.4.0
 packaging==25.0
 pillow==12.1.0
@@ -74,6 +79,11 @@ polars==1.37.1
 polars-runtime-32==1.37.1
 prometheus_client==0.24.1
 propcache==0.4.1
+
+# --- 핵심: Protobuf 버전 고정 (MediaPipe & LiveKit 호환) ---
+protobuf>=4.25.3,<5.0.0
+# -----------------------------------------------------
+
 psutil==7.2.2
 pycparser==2.23
 pydantic==2.12.5
