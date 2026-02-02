@@ -3,6 +3,7 @@ import numpy as np
 import mediapipe as mp
 import mediapipe.python.solutions
 from ultralytics import YOLO
+from core.config import Config
 
 class FeatureExtractor:
     def __init__(self):
@@ -11,17 +12,33 @@ class FeatureExtractor:
             max_num_faces=1, refine_landmarks=True,
             min_detection_confidence=0.85, min_tracking_confidence=0.85
         )
+        self.face_frame_index = 0
+        self.last_face_detected = False
+        self.last_ear = None
+        self.last_pitch = None
+        self.last_face_pixel_center = None
+        self.last_face_updated = False
+        self.last_face_bbox = None
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
             max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5
         )
+        self.hands_frame_index = 0
+        self.last_hand_centers = []
+        self.hand_cache_age = 0
         try:
-            # Upgrade to 'Small' model for better generalization (still fast on GPU)
-            self.yolo = YOLO("yolov8s.pt")
+            # Use Nano for faster inference
+            self.yolo = YOLO("yolov8n.pt")
             self.yolo_names = self.yolo.names
         except Exception as e:
             print(f"[WARN] YOLO Load Failed: {e}")
             self.yolo = None
+        self.frame_index = 0
+        self.last_phone_conf = 0.0
+        self.last_phone_box = None
+        self.last_is_cell_phone = False
+        self.last_detected_classes = []
+        self.phone_cache_age = 0
             
         # Round 6: Static Filter Variables
         self.prev_face_center = None
@@ -44,31 +61,78 @@ class FeatureExtractor:
         return (nose_y - eye_mid_y) / denom if denom > 1e-6 else 0.0
 
     def process(self, frame):
+        self.frame_index += 1
         h, w, _ = frame.shape
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        face_res = self.face.process(rgb)
-        face_detected, ear, pitch, face_pixel_center = False, None, None, None
-        
-        if face_res.multi_face_landmarks:
-            face_detected = True
-            lm = face_res.multi_face_landmarks[0].landmark
-            ear, pitch = self._calc_ear(lm, w, h), self._calc_head_pitch(lm)
-            face_pixel_center = (int((lm[234].x + lm[454].x)/2 * w), int((lm[10].y + lm[152].y)/2 * h))
-            
-            # [Fix] Removed EAR < 0.02 ghost check as it causes AWAY during deep sleep
-            pass
-            
-        hand_res = self.hands.process(rgb)
-        hand_centers = []
-        if hand_res.multi_hand_landmarks:
-            for hand in hand_res.multi_hand_landmarks:
-                sx, sy = sum([l.x for l in hand.landmark]) / 21, sum([l.y for l in hand.landmark]) / 21
-                hand_centers.append((int(sx*w), int(sy*h)))
+        face_detected = self.last_face_detected
+        ear = self.last_ear
+        pitch = self.last_pitch
+        face_pixel_center = self.last_face_pixel_center
+        face_updated = False
 
-        phone_conf, phone_box, is_cell_phone = 0.0, None, False
-        detected_classes = []
-        if self.yolo:
-            results = self.yolo(frame, verbose=False, classes=[67, 63, 65, 66], conf=0.03)
+        self.face_frame_index += 1
+        run_face = (self.face_frame_index % Config.FACE_EVERY_N_FRAMES == 0)
+        if run_face:
+            face_res = self.face.process(rgb)
+            face_detected, ear, pitch, face_pixel_center = False, None, None, None
+            
+            if face_res.multi_face_landmarks:
+                face_detected = True
+                lm = face_res.multi_face_landmarks[0].landmark
+                ear, pitch = self._calc_ear(lm, w, h), self._calc_head_pitch(lm)
+                face_pixel_center = (int((lm[234].x + lm[454].x)/2 * w), int((lm[10].y + lm[152].y)/2 * h))
+                min_x = min(p.x for p in lm) * w
+                min_y = min(p.y for p in lm) * h
+                max_x = max(p.x for p in lm) * w
+                max_y = max(p.y for p in lm) * h
+                self.last_face_bbox = (min_x, min_y, max_x, max_y)
+                
+                # [Fix] Removed EAR < 0.02 ghost check as it causes AWAY during deep sleep
+                pass
+            else:
+                self.last_face_bbox = None
+            self.last_face_detected = face_detected
+            self.last_ear = ear
+            self.last_pitch = pitch
+            self.last_face_pixel_center = face_pixel_center
+            face_updated = True
+        self.last_face_updated = face_updated
+            
+        hand_centers = list(self.last_hand_centers)
+        if self.hands:
+            self.hands_frame_index += 1
+            force_hands = self.last_phone_conf >= Config.PHONE_CONFIRMED_TH
+            run_hands = force_hands or (self.hands_frame_index % Config.HAND_EVERY_N_FRAMES == 0)
+            if run_hands:
+                hand_res = self.hands.process(rgb)
+                hand_centers = []
+                if hand_res.multi_hand_landmarks:
+                    for hand in hand_res.multi_hand_landmarks:
+                        sx, sy = sum([l.x for l in hand.landmark]) / 21, sum([l.y for l in hand.landmark]) / 21
+                        hand_centers.append((int(sx*w), int(sy*h)))
+                self.last_hand_centers = hand_centers
+                self.hand_cache_age = 0
+            else:
+                self.hand_cache_age += 1
+                if self.hand_cache_age > Config.HAND_CACHE_MAX_AGE:
+                    self.last_hand_centers = []
+                    hand_centers = []
+
+        phone_conf = self.last_phone_conf
+        phone_box = self.last_phone_box
+        is_cell_phone = self.last_is_cell_phone
+        detected_classes = list(self.last_detected_classes)
+        if self.yolo and (self.frame_index % Config.YOLO_EVERY_N_FRAMES == 0):
+            yolo_frame = frame
+            scale_x = scale_y = 1.0
+            if Config.YOLO_IMG_SIZE and (w > Config.YOLO_IMG_SIZE or h > Config.YOLO_IMG_SIZE):
+                scale = Config.YOLO_IMG_SIZE / max(w, h)
+                new_w, new_h = int(w * scale), int(h * scale)
+                yolo_frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
+                scale_x = w / new_w
+                scale_y = h / new_h
+            results = self.yolo(yolo_frame, verbose=False, classes=[67, 63, 65, 66], conf=0.03)
+            detected_classes = []
             for r in results:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
@@ -79,8 +143,30 @@ class FeatureExtractor:
                     if cls_id in [67, 63, 65, 66]: # Cell phone, laptop, remote, keyboard
                         if conf > phone_conf:
                             phone_conf = conf
-                            phone_box = list(map(int, box.xyxy[0]))
+                            xyxy = box.xyxy[0].tolist()
+                            if scale_x != 1.0 or scale_y != 1.0:
+                                xyxy = [xyxy[0] * scale_x, xyxy[1] * scale_y, xyxy[2] * scale_x, xyxy[3] * scale_y]
+                            phone_box = list(map(int, xyxy))
                             is_cell_phone = (cls_id == 67)
+            # If the best match isn't a real cell phone, drop the box to avoid false "near face"
+            if phone_box is not None and (not is_cell_phone or phone_conf < Config.PHONE_CANDIDATE_TH):
+                phone_box = None
+            self.last_phone_conf = phone_conf
+            self.last_phone_box = phone_box
+            self.last_is_cell_phone = is_cell_phone
+            self.last_detected_classes = detected_classes
+            self.phone_cache_age = 0
+        else:
+            self.phone_cache_age += 1
+            if self.phone_cache_age > Config.PHONE_CACHE_MAX_AGE:
+                self.last_phone_conf = 0.0
+                self.last_phone_box = None
+                self.last_is_cell_phone = False
+                self.last_detected_classes = []
+                phone_conf = 0.0
+                phone_box = None
+                is_cell_phone = False
+                detected_classes = []
         
         # [Fix] Smart Hybrid Liveness Filter (Round 7)
         # Combines Motion (Speed) + Blink (Safety Switch)
@@ -127,11 +213,31 @@ class FeatureExtractor:
                 if ((px-hx)**2 + (py-hy)**2)**0.5 < thresh:
                     hand_interaction = True; break
 
+        phone_near_face = False
+        phone_area_ratio = 0.0
+        if phone_box and face_pixel_center:
+            fx, fy = face_pixel_center
+            px, py = (phone_box[0] + phone_box[2]) // 2, (phone_box[1] + phone_box[3]) // 2
+            thresh = (w**2 + h**2)**0.5 * Config.PHONE_NEAR_FACE_RATIO
+            if self.last_face_bbox:
+                face_bottom = self.last_face_bbox[3]
+                below_face = py > (face_bottom + (Config.PHONE_NEAR_FACE_Y_OFFSET * h))
+            else:
+                below_face = py > (fy + (Config.PHONE_NEAR_FACE_Y_OFFSET * h))
+            if below_face and ((px-fx)**2 + (py-fy)**2)**0.5 < thresh:
+                phone_near_face = True
+        if phone_box:
+            pw = max(0, phone_box[2] - phone_box[0])
+            ph = max(0, phone_box[3] - phone_box[1])
+            phone_area_ratio = (pw * ph) / float(w * h) if w > 0 and h > 0 else 0.0
+
         return {
-            "face_detected": face_detected, "ear": ear, "pitch": pitch,
+            "face_detected": face_detected, "face_updated": face_updated, "ear": ear, "pitch": pitch,
             "phone_conf": phone_conf, 
             "is_cell_phone": is_cell_phone,
             "hand_interaction": hand_interaction,
             "hand_near_face": hand_near_face,
+            "phone_near_face": phone_near_face,
+            "phone_area_ratio": phone_area_ratio,
             "debug": {"face_center": face_pixel_center, "phone_box": phone_box, "hand_centers": hand_centers, "detected_classes": detected_classes}
         }

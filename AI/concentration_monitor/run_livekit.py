@@ -39,6 +39,8 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
     last_sent_time = 0
     last_ear = None  # [NEW] For tracking EAR changes
     SEND_INTERVAL = 0.1 # Send data every 100ms
+    quality_ready = False
+    min_width, min_height = 1280, 720
 
     async for frame in video_stream:
         start_time = time.time()
@@ -73,19 +75,36 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
         if frame_count <= 50:
             print(f"[DEBUG] Frame Resolution: {w}x{h}", flush=True)
 
+        # Wait for high quality stream before running detection/calibration
+        if not quality_ready:
+            if w >= min_width and h >= min_height:
+                quality_ready = True
+                print(f"[INFO] High quality confirmed: {w}x{h}. Starting AI processing.", flush=True)
+            else:
+                if frame_count % 10 == 0:
+                    print(f"[INFO] Waiting for {min_width}x{min_height}... current {w}x{h}", flush=True)
+                continue
+
         # 1. Feature Extraction
         feats = extractor.process(img)
 
         # 2. Detectors
         sig_abs = abs_det.process(feats["face_detected"])
-        sig_drowsy = drowsy_det.process(feats["face_detected"], feats["ear"], feats["pitch"])
+        sig_drowsy = drowsy_det.process(
+            feats["face_detected"],
+            feats["ear"],
+            feats["pitch"],
+            feats.get("face_updated", True),
+        )
         sig_phone = phone_det.process(
             feats["phone_conf"], 
             feats["is_cell_phone"],
             feats["face_detected"], 
             feats["pitch"], 
             feats["hand_interaction"],
-            feats["hand_near_face"]
+            feats["hand_near_face"],
+            feats.get("phone_near_face", False),
+            feats.get("phone_area_ratio", 0.0)
         )
         
         # [DEBUG] Print raw values to debug detection failure
@@ -113,7 +132,9 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
                     f"[DEBUG] {eyes_closed_status} | EAR: {ear_val:.3f} (dEAR {ear_change:+.3f}, Th: {current_th:.3f}), "
                     f"Pitch: {pitch_val:.3f} (Th: {Config.PITCH_PHONE_USE_TH}), "
                     f"Phone: {phone_val:.3f}, Hand-Int: {feats['hand_interaction']}, "
-                    f"Hand-Near: {feats['hand_near_face']}, FPS: {fps:.1f}",
+                    f"Hand-Near: {feats['hand_near_face']}, Phone-Near: {feats.get('phone_near_face', False)}, "
+                    f"Phone-Area: {feats.get('phone_area_ratio', 0.0):.3f}, "
+                    f"FPS: {fps:.1f}",
                     flush=True,
                 )
 
@@ -133,7 +154,13 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
             print(log_msg, flush=True)
 
         if frame_count % 10 == 0:
-             print(f"[DEBUG_RAW] EAR={sig_drowsy.ear:.3f} Th={sig_drowsy.current_threshold:.3f} | PhoneInUse={sig_phone.phone_in_use} Score={sig_drowsy.drowsy_score}", flush=True)
+            ear_dbg = f"{sig_drowsy.ear:.3f}" if sig_drowsy.ear is not None else "None"
+            th_dbg = f"{sig_drowsy.current_threshold:.3f}" if sig_drowsy.current_threshold is not None else "None"
+            print(
+                f"[DEBUG_RAW] EAR={ear_dbg} Th={th_dbg} | PhoneInUse={sig_phone.phone_in_use} "
+                f"Score={sig_drowsy.drowsy_score}",
+                flush=True,
+            )
 
         # 3. Prepare & Send Data Payload (Simplified)
         current_time = time.time()

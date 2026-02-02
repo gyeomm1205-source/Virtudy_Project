@@ -17,11 +17,17 @@ class DrowsinessDetector:
         self.baseline_ear = None
         self.adaptive_drowsy_th = Config.EAR_DROWSY_TH  # Fallback to default
         self.calibration_complete = False
+        self.closed_frames = 0
+        self.closed_start_time = None
+        self.last_signal = DrowsinessSignal(face_detected=False, ear=None, head_pitch=None, drowsy_score=0.0, current_threshold=Config.EAR_DROWSY_TH)
 
-    def process(self, face_detected: bool, ear: Optional[float], head_pitch: Optional[float]) -> DrowsinessSignal:
+    def process(self, face_detected: bool, ear: Optional[float], head_pitch: Optional[float], face_updated: bool = True) -> DrowsinessSignal:
+        if not face_updated:
+            return self.last_signal
         if not face_detected or ear is None or head_pitch is None:
             # If face not detected, we cannot judge drowsiness here (Absence will handle it)
-            return DrowsinessSignal(face_detected=face_detected, ear=ear, head_pitch=head_pitch, drowsy_score=0.0)
+            self.last_signal = DrowsinessSignal(face_detected=face_detected, ear=ear, head_pitch=head_pitch, drowsy_score=0.0, current_threshold=self.adaptive_drowsy_th)
+            return self.last_signal
 
         # [NEW] Adaptive Calibration Logic
         now = time.time()
@@ -69,7 +75,19 @@ class DrowsinessDetector:
         # Drowsy = Eyes Closed. 
         # (Head drop is ambiguous with phone use, but phone use requires phone object)
         
-        drowsy_candidate = eyes_closed
+        if eyes_closed:
+            self.closed_frames += 1
+            if self.closed_start_time is None:
+                self.closed_start_time = now
+        else:
+            self.closed_frames = 0
+            self.closed_start_time = None
+
+        closed_long_enough = False
+        if self.closed_start_time is not None:
+            closed_long_enough = (now - self.closed_start_time) >= Config.DROWSY_MIN_CLOSED_SEC
+
+        drowsy_candidate = eyes_closed and self.closed_frames >= Config.DROWSY_MIN_CLOSED_FRAMES and closed_long_enough
         
         # If head is heavily dropped, we might also consider it drowsiness if phone is NOT present?
         # But we don't know about phone here.
@@ -78,7 +96,7 @@ class DrowsinessDetector:
         # Rationale: Phone use is detected via phone object + behavior,
         # so drowsiness should prioritize eyes-closed signals.
         
-        if head_dropped and ear < (current_th * 1.2):
+        if head_dropped and ear < (current_th * 1.2) and closed_long_enough:
              # If head is dropped, we tolerate slightly larger EAR (eyes purely looking down)
              drowsy_candidate = True
 
@@ -92,10 +110,11 @@ class DrowsinessDetector:
         # Score: 1.0 if confirmed, 0.6 if candidate
         score = 1.0 if drowsy else (0.6 if drowsy_candidate else 0.0)
 
-        return DrowsinessSignal(
+        self.last_signal = DrowsinessSignal(
             face_detected=face_detected,
             ear=ear,
             head_pitch=head_pitch,
             drowsy_score=score,
             current_threshold=current_th
         )
+        return self.last_signal
