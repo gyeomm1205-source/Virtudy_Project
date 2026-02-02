@@ -63,6 +63,9 @@ const showEditModal = ref(false);
 const roomOwnerFlag = ref(false);
 const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.value);
 
+// 채팅창 열림/닫힘 상태
+const isChatOpen = ref(true);
+
 // -------------------------------------------------------------
 // 🪟 Document PIP 관련 로직
 // -------------------------------------------------------------
@@ -324,6 +327,10 @@ const handleSendChat = () => {
     chatMessage.value = '';
 };
 
+const toggleChat = () => {
+    isChatOpen.value = !isChatOpen.value;
+};
+
 onUnmounted(() => {
     const focusMinutes = Math.floor(focusSeconds.value / 60);
     leaveRoom({
@@ -488,21 +495,103 @@ onUnmounted(() => {
                     </div>
                 </main>
 
-                <aside class="chat-section">
-                    <div class="chat-header-simple">채팅창 영역</div> <div class="chat-messages">
-                        <div v-for="(msg, idx) in messages" :key="idx" class="message-bubble" :class="{ 'my-msg': msg.sender === userId, 'sys-msg': msg.type !== 'CHAT' }">
-                            <div v-if="msg.type === 'CHAT'">
-                                <span class="sender">{{ msg.sender }}</span>
-                                <p class="text">{{ msg.data?.message || msg.message }}</p>
+                <!-- 채팅 영역 -->
+                <aside 
+                    class="flex flex-col h-full transition-all duration-300 ease-in-out"
+                    :class="isChatOpen ? 'w-80 min-w-80' : 'w-0'"
+                >
+                    <!-- 채팅창이 열려있을 때 -->
+                    <div 
+                        v-if="isChatOpen" 
+                        class="bg-[var(--color-choco)] h-full flex flex-col overflow-hidden"
+                    >
+                        <!-- 채팅 헤더 -->
+                        <div class="flex items-center justify-center pt-1 px-1 pb-1 shrink-0">
+                            <div class="relative w-[19.9375rem] h-[3.25rem]">
+                                <!-- Window Title 배경 (Rectangle2) -->
+                                <div class="absolute inset-0 bg-[var(--color-butter2)]"></div>
+                                <!-- 채팅 제목 -->
+                                <div class="absolute left-[0.6875rem] top-1/2 transform -translate-y-1/2">
+                                    <h3 class="text-[var(--color-choco)] text-[2rem] font-['exqt'] font-medium leading-normal">채팅</h3>
+                                </div>
+                                <!-- X 버튼 -->
+                                <button 
+                                    @click="toggleChat"
+                                    class="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M15 5L5 15M5 5L15 15" stroke="#805143" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </button>
                             </div>
-                            <div v-else class="system-text">🔔 {{ msg.type }} 이벤트</div>
+                        </div>
+
+                        <!-- 구분선 -->
+                        <div class="h-px bg-[var(--color-choco)] opacity-80 shrink-0"></div>
+
+                        <!-- 메시지 목록 -->
+                        <div class="flex-1 overflow-y-auto p-6 space-y-8">
+                            <div v-for="(msg, idx) in messages" :key="idx" class="flex flex-col">
+                                <div v-if="msg.type === 'CHAT'">
+                                    <!-- 내 메시지 -->
+                                    <div v-if="msg.sender === userId" class="flex justify-end">
+                                        <div class="flex flex-col items-end space-y-2.5">
+                                            <div class="bg-[var(--color-butter2)] px-4 py-2 rounded-xl max-w-64">
+                                                <p class="text-[var(--color-choco)] text-[1.25rem] font-['PfStardust30S'] leading-normal tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 다른 사용자 메시지 -->
+                                    <div v-else class="flex flex-col space-y-2.5">
+                                        <p class="text-[var(--color-cream2)] text-[0.9375rem] font-['PfStardust30S'] leading-normal tracking-[-0.0375rem]">{{ msg.sender }}</p>
+                                        <div class="bg-[var(--color-syrup)] px-4 py-2 rounded-xl max-w-64">
+                                            <p class="text-[var(--color-cream2)] text-[1.25rem] font-['PfStardust30S'] leading-normal tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 시스템 메시지 -->
+                                <div v-else class="flex justify-center">
+                                    <div class="text-[var(--color-cream)] text-sm opacity-70">🔔 {{ msg.type }} 이벤트</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 메시지 입력 박스 (Figma Frame 6 디자인) -->
+                        <div class="p-[15px] shrink-0">
+                            <div class="bg-[#fff8e5] border-2 border-[#fff2cc] rounded-[12px] flex items-center justify-between h-[48px] px-[20px] py-[10px]">
+                                <input 
+                                    v-model="chatMessage" 
+                                    @keyup.enter="handleSendChat" 
+                                    type="text" 
+                                    placeholder="Type a message"
+                                    class="flex-1 bg-transparent text-[#805143] text-[20px] font-['PfStardust30S'] leading-normal tracking-[-0.8px] placeholder:opacity-40 outline-none"
+                                />
+                                <button 
+                                    @click="handleSendChat" 
+                                    class="w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity overflow-hidden relative"
+                                >
+                                    <div class="absolute inset-[10.68%_10.66%_10.66%_10.66%]">
+                                        <img alt="send" class="block max-w-none size-full" src="https://www.figma.com/api/mcp/asset/b9d70265-6324-4b42-bf69-7dfa3a62b17a" />
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="chat-input-area">
-                        <input v-model="chatMessage" @keyup.enter="handleSendChat" type="text" placeholder="메시지 입력..." />
-                        <button @click="handleSendChat">전송</button>
-                    </div>
                 </aside>
+
+                <!-- 채팅창이 닫혀있을 때 표시할 영역 (흰 배경) -->
+                <div 
+                    v-if="!isChatOpen" 
+                    class="flex-1 min-w-80 bg-white flex items-center justify-center"
+                >
+                    <button 
+                        @click="toggleChat"
+                        class="bg-[var(--color-butter)] border-2 border-[var(--color-choco)] text-[var(--color-choco)] px-6 py-3 rounded-sm hover:opacity-80 transition-opacity font-['PfStardust30S'] text-xl"
+                        style="box-shadow: 4px 4px 0px 0px var(--color-choco);"
+                    >
+                        채팅 열기
+                    </button>
+                </div>
 
             </div>
         </div>
@@ -883,19 +972,5 @@ onUnmounted(() => {
 
 .hidden-video { display: none; }
 
-/* 채팅 */
-.chat-section { 
-    flex: 1; 
-    min-width: 300px; 
-    background-color: #FFD966;
-    display: flex; 
-    flex-direction: column; 
-}
-.chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-.message-bubble { background: white; padding: 8px 12px; border-radius: 10px; max-width: 90%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-.message-bubble.my-msg { align-self: flex-end; background: #7bed9f; }
-.message-bubble.sys-msg { align-self: center; background: none; box-shadow: none; color: #888; font-size: 0.8rem; }
-.chat-input-area { padding: 15px; display: flex; gap: 10px; flex-shrink: 0; }
-.chat-input-area input { flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #ddd; }
-.chat-input-area button { padding: 0 20px; border-radius: 4px; border: none; background: #333; color: white; cursor: pointer; }
+
 </style>
