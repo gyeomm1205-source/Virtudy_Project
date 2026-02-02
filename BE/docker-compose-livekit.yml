@@ -13,8 +13,8 @@ services:
       - "7882:7882/udp"
     environment:
       - "LIVEKIT_KEYS=${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-secret}"
-    networks:
-      - virtudy-network
+    # networks:
+    #   - virtudy-network
 
 
 #  # Redis for LiveKit (and potential other uses)

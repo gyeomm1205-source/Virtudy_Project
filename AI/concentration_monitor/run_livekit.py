@@ -5,10 +5,18 @@ import numpy as np
 import json
 import time
 import multiprocessing
-from livekit import api, rtc
+import livekit
+
+import livekit
+import livekit.api as api
+import livekit.rtc as rtc
+
+
+
 
 # Reuse imports from core modules
-from run import FeatureExtractor
+# Reuse imports from core modules
+from core.feature_extractor import FeatureExtractor
 from core.types import FrameSignals, FocusState
 from core.config import Config
 from detectors.absence_detector import AbsenceDetector
@@ -28,6 +36,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
     phone_det = PhoneDetector()
     fuser = StateFuser()
     scorer = FocusScorer()
+    last_valid_event = "FOCUS" # [NEW] To hold state during UNKNOWN
 
     frame_count = 0
     last_sent_time = 0
@@ -98,16 +107,32 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         current_time = time.time()
         if current_time - last_sent_time >= SEND_INTERVAL:
             # STATUS MAPPING
-            status_str = decision.state.name 
-            if status_str == "DROWSY": status_str = "SLEEP"
-            if status_str == "ABSENT": status_str = "AWAY"
-            if status_str == "FOCUSED": status_str = "FOCUS"
+            # Frontend Spec: 
+            # "FOCUS" : 0
+            # "SLEEP" : 1 (Drowsy)
+            # "PHONE" : 1
+            # "AWAY" : 1 (Absent/Empty)
             
-            # Send STATUS
-            await _send_data(room, "STATUS", status_str, queue)
-            # print(f"[DEBUG] Sent STATUS: {status_str}, SCORE: {int(snap.score)}")
+            raw_state = decision.state.name # FOCUSED, DROWSY, ABSENT, PHONE, UNKNOWN
             
-            # Send SCORE
+            # [NEW] Hold Last Valid State
+            if raw_state != "UNKNOWN":
+                event_type = raw_state
+                if raw_state == "FOCUSED": event_type = "FOCUS"
+                elif raw_state == "DROWSY": event_type = "SLEEP"
+                elif raw_state == "ABSENT": event_type = "AWAY"
+                last_valid_event = event_type
+            else:
+                event_type = last_valid_event # Maintain previous
+            
+            # Value Logic
+            value = 0 if event_type == "FOCUS" else 1
+
+            # Send STATUS Event (Strict JSON Spec)
+            # We pass 'event_type' as category, but _send_data will now ensure it maps to 'eventType'
+            await _send_data(room, event_type, value, queue)
+            
+            # Send SCORE Event (Separate)
             await _send_data(room, "SCORE", int(snap.score), queue)
 
             last_sent_time = current_time
@@ -119,12 +144,14 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
     await room.local_participant.publish_data(data, reliable=False)
 
     # 2. Send via Queue (to Frontend Socket)
+    # 2. Send via Queue (to Frontend Socket)
     if queue:
         try:
-            # Frontend expects { eventType: ..., value: ... } structure roughly
-            # But RoomManager.ts parses: { eventType: data.eventType || data.status, value: data.value }
-            # Let's match typical AI response format
-            queue_payload = {"eventType": category, "value": value, "status": category}
+            # Frontend Logic:
+            # - Expects { eventType: "FOCUS", value: 0 }
+            # - Expects { eventType: "SCORE", value: 85 }
+            
+            queue_payload = {"eventType": category, "value": value}
             queue.put(queue_payload)
             print(f"[DEBUG] Queue Put: {category} -> {value}") # Explicit print
         except Exception as e:
@@ -138,6 +165,8 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
     def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
         if track.kind == rtc.TrackKind.KIND_VIDEO:
             print(f"[INFO] Subscribed to Video Track from {participant.identity}", flush=True)
+            # [Fix] Request High Quality Video for AI Analysis
+            # publication.set_video_quality(rtc.VideoQuality.HIGH) # Unsupported in v1.0.23
             video_stream = rtc.VideoStream(track)
             asyncio.create_task(ai_process_loop(room, video_stream, queue))
 
@@ -165,6 +194,8 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                 # If already subscribed but logic didn't trigger (unlikely but safe)
                 if publication.subscribed and publication.track and publication.kind == rtc.TrackKind.KIND_VIDEO:
                      print(f"[INFO] Found existing subscribed video, starting loop for {identity}", flush=True)
+                     # [Fix] Request High Quality Video for AI Analysis
+                     publication.set_video_quality(rtc.VideoQuality.HIGH)
                      video_stream = rtc.VideoStream(publication.track)
                      asyncio.create_task(ai_process_loop(room, video_stream, queue))
         
@@ -178,8 +209,8 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
             if count == 0:
                 if empty_room_start is None:
                     empty_room_start = time.time()
-                elif time.time() - empty_room_start > 5.0:
-                    print(f"[INFO] Room empty for 5 seconds. Disconnecting...", flush=True)
+                elif time.time() - empty_room_start > 1.0:
+                    print(f"[INFO] Room empty for 1 second. Disconnecting...", flush=True)
                     break
             else:
                 empty_room_start = None

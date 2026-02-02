@@ -21,17 +21,16 @@ export default defineConfig({
   server: {
     port: 3030, // 백엔드 가이드에 따라 포트를 3030으로 고정
     proxy: {
-      // 브라우저에서 /api로 시작하는 요청을 보내면 백엔드 서버(80)로 전달합니다.
       '/api': {
-        target: 'http://i14a703.p.ssafy.io:80',
-        // target: 'http://i14a703.p.ssafy.io:8080', // 로컬 백엔드 테스트용
+        target: 'http://localhost:8080', // 로컬 백엔드 (기본값)
+        // target: 'http://i14a703.p.ssafy.io:80', // 진짜 배포 서버
         changeOrigin: true,
         secure: false,
       },
       // [추가] WebSocket 요청도 백엔드로 프록시 (CORS 해결)
       '/ws': {
-        target: 'http://i14a703.p.ssafy.io:80',
-        // target: 'http://i14a703.p.ssafy.io:8081', // Interceptor가 8081을 요구하므로 8081로 연결
+        target: 'http://localhost:8081', // 로컬 소켓 서버
+        // target: 'http://i14a703.p.ssafy.io:80', // 진짜 배포 서버
         changeOrigin: true,
         ws: true,
         secure: false

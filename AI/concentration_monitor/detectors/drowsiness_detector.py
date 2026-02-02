@@ -45,6 +45,11 @@ class DrowsinessDetector:
              # If head is dropped, we tolerate slightly larger EAR (eyes purely looking down)
              drowsy_candidate = True
 
+        # [NEW] Fast Awake: If eyes are wide open, clear the buffer to wake up immediately
+        if ear >= Config.EAR_AWAKE_TH:
+            self.drowsy_smoother.q.clear()
+            drowsy_candidate = False
+
         drowsy = self.drowsy_smoother.update(drowsy_candidate)
         
         # Score: 1.0 if confirmed, 0.6 if candidate

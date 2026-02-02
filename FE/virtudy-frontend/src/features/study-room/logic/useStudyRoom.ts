@@ -12,6 +12,11 @@ export function useStudyRoom() {
     const messages = ref<any[]>([]);
     const remoteTracks = ref<{ participantId: string; track: any }[]>([]);
     const focusEventType = ref<FocusEventType | null>(null);
+    // [추가] 상대방 AI 상태 저장용 (key: participantId, value: status)
+    const remoteParticipantStates = ref<Record<string, FocusEventType>>({});
+    // [추가] 상대방 집중도 점수 저장용 (key: participantId, value: score)
+    const remoteParticipantScores = ref<Record<string, number>>({});
+
     // null이 아니고 FOCUS가 아니면 '딴짓 중(true)'으로 판단
     const isDistracted = computed(() => focusEventType.value !== null && focusEventType.value !== 'FOCUS');
 
@@ -28,23 +33,32 @@ export function useStudyRoom() {
             error.value = null;
             messages.value = [];
             remoteTracks.value = [];
+            remoteParticipantStates.value = {}; // 초기화
 
             // 이전 리스너 제거 (중복 방지)
-            // [Fix] useAiHandler 등 다른 훅에서 등록한 리스너까지 지워버리는 문제 발생
-            // 개별 리스너 관리는 각 컴포넌트/훅의 onUnmounted에서 처리하는 것이 맞음
-            // 우선 이 줄을 제거하여 AI 리스너가 살아남게 수정
             // roomManager.removeAllListeners();
 
             // 메시지 수신 리스너 등록 (채팅, 시스템 메시지)
-            roomManager.onMessage((payload) => {
+            roomManager.onMessage((payload, senderId) => {
                 // [Fix] AI 데이터(category 필드 있음)는 채팅에 추가하지 않음 (HEAD Logic)
                 if (payload && payload.category) {
-                    // (Optional) Map AI Data to Local Focus State for Avatar compatibility
-                    if (payload.category === 'STATUS' && typeof payload.value === 'string') {
-                        const val = payload.value as FocusEventType;
-                        if (['FOCUS', 'SLEEP', 'PHONE', 'AWAY'].includes(val)) {
-                            focusEventType.value = val;
-                        }
+                    // Local AI logic (already handled by useAiHandler via separate listener, but careful of duplication)
+                    // useAiHandler registers its own listener. Here we just ignore it for chat.
+                    return;
+                }
+
+                // [추가] 3. WebRTC Broadcast 데이터 처리 (상대방 AI 상태)
+                // senderId가 있고, topic이 AI_STATUS인 경우
+                if (senderId && payload && payload.topic === 'AI_STATUS') {
+                    // 1. 상태(status) 업데이트
+                    if (payload.status) {
+                        console.log(`📡 [Remote-Status-Update] ${senderId}: ${payload.status}`);
+                        remoteParticipantStates.value[senderId] = payload.status as FocusEventType;
+                    }
+                    // 2. 점수(score) 업데이트
+                    if (typeof payload.score === 'number') {
+                        console.log(`📡 [Remote-Score-Update] ${senderId}: ${payload.score}`);
+                        remoteParticipantScores.value[senderId] = payload.score;
                     }
                     return;
                 }
@@ -132,6 +146,8 @@ export function useStudyRoom() {
         error,
         messages,
         remoteTracks,
+        remoteParticipantStates,
+        remoteParticipantScores, // [추가]
         focusEventType,
         isDistracted,
         setDebugState, // [추가] 디버그용 함수 반환
