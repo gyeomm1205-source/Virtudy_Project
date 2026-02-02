@@ -248,10 +248,6 @@ const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
 const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
 const getAiAbsent = (status: string) => (status === 'AWAY' ? 1 : 0);
 
-// 눈 깜빡임 & 입모양 상태 (기본값)
-const isBlinking = ref(false); 
-const mouthState = ref<'closed' | 'slightly_open' | 'wide_open'>('closed');
-
 // =================================================================
 // 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
 // =================================================================
@@ -459,8 +455,6 @@ onUnmounted(() => {
                                     :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
                                     :aiPhone="getAiPhone(aiStore.focusStatus)"
                                     :aiAbsent="getAiAbsent(aiStore.focusStatus)"
-                                    :isBlinking="isBlinking"
-                                    :mouthState="mouthState"
                                 />
                             </div>
                             
@@ -483,8 +477,6 @@ onUnmounted(() => {
                                     :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
                                     :aiPhone="getAiPhone(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
                                     :aiAbsent="getAiAbsent(remoteParticipantStates[rt.participantId] || 'FOCUS')"
-                                    :isBlinking="false"
-                                    :mouthState="'closed'"
                                 />
                             </div>
                             <div class="user-info">
