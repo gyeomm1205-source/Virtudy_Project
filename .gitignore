@@ -20,3 +20,9 @@ __pycache__/
 .vscode/
 /BE/
 .idea/
+
+# Logs
+logs/
+**/logs/
+*.log
+*.csv

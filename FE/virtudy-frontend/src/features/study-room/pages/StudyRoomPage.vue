@@ -15,6 +15,7 @@ import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 // HEAD Imports
 import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
+import { getScoreColor } from '../logic/scoreUtils'; // [Refactor] 팀원 코드 구조 동기화
 
 // 1. 라우터 및 스토어 설정
 const route = useRoute();
@@ -27,16 +28,6 @@ const token = route.query.token as string;
 const userId = (route.query.userId as string) || authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
 //[추가] 사용자 닉네임 표시용
 const displayName = computed(() => authStore.userInfo?.nickName || userId);
-// [추가] AI Score(점수)에 따른 하트 색상 반환 함수
-const getScoreColor = (score: number) => {
-    if (score >= 80) {
-        return '#2ed573'; // 💚 초록 (80점 이상)
-    } else if (score > 60) {
-        return '#ffa502'; // 💛 노랑 (60점 초과 ~ 80점 미만)
-    } else {
-        return '#ff4757'; // ❤️ 빨강 (60점 이하)
-    }
-};
 
 // 3. 로직 훅
 const { 
