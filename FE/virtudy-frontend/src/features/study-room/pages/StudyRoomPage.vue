@@ -16,6 +16,9 @@ import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 
+import { getScoreColor } from '../logic/scoreUtils'; 
+import PipDashboard from '../ui/PipDashboard.vue';
+
 // 1. 라우터 및 스토어 설정
 const route = useRoute();
 const router = useRouter();
@@ -27,16 +30,6 @@ const token = route.query.token as string;
 const userId = authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
 //[추가] 사용자 닉네임 표시용
 const displayName = computed(() => authStore.userInfo?.nickName || userId);
-// [추가] AI Score(점수)에 따른 하트 색상 반환 함수
-const getScoreColor = (score: number) => {
-    if (score >= 80) {
-        return '#2ed573'; // 💚 초록 (80점 이상)
-    } else if (score > 60) {
-        return '#ffa502'; // 💛 노랑 (60점 초과 ~ 80점 미만)
-    } else {
-        return '#ff4757'; // ❤️ 빨강 (60점 이하)
-    }
-};
 
 // 3. 로직 훅
 const { 
@@ -47,7 +40,7 @@ const {
     error, 
     messages, 
     remoteTracks,
-    remoteParticipantStates, // [추가]
+    remoteParticipantStates,
     isDistracted,
 } = useStudyRoom();
 
@@ -63,6 +56,84 @@ const localVideoRef = ref<HTMLVideoElement | null>(null);
 //[추가] 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
+
+// -------------------------------------------------------------
+// 🪟 Document PIP 관련 로직
+// -------------------------------------------------------------
+const isPipActive = ref(false);
+const pipDashboardRef = ref<HTMLElement | null>(null); 
+const pipSourceContainerRef = ref<HTMLElement | null>(null);
+let pipWindow: Window | null = null;
+
+// [PIP용 데이터] 팀원 정보 가공 (ID와 상태 점수를 넘김)
+// 실제 팀원 점수 데이터가 있다면 이곳에 매핑 (현재는 Mock 65점)
+const teammatesData = computed(() => {
+    return remoteTracks.value.map(rt => ({
+        id: rt.participantId,
+        score: 65 // 예시: 팀원은 보통(노랑) 상태로 가정
+    }));
+});
+
+const togglePip = async () => {
+    if (isPipActive.value && pipWindow) {
+        pipWindow.close();
+        return;
+    }
+
+    if (!('documentPictureInPicture' in window)) {
+        alert('이 기능은 Chrome/Edge 최신 버전에서만 지원됩니다.');
+        return;
+    }
+
+    try {
+        // 이미지 비율 고려하여 세로형 창 생성
+        // @ts-ignore
+        pipWindow = await window.documentPictureInPicture.requestWindow({
+            width: 200, 
+            height: 280,
+        });
+
+        if (!pipWindow) return;
+
+        // 스타일 복사
+        [...document.styleSheets].forEach((styleSheet) => {
+            try {
+                const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+                const style = document.createElement('style');
+                style.textContent = cssRules;
+                pipWindow!.document.head.appendChild(style);
+            } catch (e) {
+                if (styleSheet.href) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = styleSheet.href;
+                    pipWindow!.document.head.appendChild(link);
+                }
+            }
+        });
+
+        // DOM 이동
+        if (pipDashboardRef.value) {
+            pipWindow.document.body.append(pipDashboardRef.value);
+            // PIP 창 바디 스타일 (여백 제거)
+            pipWindow.document.body.style.margin = '0';
+        }
+
+        isPipActive.value = true;
+
+        // PIP 종료 시 원복
+        pipWindow.addEventListener('pagehide', () => {
+            if (pipDashboardRef.value && pipSourceContainerRef.value) {
+                pipSourceContainerRef.value.append(pipDashboardRef.value);
+            }
+            isPipActive.value = false;
+            pipWindow = null;
+        });
+
+    } catch (err) {
+        console.error('PIP Error:', err);
+    }
+};
 
 // =================================================================
 // 🧪 [테스트/아바타] 설정
@@ -85,7 +156,7 @@ const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
 const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
 const getAiAbsent = (status: string) => (status === 'AWAY' ? 1 : 0);
 
-// [NEW] 눈 깜빡임 & 입모양 상태 (기본값)
+// 눈 깜빡임 & 입모양 상태 (기본값)
 const isBlinking = ref(false); 
 const mouthState = ref<'closed' | 'slightly_open' | 'wide_open'>('closed');
 
@@ -167,6 +238,19 @@ onUnmounted(() => {
 
 <template>
     <div class="page-container">
+        <!-- pip 로직 추가 -->
+        <div ref="pipSourceContainerRef" style="display: none;">
+            <div ref="pipDashboardRef" class="pip-content-root">
+                <PipDashboard 
+                    :focusSeconds="focusSeconds"
+                    :myAvatarConfig="myAvatarConfig"
+                    :aiScore="aiStore.concentrationScore"
+                    :aiStatus="aiStore.focusStatus"
+                    :teammates="teammatesData"
+                />
+            </div>
+        </div>
+
         <div v-if="!isConnected" class="loading-overlay">
             <div class="loading-content">
                 <div v-if="error" class="error-msg">
@@ -217,6 +301,11 @@ onUnmounted(() => {
                         <div class="timer-display">
                             <StudyTimer />
                             <FocusTimer :seconds="focusSeconds" />
+                        </div>
+                        <div class="pip-btn-area">
+                            <button @click="togglePip" class="btn-pip" :class="{ active: isPipActive }">
+                                {{ isPipActive ? 'PIP 종료' : '미니 모드 (PIP)' }}
+                            </button>
                         </div>
                     </div>
 
@@ -289,7 +378,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* ... (이전 스타일과 동일, user-info 부분만 확인) ... */
 
 /* 페이지 전체 컨테이너 */
 .page-container {
@@ -400,6 +488,26 @@ onUnmounted(() => {
     left: 45px;
     top: 137px;
 }
+
+.pip-btn-area {
+    margin-top: 12px;
+    border-top: 1px solid #f1f2f6;
+    padding-top: 10px;
+}
+.btn-pip {
+    background: #4b6584;
+    color: white;
+    border: none;
+    padding: 8px 0;
+    width: 100%;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+.btn-pip:hover { background: #778ca3; }
+.btn-pip.active { background: #2ed573; }
 
 /* 아바타 스트립: 긴 바(Bar)*/
 .avatar-strip {
