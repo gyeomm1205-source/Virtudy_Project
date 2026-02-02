@@ -2,24 +2,49 @@
 from core.types import FrameSignals, FocusDecision, FocusState
 
 class StateFuser:
+    def __init__(self):
+        self.last_state = FocusState.FOCUSED
+        self.state_count = 0
+        self.STICKY_THRESHOLD = 15 # Frames to 'stick' to a violation state
+
     def decide(self, sig: FrameSignals) -> FocusDecision:
-        # Priority: ABSENT > DROWSY > PHONE > FOCUSED
-        
-        # 1) ABSENT
-        if sig.absent.absent:
-            return FocusDecision(FocusState.ABSENT, 1.0, "Face missing")
+        # Determine raw candidate state
+        candidate = FocusState.FOCUSED
+        reason = "Normal"
+        confidence = 0.8
 
-        # 2) PHONE (Prioritize over Drowsy because looking down + phone = Phone Use)
+        # 1) PHONE (Highest Priority violation)
         if sig.phone.phone_in_use:
-            return FocusDecision(FocusState.PHONE, sig.phone.phone_in_use_score, "Phone use detected")
+            candidate = FocusState.PHONE
+            reason = "Phone use detected"
+            confidence = sig.phone.phone_in_use_score
 
-        # 3) DROWSY
-        if sig.drowsy.drowsy_score >= 0.9:
-            return FocusDecision(FocusState.DROWSY, sig.drowsy.drowsy_score, "Eyes closed")
+        # 2) DROWSY (Priority violation)
+        elif sig.drowsy.drowsy_score >= 0.9:
+            candidate = FocusState.DROWSY
+            reason = "Eyes closed"
+            confidence = sig.drowsy.drowsy_score
+            
+        # 3) ABSENT
+        elif sig.absent.absent:
+            candidate = FocusState.ABSENT
+            reason = "Face missing"
+            confidence = 1.0
 
-        # 4) FOCUSED
-        # If face is detected and no other negative states
-        if sig.drowsy.face_detected:
-            return FocusDecision(FocusState.FOCUSED, 0.8, "Normal")
+        # --- Stability Logic (Hysteresis) ---
+        # If we are in a violation state (PHONE/SLEEP/AWAY), 
+        # don't flicker back to FOCUS unless we see it consistently.
+        if self.last_state in [FocusState.PHONE, FocusState.DROWSY, FocusState.ABSENT]:
+            if candidate == FocusState.FOCUSED:
+                self.state_count += 1
+                if self.state_count < self.STICKY_THRESHOLD:
+                    # Stick to last violation
+                    return FocusDecision(self.last_state, 0.7, f"Stable {self.last_state.name} (Hysteresis)")
+            else:
+                self.state_count = 0 # Detected violation again, reset counter
+        
+        self.last_state = candidate
+        if candidate == FocusState.FOCUSED:
+             self.state_count = 0
 
-        return FocusDecision(FocusState.UNKNOWN, 0.0, "Insufficient signals")
+        return FocusDecision(candidate, confidence, reason)

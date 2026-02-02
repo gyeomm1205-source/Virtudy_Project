@@ -1,3 +1,25 @@
+<<<<<<< HEAD
+# Core AI & Video
+livekit==1.0.25
+livekit-api==1.1.0
+livekit-protocol==1.1.2
+mediapipe==0.10.14
+opencv-python==4.13.0.90
+ultralytics==8.4.7
+numpy==2.4.1
+
+# Server & Communication
+fastapi==0.128.0
+uvicorn==0.40.0
+websockets==16.0
+kafka-python-ng==2.2.3
+PyJWT==2.10.1
+
+# Utilities
+python-dateutil==2.9.0.post0
+aiofiles==25.1.0
+pydantic==2.12.5
+=======
 absl-py==2.3.1
 attrs==25.4.0
 cffi==2.0.0
@@ -23,3 +45,4 @@ livekit>=0.7.1
 ultralytics
 fastapi
 uvicorn
+>>>>>>> origin/ai
