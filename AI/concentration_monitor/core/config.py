@@ -30,7 +30,11 @@ class Config:
     PENALTY_UNKNOWN = 0.5
 
     # --- Kafka ---
-    KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092'] # Localhost execution
+    
+    # [Local 실행 시]
+    KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092']
+    # [Docker 배포 시 - 이걸로 변경 필요!]
+    # KAFKA_BOOTSTRAP_SERVERS = ['kafka:29092']
     KAFKA_TOPIC = 'study-log-topic'
     LOG_COOLDOWN = 60.0  # Seconds
 
