@@ -1,6 +1,6 @@
 package com.ssafy.virtudy.global.init;
 
-import com.ssafy.virtudy.group.repository.RoomMemberRepository;
+import com.ssafy.virtudy.member.domain.Avatar;
 import com.ssafy.virtudy.member.domain.*;
 import com.ssafy.virtudy.member.repository.AvatarRepository;
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
@@ -17,7 +17,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional; // 트랜잭션 추가 권장
 
 import java.util.*;
 

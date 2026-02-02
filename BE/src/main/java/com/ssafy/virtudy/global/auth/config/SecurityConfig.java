@@ -49,18 +49,20 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
-                        .anyRequest().permitAll()); // TODO : 추후 정상 인증 로직 아래 버전으로 수정 필요
-//                        .requestMatchers(
-//                                            "/swagger-ui.html",
-//                                            "/swagger-ui/**",
-//                                            "/v3/api-docs/**",
-//                                            "/api/auth/login",
-//                                            "/api/auth/signup",
-//                                            "/api/auth/reissue"
-//                ).permitAll()
-//                .anyRequest().authenticated())
-//                .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
-//                UsernamePasswordAuthenticationFilter.class)
+//                        .anyRequest().permitAll()); // TODO : 추후 정상 인증 로직 아래 버전으로 수정 필요
+                        .requestMatchers(
+                                            "/swagger-ui.html",
+                                            "/swagger-ui/**",
+                                            "/v3/api-docs/**",
+                                            "/api/auth/login",
+                                            "/api/auth/signup",
+                                            "/api/auth/reissue",
+                                            "/api/auth/kakao/callback",
+                                            "/ws/**"  // <--- 여기 추가!
+                ).permitAll()
+                .anyRequest().authenticated())
+                .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
+                UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -75,6 +77,12 @@ public class SecurityConfig {
                 "http://localhost:3030", // (혹시 포트 다르면 추가)
                 "http://localhost:3031", // Vite dev server
                 "http://localhost:3032", // User's current port
+                "http://i14a703.p.ssafy.io", // ✅ [필수 추가] 현재 요청이 들어오는 도메인
+                "https://i14a703.p.ssafy.io",
+                "http://localhost:5173", // Vite Default Port
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:3030",
+                "http://127.0.0.1:3000",
                 "http://www.virtudy.com" // 운영 프론트엔드
         ));
 

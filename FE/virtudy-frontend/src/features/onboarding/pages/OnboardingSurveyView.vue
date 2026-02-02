@@ -37,7 +37,7 @@
           마라톤형 (꾸준히 길게)
         </label>
         <label>
-          <input type="radio" value="SPRINT" v-model="surveyData.studyStyle" />
+          <input type="radio" value="SPRINTER" v-model="surveyData.studyStyle" />
           스프린터형 (짧고 굵게)
         </label>
       </div>
@@ -84,7 +84,7 @@ const timeSlots = [
 ];
 
 const jobOptions = [
-  { text: '학생 (초/중/고)', value: 'MIDDLE_HIGH_SCHOOL' },
+  { text: '학생 (초/중/고)', value: 'SCHOOL_STUDENT' },
   { text: '대학생/대학원생', value: 'UNIVERSITY_STUDENT' },
   { text: '취업준비생', value: 'JOB_SEEKER' },
   { text: '직장인', value: 'OFFICE_WORKER' },

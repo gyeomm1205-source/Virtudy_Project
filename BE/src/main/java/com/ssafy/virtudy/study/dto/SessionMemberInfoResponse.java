@@ -1,6 +1,5 @@
 package com.ssafy.virtudy.study.dto;
 
-import com.ssafy.virtudy.member.domain.Avatar;
 import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.dto.AvatarResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
