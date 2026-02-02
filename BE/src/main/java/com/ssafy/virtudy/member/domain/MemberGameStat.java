@@ -39,4 +39,10 @@ public class MemberGameStat {
     public void updateTierScore(int newScore) {
         this.tierScore = newScore;
     }
+
+    public void resetStat() {
+        this.point = 0;
+        this.totalStudyTime = 0;
+        this.tierScore = 0;
+    }
 }
