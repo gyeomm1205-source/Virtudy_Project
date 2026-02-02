@@ -23,7 +23,6 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:8080', // 로컬 백엔드 (기본값)
-        // target: 'http://i14a703.p.ssafy.io:8080', // 배포 서버 (필요시 주석 해제하여 사용)
         // target: 'http://i14a703.p.ssafy.io:80', // 진짜 배포 서버
         changeOrigin: true,
         secure: false,
@@ -31,7 +30,6 @@ export default defineConfig({
       // [추가] WebSocket 요청도 백엔드로 프록시 (CORS 해결)
       '/ws': {
         target: 'http://localhost:8081', // 로컬 소켓 서버
-        // target: 'http://i14a703.p.ssafy.io:8081', // 배포 소켓 서버
         // target: 'http://i14a703.p.ssafy.io:80', // 진짜 배포 서버
         changeOrigin: true,
         ws: true,
