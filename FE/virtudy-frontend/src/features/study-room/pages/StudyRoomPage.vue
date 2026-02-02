@@ -65,6 +65,11 @@ const pipDashboardRef = ref<HTMLElement | null>(null);
 const pipSourceContainerRef = ref<HTMLElement | null>(null);
 let pipWindow: Window | null = null;
 
+// 코드 복사 버튼 관련 상태
+const isHoveringCopyButton = ref(false);
+const showCopyTooltip = ref(false);
+const tooltipMessage = ref('코드 복사');
+
 // [PIP용 데이터] 팀원 정보 가공 (ID와 상태 점수를 넘김)
 // 실제 팀원 점수 데이터가 있다면 이곳에 매핑 (현재는 Mock 65점)
 const teammatesData = computed(() => {
@@ -132,6 +137,42 @@ const togglePip = async () => {
 
     } catch (err) {
         console.error('PIP Error:', err);
+    }
+};
+
+// 코드 복사 관련 함수들
+const handleCopyCode = async () => {
+    try {
+        await navigator.clipboard.writeText(roomId);
+        tooltipMessage.value = '복사 완료!';
+        showCopyTooltip.value = true;
+        
+        setTimeout(() => {
+            showCopyTooltip.value = false;
+            tooltipMessage.value = '코드 복사';
+        }, 2000);
+    } catch (err) {
+        console.error('복사 실패:', err);
+        tooltipMessage.value = '복사 실패';
+        showCopyTooltip.value = true;
+        setTimeout(() => {
+            showCopyTooltip.value = false;
+            tooltipMessage.value = '코드 복사';
+        }, 2000);
+    }
+};
+
+const handleCopyMouseEnter = () => {
+    isHoveringCopyButton.value = true;
+    if (!showCopyTooltip.value) {
+        showCopyTooltip.value = true;
+    }
+};
+
+const handleCopyMouseLeave = () => {
+    isHoveringCopyButton.value = false;
+    if (tooltipMessage.value === '코드 복사') {
+        showCopyTooltip.value = false;
     }
 };
 
@@ -284,6 +325,31 @@ onUnmounted(() => {
 
                     <div class="room-controls-overlay">
                         <span class="member-count">👤 {{ remoteTracks.length + 1 }}/6</span>
+                        
+                        <!-- Pixel/Solid/Copy 버튼 -->
+                        <div class="copy-button-container">
+                            <button 
+                                @click="handleCopyCode"
+                                @mouseenter="handleCopyMouseEnter"
+                                @mouseleave="handleCopyMouseLeave"
+                                class="btn-copy-pixel"
+                                :class="{ 'hover': isHoveringCopyButton }"
+                            >
+                                <!-- 새로운 Pixel/Solid/Copy SVG 디자인 -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M16 20V22H15V23H3V22H2V6H3V5H6V20H16Z" :fill="isHoveringCopyButton ? '#805143' : '#FFF2CC'"/>
+                                    <path d="M22 7V18H21V19H8V18H7V2H8V1H16V7H22Z" :fill="isHoveringCopyButton ? '#805143' : '#FFF2CC'"/>
+                                    <path d="M22 5V6H17V1H18V2H19V3H20V4H21V5H22Z" :fill="isHoveringCopyButton ? '#805143' : '#FFF2CC'"/>
+                                </svg>
+                            </button>
+                            
+                            <!-- 툴팁 -->
+                            <div v-if="showCopyTooltip" class="copy-tooltip">
+                                {{ tooltipMessage }}
+                                <div class="tooltip-arrow"></div>
+                            </div>
+                        </div>
+                        
                         <button @click="handleLeave" class="btn-leave">나가기</button>
                     </div>
                     
@@ -431,6 +497,69 @@ onUnmounted(() => {
 }
 .btn-leave { background: #ff4757; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 .member-count { color: white; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+
+/* Pixel/Solid/Copy 버튼 스타일 */
+.copy-button-container {
+    position: relative;
+    display: inline-block;
+}
+
+.btn-copy-pixel {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-copy-pixel svg {
+    transition: all 0.2s ease;
+}
+
+/* 툴팁 스타일 */
+.copy-tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: tooltipFadeIn 0.2s ease-in-out;
+}
+
+.tooltip-arrow {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #333;
+}
+
+@keyframes tooltipFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
 /* 타이머 */
 .combined-timer-widget { 
     position: absolute; 
