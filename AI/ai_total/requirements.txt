@@ -1,68 +1,73 @@
-absl-py==2.3.1
-aiofiles==25.1.0
-aiohappyeyeballs==2.6.1
-aiohttp==3.13.3
-aiosignal==1.4.0
-annotated-doc==0.0.4
-annotated-types==0.7.0
-anyio==4.12.1
-attrs==25.4.0
-av==16.1.0
-certifi==2026.1.4
-cffi==2.0.0
-charset-normalizer==3.4.4
+# --- [웹 프레임워크 & 유틸리티] ---
+fastapi==0.128.0
+uvicorn==0.40.0
+starlette==0.50.0
+pydantic==2.12.5
+pydantic_core==2.41.5
+python-dotenv==1.2.1
+python-multipart==0.0.22
 click==8.3.1
 colorama==0.4.6
-contourpy==1.3.2
-cycler==0.12.1
-distro==1.9.0
-docstring_parser==0.17.0
-eval_type_backport==0.3.1
-fastapi==0.128.0
-filelock==3.20.3
-flatbuffers==25.12.19
-fonttools==4.61.1
-frozenlist==1.8.0
-fsspec==2026.1.0
-# --- [충돌 해결 1] OpenTelemetry 1.25.0과 호환되는 버전 고정 ---
-googleapis-common-protos==1.52.0
-# --------------------------------------------------------
-greenlet==3.3.1
-grpcio==1.76.0
-h11==0.16.0
-httpcore==1.0.9
-httptools==0.7.1
+python-dateutil==2.9.0.post0
+requests==2.32.3
 httpx==0.28.1
-idna==3.11
-importlib_metadata==8.7.1
-jax==0.9.0
-jaxlib==0.9.0
-Jinja2==3.1.6
-jiter==0.12.0
-kafka-python-ng==2.2.3
-kiwisolver==1.4.9
+httpcore==1.0.9
+h11==0.16.0
+httptools==0.7.1
+websockets==16.0
+PyYAML==6.0.3
+tqdm==4.67.1
+watchfiles==1.1.1
+rich==14.3.2
+typer==0.21.1
+
+# --- [데이터베이스] ---
+SQLAlchemy==2.0.46
+PyMySQL==1.1.2
+aiosqlite  # (옵션: 필요 시 사용)
+
+# --- [AI & 머신러닝 코어] ---
+torch==2.10.0
+torchvision==0.25.0
+ultralytics==8.4.9
+openai==2.15.0
+scipy==1.17.0
+pandas  # 버전 유연하게
+polars==1.37.1
+
+# --- [미디어 처리 (MediaPipe & OpenCV)] ---
+# 중요: MediaPipe는 아직 Numpy 2.0을 지원하지 않으므로 2.0 미만으로 고정
+numpy<2.0.0
+mediapipe==0.10.14
+opencv-python==4.13.0.90
+opencv-contrib-python==4.13.0.90
+pillow==12.1.0
+av==16.1.0
+
+# --- [LiveKit & 통신] ---
 livekit==1.0.23
 livekit-agents==1.3.12
 livekit-api==1.1.0
-livekit-blingfire==1.1.0
 livekit-plugins-openai==1.3.12
 livekit-protocol==1.1.2
-markdown-it-py==4.0.0
-MarkupSafe==3.0.3
-matplotlib==3.10.8
-mdurl==0.1.2
-mediapipe==0.10.14
-ml_dtypes==0.5.4
-mpmath==1.3.0
-multidict==6.7.1
-nest-asyncio==1.6.0
-networkx==3.6.1
-numpy==2.2.6
-openai==2.15.0
-opencv-contrib-python==4.13.0.90
-opencv-python==4.13.0.90
+grpcio==1.76.0
 
-# --- [충돌 해결 2] Protobuf 4와 호환되는 안전한 버전(1.25.0)으로 고정 ---
+# --- [비동기 지원] ---
+aiofiles==25.1.0
+aiohttp==3.13.3
+anyio==4.12.1
+greenlet==3.3.1
+sniffio==1.3.1
+
+# --- [충돌 방지 핵심 구간 (절대 수정 금지)] ---
+# 1. Protobuf: MediaPipe와 LiveKit이 동시에 작동하는 유일한 구간
+protobuf>=4.25.3,<5.0.0
+types-protobuf==6.32.1.20251210
+
+# 2. Google APIs: Protobuf 4.x와 충돌하지 않는 버전
+googleapis-common-protos==1.52.0
+
+# 3. OpenTelemetry: 최신 버전은 Protobuf 5를 강제하므로 구버전(1.25)으로 고정
 opentelemetry-api==1.25.0
 opentelemetry-exporter-otlp==1.25.0
 opentelemetry-exporter-otlp-proto-common==1.25.0
@@ -70,55 +75,17 @@ opentelemetry-exporter-otlp-proto-grpc==1.25.0
 opentelemetry-exporter-otlp-proto-http==1.25.0
 opentelemetry-proto==1.25.0
 opentelemetry-sdk==1.25.0
-opentelemetry-semantic-conventions  # 버전 자동 결정에 맡김
-# ----------------------------------------------------------------
+opentelemetry-semantic-conventions  # 자동 결정
+# -----------------------------------------------
 
-opt_einsum==3.4.0
+# --- 기타 의존성 ---
+absl-py==2.3.1
+certifi==2026.1.4
+charset-normalizer==3.4.4
+distro==1.9.0
+idna==3.11
+jiter==0.12.0
 packaging==25.0
-pillow==12.1.0
-polars==1.37.1
-polars-runtime-32==1.37.1
-prometheus_client==0.24.1
-propcache==0.4.1
-
-# --- [유지] Protobuf 버전 고정 (MediaPipe & LiveKit 호환) ---
-protobuf>=4.25.3,<5.0.0
-# -----------------------------------------------------
-
-psutil==7.2.2
-pycparser==2.23
-pydantic==2.12.5
-pydantic_core==2.41.5
-Pygments==2.19.2
-PyJWT==2.11.0
-PyMySQL==1.1.2
-pyparsing==3.3.1
-python-dateutil==2.9.0.post0
-python-dotenv==1.2.1
-python-multipart==0.0.22
-PyYAML==6.0.3
-requests==2.32.5
-rich==14.3.2
-scipy==1.17.0
-shellingham==1.5.4
-six==1.17.0
-sniffio==1.3.1
-sounddevice==0.5.5
-SQLAlchemy==2.0.46
-starlette==0.50.0
-sympy==1.14.0
-torch==2.10.0
-torchvision==0.25.0
-tqdm==4.67.1
-typer==0.21.1
-types-protobuf==6.32.1.20251210
-typing-inspection==0.4.2
 typing_extensions==4.15.0
-ultralytics==8.4.9
-ultralytics-thop==2.0.18
-urllib3==2.6.3
-uvicorn==0.40.0
-watchfiles==1.1.1
-websockets==15.0.1
-yarl==1.22.0
+typing-inspection==0.4.2
 zipp==3.23.0
