@@ -15,7 +15,8 @@ import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 // HEAD Imports
 import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
-import { getScoreColor } from '../logic/scoreUtils'; // [Refactor] 팀원 코드 구조 동기화
+import { getScoreColor } from '../logic/scoreUtils'; 
+import PipDashboard from '../ui/PipDashboard.vue';
 
 // 1. 라우터 및 스토어 설정
 const route = useRoute();
@@ -38,7 +39,7 @@ const {
     error, 
     messages, 
     remoteTracks,
-    remoteParticipantStates, // [추가]
+    remoteParticipantStates,
     remoteParticipantScores, // [추가]
     isDistracted,
 } = useStudyRoom();
@@ -46,7 +47,8 @@ const {
 // 3.1 AI 핸들러 & 타이머 연결 ([Merge] Both)
 useAiHandler();
 const aiStore = useStudyRoomAiStore();
-const { focusSeconds } = useFocusTimer(isDistracted);
+const canRunFocusTimer = computed(() => isConnected.value && !isDistracted.value);
+const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 
 // 4. 상태 변수
 const chatMessage = ref('');
@@ -54,6 +56,84 @@ const localVideoRef = ref<HTMLVideoElement | null>(null);
 //[추가] 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
+
+// -------------------------------------------------------------
+// 🪟 Document PIP 관련 로직
+// -------------------------------------------------------------
+const isPipActive = ref(false);
+const pipDashboardRef = ref<HTMLElement | null>(null); 
+const pipSourceContainerRef = ref<HTMLElement | null>(null);
+let pipWindow: Window | null = null;
+
+// [PIP용 데이터] 팀원 정보 가공 (ID와 상태 점수를 넘김)
+// 실제 팀원 점수 데이터가 있다면 이곳에 매핑 (현재는 Mock 65점)
+const teammatesData = computed(() => {
+    return remoteTracks.value.map(rt => ({
+        id: rt.participantId,
+        score: 65 // 예시: 팀원은 보통(노랑) 상태로 가정
+    }));
+});
+
+const togglePip = async () => {
+    if (isPipActive.value && pipWindow) {
+        pipWindow.close();
+        return;
+    }
+
+    if (!('documentPictureInPicture' in window)) {
+        alert('이 기능은 Chrome/Edge 최신 버전에서만 지원됩니다.');
+        return;
+    }
+
+    try {
+        // 이미지 비율 고려하여 세로형 창 생성
+        // @ts-ignore
+        pipWindow = await window.documentPictureInPicture.requestWindow({
+            width: 200, 
+            height: 280,
+        });
+
+        if (!pipWindow) return;
+
+        // 스타일 복사
+        [...document.styleSheets].forEach((styleSheet) => {
+            try {
+                const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+                const style = document.createElement('style');
+                style.textContent = cssRules;
+                pipWindow!.document.head.appendChild(style);
+            } catch (e) {
+                if (styleSheet.href) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = styleSheet.href;
+                    pipWindow!.document.head.appendChild(link);
+                }
+            }
+        });
+
+        // DOM 이동
+        if (pipDashboardRef.value) {
+            pipWindow.document.body.append(pipDashboardRef.value);
+            // PIP 창 바디 스타일 (여백 제거)
+            pipWindow.document.body.style.margin = '0';
+        }
+
+        isPipActive.value = true;
+
+        // PIP 종료 시 원복
+        pipWindow.addEventListener('pagehide', () => {
+            if (pipDashboardRef.value && pipSourceContainerRef.value) {
+                pipSourceContainerRef.value.append(pipDashboardRef.value);
+            }
+            isPipActive.value = false;
+            pipWindow = null;
+        });
+
+    } catch (err) {
+        console.error('PIP Error:', err);
+    }
+};
 
 // =================================================================
 // 🧪 [테스트/아바타] 설정
@@ -76,7 +156,7 @@ const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
 const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
 const getAiAbsent = (status: string) => (status === 'AWAY' ? 1 : 0);
 
-// [NEW] 눈 깜빡임 & 입모양 상태 (기본값)
+// 눈 깜빡임 & 입모양 상태 (기본값)
 const isBlinking = ref(false); 
 const mouthState = ref<'closed' | 'slightly_open' | 'wide_open'>('closed');
 
@@ -159,6 +239,19 @@ onUnmounted(() => {
 
 <template>
     <div class="page-container">
+        <!-- pip 로직 추가 -->
+        <div ref="pipSourceContainerRef" style="display: none;">
+            <div ref="pipDashboardRef" class="pip-content-root">
+                <PipDashboard 
+                    :focusSeconds="focusSeconds"
+                    :myAvatarConfig="myAvatarConfig"
+                    :aiScore="aiStore.concentrationScore"
+                    :aiStatus="aiStore.focusStatus"
+                    :teammates="teammatesData"
+                />
+            </div>
+        </div>
+
         <div v-if="!isConnected" class="loading-overlay">
             <div class="loading-content">
                 <div v-if="error" class="error-msg">
@@ -196,11 +289,24 @@ onUnmounted(() => {
                     </div>
                     
                     <div class="combined-timer-widget">
-                        <div class="timer-label">Title</div>
-                        <div class="timer-content">
+                        <!-- Window Frame -->
+                        <div class="window-frame">
+                            <div class="window-framing">
+                                <div class="window-title">
+                                    <span>Title</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timer Display -->
+                        <div class="timer-display">
                             <StudyTimer />
-                            <div class="divider">/</div>
                             <FocusTimer :seconds="focusSeconds" />
+                        </div>
+                        <div class="pip-btn-area">
+                            <button @click="togglePip" class="btn-pip" :class="{ active: isPipActive }">
+                                {{ isPipActive ? 'PIP 종료' : '미니 모드 (PIP)' }}
+                            </button>
                         </div>
                     </div>
 
@@ -273,7 +379,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* ... (이전 스타일과 동일, user-info 부분만 확인) ... */
 
 /* 페이지 전체 컨테이너 */
 .page-container {
@@ -330,19 +435,80 @@ onUnmounted(() => {
 /* 타이머 */
 .combined-timer-widget { 
     position: absolute; 
-    top: 80px; /* 상단 정보 피해서 아래로 */
+    top: 100px; 
     right: 40px; 
-    background: white; 
-    padding: 15px; 
-    border-radius: 8px; 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
-    min-width: 200px; 
-    text-align: center; 
+    width: 323px;
+    height: 213.377px;
     z-index: 5; 
 }
-.timer-label { font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 10px; padding-bottom: 5px; text-align: left;}
-.timer-content { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.5rem; font-weight: bold; }
-.divider { color: #ccc; }
+
+.window-frame {
+    position: absolute;
+    width: 323px;
+    height: 200px;
+    right: -10px;
+    top: 80px;
+    background: #fff8e5;
+}
+
+.window-framing {
+    position: absolute;
+    background: #fff8e5;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #805143;
+    border-radius: 2px;
+    box-shadow: inset -1.029px -1.029px 0px 0px #000000,
+                inset 1.029px 1.029px 0px 0px #dbdbdb,
+                inset -2.057px -2.057px 0px 0px #808080,
+                inset 2.057px 2.057px 0px 0px #ffffff;
+}
+
+.window-title {
+    position: absolute;
+    height: 30.862px;
+    left: 3.09px;
+    right: 3.09px;
+    top: 3.09px;
+    background: #805143;
+    display: flex;
+    align-items: center;
+    padding-left: 4.11px;
+}
+
+.window-title span {
+    font-family: 'exqt', sans-serif;
+    font-size: 28.805px;
+    color: white;
+    font-weight: normal;
+    line-height: normal;
+}
+
+.timer-display {
+    position: absolute;
+    left: 45px;
+    top: 137px;
+}
+
+.pip-btn-area {
+    margin-top: 12px;
+    border-top: 1px solid #f1f2f6;
+    padding-top: 10px;
+}
+.btn-pip {
+    background: #4b6584;
+    color: white;
+    border: none;
+    padding: 8px 0;
+    width: 100%;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+.btn-pip:hover { background: #778ca3; }
+.btn-pip.active { background: #2ed573; }
 
 /* 아바타 스트립: 긴 바(Bar)*/
 .avatar-strip {
@@ -353,7 +519,7 @@ onUnmounted(() => {
     height: 50px; /* 바의 높이 */
     
     /* 긴 바의 배경색 */
-    background-color: #f3d2ac; 
+    background-color:#FFC497; 
     
     display: flex;
     flex-direction: row;
@@ -420,10 +586,9 @@ onUnmounted(() => {
 .chat-section { 
     flex: 1; 
     min-width: 300px; 
-    background-color: #ffeaa7;
+    background-color: #FFD966;
     display: flex; 
     flex-direction: column; 
-    border-left: 1px solid #ddd;
 }
 .chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
 .message-bubble { background: white; padding: 8px 12px; border-radius: 10px; max-width: 90%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
