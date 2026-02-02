@@ -1,8 +1,8 @@
 # core/config.py
 class Config:
     # --- Absence ---
-    ABSENT_WINDOW = 15          # Frame window size
-    ABSENT_TRUE_RATIO = 0.8     # Ratio of frames to confirm absence
+    ABSENT_WINDOW = 20          # Heavy smoothing for 180p noise
+    ABSENT_TRUE_RATIO = 0.8     
 
     # --- Drowsy ---
     EAR_DROWSY_TH = 0.18        # Threshold for Eye Aspect Ratio (Adjusted for user)
@@ -16,21 +16,24 @@ class Config:
     PHONE_CONFIRMED_TH = 0.30   # [NEW] Easier confirmation
     PHONE_USE_WINDOW = 15
     PHONE_USE_TRUE_RATIO = 0.7
-    
+
     # Head down threshold for phone usage (can be more sensitive than drowsy)
-    PITCH_PHONE_USE_TH = 0.40   # [NEW] Reverted to 0.40 (Optimized)   
+    PITCH_PHONE_USE_TH = 0.40   # [NEW] Reverted to 0.40 (Optimized)
 
     # --- Scoring ---
     # Penalty/Reward per second
-    REWARD_FOCUSED = 1.0        # [NEW] Reward for focusing
+    REWARD_FOCUSED = 2.0        # Recover score faster
     PENALTY_FOCUSED = 0.0
-    PENALTY_DROWSY = 3.0
-    PENALTY_PHONE = 2.0
-    PENALTY_ABSENT = 5.0
+    PENALTY_DROWSY = 4.0        # Stricter penalty
+    PENALTY_PHONE = 4.0         
+    PENALTY_ABSENT = 6.0        
     PENALTY_UNKNOWN = 0.5
 
     # --- Kafka ---
-    KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092'] # Localhost execution
+    
+    # [Local ?§Ìñâ ??
+    KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092']
+    # [Docker Î∞∞Ìè¨ ??- ?¥Í±∏Î°?Î≥ÄÍ≤??ÑÏöî!]
+    # KAFKA_BOOTSTRAP_SERVERS = ['kafka:29092']
     KAFKA_TOPIC = 'study-log-topic'
     LOG_COOLDOWN = 60.0  # Seconds
-

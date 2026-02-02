@@ -111,6 +111,16 @@ class FeatureExtractor:
             self.static_frames = 0
             self.prev_face_center = None
 
+        hand_near_face = False
+        if face_pixel_center and hand_centers:
+            fx, fy = face_pixel_center
+            # Thresh: 25% of image diagonal
+            thresh = (w**2 + h**2)**0.5 * 0.25
+            for hx, hy in hand_centers:
+                if ((fx-hx)**2 + (fy-hy)**2)**0.5 < thresh:
+                    hand_near_face = True
+                    break
+
         hand_interaction = False
         if phone_box and hand_centers:
             px, py = (phone_box[0] + phone_box[2]) // 2, (phone_box[1] + phone_box[3]) // 2
@@ -121,6 +131,8 @@ class FeatureExtractor:
 
         return {
             "face_detected": face_detected, "ear": ear, "pitch": pitch,
-            "phone_conf": phone_conf, "hand_interaction": hand_interaction,
+            "phone_conf": phone_conf, 
+            "hand_interaction": hand_interaction,
+            "hand_near_face": hand_near_face,
             "debug": {"face_center": face_pixel_center, "phone_box": phone_box, "hand_centers": hand_centers}
         }
