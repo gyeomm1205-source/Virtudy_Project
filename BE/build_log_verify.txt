@@ -1,0 +1,13 @@
+> Task :clean
+> Task :compileJava
+> Task :processResources
+> Task :classes
+> Task :resolveMainClassName
+> Task :bootJar
+> Task :jar SKIPPED
+> Task :assemble
+> Task :check
+> Task :build
+
+BUILD SUCCESSFUL in 6s
+5 actionable tasks: 5 executed
