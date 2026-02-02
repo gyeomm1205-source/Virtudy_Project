@@ -1,5 +1,6 @@
 # fusion/state_fuser.py
 from core.types import FrameSignals, FocusDecision, FocusState
+from core.config import Config
 
 class StateFuser:
     def __init__(self):
@@ -14,22 +15,15 @@ class StateFuser:
         confidence = 0.8
 
         # 1) PHONE (Highest Priority violation)
-        # [Fix] Only Mute Drowsiness if:
-        # - It is clearly a CELL PHONE (Class 67)
-        # - OR the behavior detector is already confident (PhoneDetector ON)
-        # We NO LONGER mute for stationary laptops/remotes (Phantom Phone)
-        is_truly_phone = sig.phone.is_cell_phone or sig.phone.phone_in_use
-        
-        if is_truly_phone:
+        # Only trigger PHONE on actual in-use (presence alone shouldn't lock state)
+        if sig.phone.phone_in_use:
             candidate = FocusState.PHONE
-            reason = f"Phone detected (Cell={sig.phone.is_cell_phone}, InUse={sig.phone.phone_in_use})"
-            confidence = sig.phone.phone_in_use_score if sig.phone.phone_in_use else 0.5
-            if sig.phone.phone_conf > 0.4 and sig.phone.is_cell_phone:
-                confidence = max(confidence, 0.8)
+            reason = f"Phone in use (Cell={sig.phone.is_cell_phone})"
+            confidence = sig.phone.phone_in_use_score
 
         # 2) DROWSY (Priority violation)
         # If it's just a laptop (Phantom) and eyes are closed, we prioritize DROWSY again.
-        elif not is_truly_phone and sig.drowsy.drowsy_score >= 0.6:
+        elif sig.drowsy.drowsy_score >= Config.DROWSY_TRIGGER_SCORE:
             candidate = FocusState.DROWSY
             reason = "Eyes closed (No true phone present)"
             confidence = sig.drowsy.drowsy_score

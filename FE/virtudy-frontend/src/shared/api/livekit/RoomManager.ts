@@ -12,14 +12,15 @@ import SockJS from 'sockjs-client';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
 // const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880'; // 환경변수 우선 사용
-const LIVEKIT_URL = 'wss://i14a703.p.ssafy.io'; // 환경변수 우선 사용
+const LIVEKIT_URL = 'ws://127.0.0.1:7880'; // 로컬 개발용
+// const LIVEKIT_URL = 'wss://i14a703.p.ssafy.io'; // 배포용
 
-// const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
-const SOCKET_URL = 'https://i14a703.p.ssafy.io/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 로컬 개발용
+// const SOCKET_URL = 'https://i14a703.p.ssafy.io/ws'; // 배포용
 
 // [추가] AI 서버 웹소켓 주소 (FastAPI 등 AI 서버의 웹소켓 엔드포인트)
-// const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
-const AI_SOCKET_URL = 'wss://i14a703.p.ssafy.io/ws/analysis';
+const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis'; // 로컬 개발용
+// const AI_SOCKET_URL = 'wss://i14a703.p.ssafy.io/ws/analysis'; // 배포용
 
 
 export class RoomManager {
@@ -139,8 +140,14 @@ export class RoomManager {
 
             // [수정] AI 봇(서버) 방식을 사용하므로 브라우저가 실제 카메라를 송출해야 함
             // 가상 카메라(Avatar)는 로컬 UI에서 처리하고, 송출은 실제 카메라로 해야 AI가 분석 가능
-            console.log('[LiveKit] 실제 카메라를 시작합니다.');
-            await this.room.localParticipant.setCameraEnabled(true);
+            console.log('[LiveKit] 실제 카메라를 고화질(720p)로 시작합니다.');
+            await this.room.localParticipant.setCameraEnabled(true, {
+                resolution: {
+                    width: 1280,
+                    height: 720,
+                    frameRate: 30,
+                }
+            });
 
             // Legacy(origin/fe) Logic:
             // await this.room.localParticipant.publishTrack(virtualTrack, { source: Track.Source.Camera });
