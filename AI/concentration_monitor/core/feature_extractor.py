@@ -16,8 +16,8 @@ class FeatureExtractor:
             max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5
         )
         try:
-            # Lower internal YOLO conf to catch occluded phones
-            self.yolo = YOLO("yolov8n.pt")
+            # Upgrade to 'Small' model for better generalization (still fast on GPU)
+            self.yolo = YOLO("yolov8s.pt")
             self.yolo_names = self.yolo.names
         except Exception as e:
             print(f"[WARN] YOLO Load Failed: {e}")
@@ -65,22 +65,22 @@ class FeatureExtractor:
                 sx, sy = sum([l.x for l in hand.landmark]) / 21, sum([l.y for l in hand.landmark]) / 21
                 hand_centers.append((int(sx*w), int(sy*h)))
 
-        phone_conf, phone_box = 0.0, None
+        phone_conf, phone_box, is_cell_phone = 0.0, None, False
+        detected_classes = []
         if self.yolo:
-            # [Fix] Expand classes to caught misclassified phones (63:laptop, 65:remote, 66:keyboard)
-            # and lower conf to 0.03 for extreme responsiveness
             results = self.yolo(frame, verbose=False, classes=[67, 63, 65, 66], conf=0.03)
             for r in results:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
                     conf = float(box.conf[0])
-                    # [DEBUG_INTERNAL] Print what YOLO sees locally
-                    # print(f"[DEBUG_INTERNAL] YOLO saw class {cls_id} with conf {conf:.3f}")
+                    cls_name = self.yolo_names.get(cls_id, 'unknown')
+                    detected_classes.append(cls_name)
                     
-                    if cls_id == 67: # Cell phone
+                    if cls_id in [67, 63, 65, 66]: # Cell phone, laptop, remote, keyboard
                         if conf > phone_conf:
                             phone_conf = conf
                             phone_box = list(map(int, box.xyxy[0]))
+                            is_cell_phone = (cls_id == 67)
         
         # [Fix] Smart Hybrid Liveness Filter (Round 7)
         # Combines Motion (Speed) + Blink (Safety Switch)
@@ -105,6 +105,7 @@ class FeatureExtractor:
                 else:
                     face_detected = False 
                     ear, pitch = None, None
+            self.prev_face_center = face_pixel_center if face_detected else None
         else:
             self.static_frames = 0
             self.prev_face_center = None
@@ -129,7 +130,8 @@ class FeatureExtractor:
         return {
             "face_detected": face_detected, "ear": ear, "pitch": pitch,
             "phone_conf": phone_conf, 
+            "is_cell_phone": is_cell_phone,
             "hand_interaction": hand_interaction,
             "hand_near_face": hand_near_face,
-            "debug": {"face_center": face_pixel_center, "phone_box": phone_box, "hand_centers": hand_centers}
+            "debug": {"face_center": face_pixel_center, "phone_box": phone_box, "hand_centers": hand_centers, "detected_classes": detected_classes}
         }

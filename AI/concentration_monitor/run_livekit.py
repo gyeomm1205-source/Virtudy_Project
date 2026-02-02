@@ -37,6 +37,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
 
     frame_count = 0
     last_sent_time = 0
+    last_ear = None  # [NEW] For tracking EAR changes
     SEND_INTERVAL = 0.1 # Send data every 100ms
 
     async for frame in video_stream:
@@ -80,6 +81,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
         sig_drowsy = drowsy_det.process(feats["face_detected"], feats["ear"], feats["pitch"])
         sig_phone = phone_det.process(
             feats["phone_conf"], 
+            feats["is_cell_phone"],
             feats["face_detected"], 
             feats["pitch"], 
             feats["hand_interaction"],
@@ -87,24 +89,51 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
         )
         
         # [DEBUG] Print raw values to debug detection failure
-        # [DEBUG] Print raw values to debug detection failure
-        if feats['face_detected']:
-             ear_val = feats['ear'] if feats['ear'] is not None else 0.0
-             pitch_val = feats['pitch'] if feats['pitch'] is not None else 0.0
-             phone_val = feats['phone_conf']
-             
-             # Calculate FPS/Latency
-             process_time = time.time() - start_time
-             fps = 1.0 / process_time if process_time > 0 else 0
-             
-             # Print THRESHOLD to confirm it updated
-             print(f"[DEBUG] EAR: {ear_val:.3f} (Th: {Config.EAR_DROWSY_TH}), Pitch: {pitch_val:.3f} (Th: {Config.PITCH_PHONE_USE_TH}), Phone: {phone_val:.3f}, FPS: {fps:.1f}", flush=True)
+        if feats["face_detected"]:
+            ear_val = feats["ear"] if feats["ear"] is not None else 0.0
+            pitch_val = feats["pitch"] if feats["pitch"] is not None else 0.0
+            phone_val = feats["phone_conf"]
+
+            # Calculate FPS/Latency
+            process_time = time.time() - start_time
+            fps = 1.0 / process_time if process_time > 0 else 0.0
+
+            # Print threshold to confirm it updated (use adaptive threshold)
+            current_th = sig_drowsy.current_threshold
+            eyes_closed_status = "CLOSED" if ear_val < current_th else "OPEN"
+
+            # Highlight EAR changes
+            if last_ear is None:
+                last_ear = ear_val
+            ear_change = abs(ear_val - last_ear)
+
+            # Print always if eyes just closed/opened (big change), otherwise print every 10 frames
+            if ear_change > 0.05 or frame_count % 10 == 0:
+                print(
+                    f"[DEBUG] {eyes_closed_status} | EAR: {ear_val:.3f} (dEAR {ear_change:+.3f}, Th: {current_th:.3f}), "
+                    f"Pitch: {pitch_val:.3f} (Th: {Config.PITCH_PHONE_USE_TH}), "
+                    f"Phone: {phone_val:.3f}, Hand-Int: {feats['hand_interaction']}, "
+                    f"Hand-Near: {feats['hand_near_face']}, FPS: {fps:.1f}",
+                    flush=True,
+                )
+
+            last_ear = ear_val
         else:
-             print(f"[DEBUG] NO FACE DETECTED", flush=True)
+            print("[DEBUG] NO FACE DETECTED", flush=True)
 
         signals = FrameSignals(drowsy=sig_drowsy, absent=sig_abs, phone=sig_phone)
         decision = fuser.decide(signals)
         snap = scorer.update(decision.state)
+        
+        # [DEBUG_STATE] High visibility log
+        if frame_count % 3 == 0:  # More frequent for debugging
+            log_msg = f"[STATE] {decision.state.name} | Conf: {decision.confidence:.2f} | Reason: {decision.reason}"
+            if sig_phone.phone_present and not sig_phone.is_cell_phone:
+                log_msg += f" (Note: Phantom {feats.get('debug', {}).get('detected_classes', 'object')} Ignored)"
+            print(log_msg, flush=True)
+
+        if frame_count % 10 == 0:
+             print(f"[DEBUG_RAW] EAR={sig_drowsy.ear:.3f} Th={sig_drowsy.current_threshold:.3f} | PhoneInUse={sig_phone.phone_in_use} Score={sig_drowsy.drowsy_score}", flush=True)
 
         # 3. Prepare & Send Data Payload (Simplified)
         current_time = time.time()
@@ -166,7 +195,7 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
     except Exception as e:
         print(f"[DEBUG] Failed to publish {category} (Room likely closed): {e}")
 
-    # 2. Send via Queue (to Frontend Socket)
+
     # 2. Send via Queue (to Frontend Socket)
     if queue:
         try:

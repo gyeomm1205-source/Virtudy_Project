@@ -5,7 +5,7 @@ class StateFuser:
     def __init__(self):
         self.last_state = FocusState.FOCUSED
         self.state_count = 0
-        self.STICKY_THRESHOLD = 15 # Frames to 'stick' to a violation state
+        self.STICKY_THRESHOLD = 10 # [Tuned] Reduced 15 -> 10 for faster recovery (~1s at 10fps)
 
     def decide(self, sig: FrameSignals) -> FocusDecision:
         # Determine raw candidate state
@@ -14,15 +14,24 @@ class StateFuser:
         confidence = 0.8
 
         # 1) PHONE (Highest Priority violation)
-        if sig.phone.phone_in_use:
+        # [Fix] Only Mute Drowsiness if:
+        # - It is clearly a CELL PHONE (Class 67)
+        # - OR the behavior detector is already confident (PhoneDetector ON)
+        # We NO LONGER mute for stationary laptops/remotes (Phantom Phone)
+        is_truly_phone = sig.phone.is_cell_phone or sig.phone.phone_in_use
+        
+        if is_truly_phone:
             candidate = FocusState.PHONE
-            reason = "Phone use detected"
-            confidence = sig.phone.phone_in_use_score
+            reason = f"Phone detected (Cell={sig.phone.is_cell_phone}, InUse={sig.phone.phone_in_use})"
+            confidence = sig.phone.phone_in_use_score if sig.phone.phone_in_use else 0.5
+            if sig.phone.phone_conf > 0.4 and sig.phone.is_cell_phone:
+                confidence = max(confidence, 0.8)
 
         # 2) DROWSY (Priority violation)
-        elif sig.drowsy.drowsy_score >= 0.9:
+        # If it's just a laptop (Phantom) and eyes are closed, we prioritize DROWSY again.
+        elif not is_truly_phone and sig.drowsy.drowsy_score >= 0.6:
             candidate = FocusState.DROWSY
-            reason = "Eyes closed"
+            reason = "Eyes closed (No true phone present)"
             confidence = sig.drowsy.drowsy_score
             
         # 3) ABSENT

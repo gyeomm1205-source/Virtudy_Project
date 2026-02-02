@@ -20,6 +20,7 @@ class PhoneDetector:
     def process(
         self,
         phone_conf: float,          
+        is_cell_phone: bool,
         face_detected: bool,
         head_pitch: Optional[float],
         hand_interaction: bool,
@@ -38,8 +39,9 @@ class PhoneDetector:
         
         # 2. Logic Conditions
         # (A) Fast Condition: Candidate + (Hand or Head Down)
-        # [Plus] Proxy: Hand Near Face + Looking Down (Even if phone not detected)
-        fast_condition = (phone_candidate and (hand_interaction or looking_down)) or (hand_near_face and looking_down)
+        # [Fix] Removed proxy logic (hand_near_face + looking_down) to prevent false positives
+        # Now requires actual phone detection
+        fast_condition = phone_candidate and (hand_interaction or looking_down)
         
         # (B) Phone Only Condition: Confirmed Phone
         phone_only_condition = phone_confirmed
@@ -60,9 +62,12 @@ class PhoneDetector:
                 self.fast_on_start = None
                 
             # (B) Phone Only ON (Fallback)
-            # [Fix] Even if phone is confirmed, we want some activity (head or hand)
-            # to avoid triggering on a phone just lying on the desk.
-            if self.state == "OFF" and phone_only_condition and (hand_interaction or hand_near_face or looking_down):
+            # [Tuned] High confidence (0.5+) triggers even without explicit hand/head behavior
+            # ONLY IF it's a true cell phone (Class 67). 
+            # Laptop/Remote detections still require behavioral proof to avoid static false positives.
+            very_sure_phone = (is_cell_phone and phone_conf > 0.50)
+            
+            if self.state == "OFF" and phone_only_condition and (hand_interaction or hand_near_face or looking_down or very_sure_phone):
                 if self.phone_only_on_start is None: self.phone_only_on_start = now
                 if now - self.phone_only_on_start >= self.phone_only_on_hold_sec:
                     self.state = "ON"
@@ -103,6 +108,7 @@ class PhoneDetector:
 
         return PhoneSignal(
             phone_present=phone_candidate,
+            is_cell_phone=is_cell_phone,
             phone_conf=phone_conf,
             phone_in_use_score=score,
             phone_in_use=phone_in_use
