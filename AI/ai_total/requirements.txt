@@ -37,10 +37,9 @@ polars==1.37.1
 
 # --- [미디어 처리 (MediaPipe & OpenCV)] ---
 # 중요: MediaPipe는 아직 Numpy 2.0을 지원하지 않으므로 2.0 미만으로 고정
-numpy<2.0.0
+numpy>=2.0.0,<2.3.0
 mediapipe==0.10.14
-opencv-python==4.13.0.90
-opencv-contrib-python==4.13.0.90
+opencv-python-headless==4.13.0.90
 pillow==12.1.0
 av==16.1.0
 
