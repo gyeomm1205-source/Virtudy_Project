@@ -5,12 +5,6 @@ import numpy as np
 import json
 import time
 import multiprocessing
-<<<<<<< HEAD
-=======
-import livekit
-
-import livekit
->>>>>>> origin/ai
 import livekit.api as api
 import livekit.rtc as rtc
 
@@ -18,10 +12,6 @@ import livekit.rtc as rtc
 
 
 # Reuse imports from core modules
-<<<<<<< HEAD
-=======
-# Reuse imports from core modules
->>>>>>> origin/ai
 from core.feature_extractor import FeatureExtractor
 from core.types import FrameSignals, FocusState
 from core.config import Config
@@ -32,20 +22,12 @@ from fusion.state_fuser import StateFuser
 from scoring.focus_scorer import FocusScorer
 
 
-<<<<<<< HEAD
 async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id: str, queue: multiprocessing.Queue = None, debug_visual: bool = False):
     print("[INFO] AI Processing Loop Started", flush=True)
     
     # Initialize Logic
     extractor = FeatureExtractor() 
     # extractor = FeatureExtractor() # Use original extractor (removed redundant comment)
-=======
-async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: multiprocessing.Queue = None):
-    print("[INFO] AI Processing Loop Started", flush=True)
-    
-    # Initialize Logic
-    extractor = FeatureExtractor() # Use original extractor
->>>>>>> origin/ai
     abs_det = AbsenceDetector()
     drowsy_det = DrowsinessDetector()
     phone_det = PhoneDetector()
@@ -86,13 +68,8 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         img = cv2.flip(img, 1)
         h, w, _ = img.shape
         
-<<<<<<< HEAD
         # [DEBUG] Check resolution for the first 50 frames (to see if it scales up)
         if frame_count <= 50:
-=======
-        # [DEBUG] Check resolution immediately
-        if frame_count <= 10:
->>>>>>> origin/ai
             print(f"[DEBUG] Frame Resolution: {w}x{h}", flush=True)
 
         # 1. Feature Extraction
@@ -101,7 +78,6 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         # 2. Detectors
         sig_abs = abs_det.process(feats["face_detected"])
         sig_drowsy = drowsy_det.process(feats["face_detected"], feats["ear"], feats["pitch"])
-<<<<<<< HEAD
         sig_phone = phone_det.process(
             feats["phone_conf"], 
             feats["face_detected"], 
@@ -109,9 +85,6 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
             feats["hand_interaction"],
             feats["hand_near_face"]
         )
-=======
-        sig_phone = phone_det.process(feats["phone_conf"], feats["face_detected"], feats["pitch"], feats["hand_interaction"])
->>>>>>> origin/ai
         
         # [DEBUG] Print raw values to debug detection failure
         # [DEBUG] Print raw values to debug detection failure
@@ -167,7 +140,6 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
 
             last_sent_time = current_time
 
-<<<<<<< HEAD
         # [NEW] Optional Debug Visualization
         if debug_visual:
             display_frame = img.copy()
@@ -193,13 +165,6 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
             await room.local_participant.publish_data(data, reliable=False)
     except Exception as e:
         print(f"[DEBUG] Failed to publish {category} (Room likely closed): {e}")
-=======
-async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None):
-    # 1. Send via LiveKit
-    payload = json.dumps({"category": category, "value": value})
-    data = payload.encode('utf-8')
-    await room.local_participant.publish_data(data, reliable=False)
->>>>>>> origin/ai
 
     # 2. Send via Queue (to Frontend Socket)
     # 2. Send via Queue (to Frontend Socket)
@@ -215,7 +180,6 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
         except Exception as e:
             print(f"[WARN] Queue put failed: {e}")
 
-<<<<<<< HEAD
 async def request_high_quality(publication: rtc.RemoteTrackPublication):
     """
     Manually request high quality and set dimensions for a remote track.
@@ -249,16 +213,11 @@ async def request_high_quality(publication: rtc.RemoteTrackPublication):
 
 async def run_bot(url: str, token: str, room_id: str = "DEBUG_SESSION", queue: multiprocessing.Queue = None, debug_visual: bool = False):
     print(f"[INFO] Connecting to room: {room_id}", flush=True)
-=======
-async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
-    print(f"[DEBUG] run_bot started! Connecting to: {url}", flush=True)
->>>>>>> origin/ai
     room = rtc.Room()
     
     @room.on("track_subscribed")
     def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
         if track.kind == rtc.TrackKind.KIND_VIDEO:
-<<<<<<< HEAD
             print(f"[INFO] Subscribed to video track from {participant.identity}", flush=True)
             # [Add] Request HIGH quality immediately
             asyncio.create_task(request_high_quality(publication))
@@ -271,17 +230,6 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
         # 'data' is now a DataPacket object
         # print(f"[DEBUG] Data received from {data.participant.identity}: {data.data.decode()}", flush=True)
         pass
-=======
-            print(f"[INFO] Subscribed to Video Track from {participant.identity}", flush=True)
-            # [Fix] Request High Quality Video for AI Analysis
-            # publication.set_video_quality(rtc.VideoQuality.HIGH) # Unsupported in v1.0.23
-            video_stream = rtc.VideoStream(track)
-            asyncio.create_task(ai_process_loop(room, video_stream, queue))
-
-    @room.on("track_published")
-    def on_track_published(publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
-        print(f"[DEBUG] Track Published: {publication.kind} from {participant.identity}", flush=True)
->>>>>>> origin/ai
 
     @room.on("participant_connected")
     def on_participant_connected(participant: rtc.RemoteParticipant):
@@ -289,13 +237,9 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
 
     print(f"[INFO] Connecting to LiveKit Room...", flush=True)
     try:
-<<<<<<< HEAD
         # [Fix] Use valid RoomOptions for SDK 1.0+
         options = rtc.RoomOptions(auto_subscribe=True)
         await room.connect(url, token, options=options)
-=======
-        await room.connect(url, token)
->>>>>>> origin/ai
         print(f"[INFO] Connected to {room.name}", flush=True)
 
         # [CRITICAL Fix] Check for EXISTING participants/tracks
@@ -309,17 +253,10 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                 # If already subscribed but logic didn't trigger (unlikely but safe)
                 if publication.subscribed and publication.track and publication.kind == rtc.TrackKind.KIND_VIDEO:
                      print(f"[INFO] Found existing subscribed video, starting loop for {identity}", flush=True)
-<<<<<<< HEAD
                      # [Add] Request HIGH quality for existing tracks
                      asyncio.create_task(request_high_quality(publication))
                      video_stream = rtc.VideoStream(publication.track)
                      asyncio.create_task(ai_process_loop(room, video_stream, room_id, queue, debug_visual))
-=======
-                     # [Fix] Request High Quality Video for AI Analysis
-                     publication.set_video_quality(rtc.VideoQuality.HIGH)
-                     video_stream = rtc.VideoStream(publication.track)
-                     asyncio.create_task(ai_process_loop(room, video_stream, queue))
->>>>>>> origin/ai
         
         # Keep alive & Monitor
         empty_room_start = None
@@ -331,13 +268,8 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
             if count == 0:
                 if empty_room_start is None:
                     empty_room_start = time.time()
-<<<<<<< HEAD
                 elif time.time() - empty_room_start > 60.0: # Keep alive for 60 seconds even if empty
                     print(f"[INFO] Room empty for 60 seconds. Disconnecting...", flush=True)
-=======
-                elif time.time() - empty_room_start > 1.0:
-                    print(f"[INFO] Room empty for 1 second. Disconnecting...", flush=True)
->>>>>>> origin/ai
                     break
             else:
                 empty_room_start = None
@@ -350,10 +282,7 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
     finally:
         await room.disconnect()
 
-<<<<<<< HEAD
 # Start bot if run as main script
-=======
->>>>>>> origin/ai
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", required=True, help="LiveKit URL")
