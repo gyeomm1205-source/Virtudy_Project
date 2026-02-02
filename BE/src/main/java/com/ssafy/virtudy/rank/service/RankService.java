@@ -133,11 +133,13 @@ public class RankService {
         Long rankIndex;
         AvatarResponse avatarDto = null;
         Double scoreVal;
+        String email = null;
         if (type.equals(ROOMTYPE_PRIVATE)) {
             nickName = member.getNickName();
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_PRIVATE_KEY, userId);
             scoreVal = redisTemplate.opsForZSet().score(RANK_PRIVATE_KEY, userId);
             avatarDto = AvatarResponse.from(member.getAvatar());
+            email = member.getEmail();
         } else {
             // 최애 팀 깎고 와야됨.
             StudyRoom studyRoom = member.getFavoriteRoom();
@@ -148,7 +150,7 @@ public class RankService {
 
             Member owner = memberRepository.findByMemberId(studyRoom.getOwner().getMemberId())
                     .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
-
+            nickName = studyRoom.getTitle();
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_TEAM_KEY, studyRoom.getRoomId());
             scoreVal = redisTemplate.opsForZSet().score(RANK_TEAM_KEY, studyRoom.getRoomId());
             avatarDto = AvatarResponse.from(owner.getAvatar());
@@ -159,6 +161,7 @@ public class RankService {
         }
         return RankDTO.Response.builder()
                 .nickName(nickName)
+                .email(email)
                 .rank(rankIndex.intValue() + 1)
                 .score(scoreVal.intValue())
                 .avatar(avatarDto)
