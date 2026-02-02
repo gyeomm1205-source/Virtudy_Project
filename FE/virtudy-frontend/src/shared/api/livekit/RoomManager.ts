@@ -11,7 +11,7 @@ const SOCKET_URL = 'https://i14a703.p.ssafy.io/ws'; // 백엔드 요구사항: 8
 
 // [추가] AI 서버 웹소켓 주소 (FastAPI 등 AI 서버의 웹소켓 엔드포인트)
 // const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
-const AI_SOCKET_URL = 'wss://i14a703.p.ssafy.io/ws/analysis';
+const AI_SOCKET_URL = 'wss://i14a703.p.ssafy.io/fastapi/ws/analysis';
 
 export class RoomManager {
     private static instance: RoomManager;
