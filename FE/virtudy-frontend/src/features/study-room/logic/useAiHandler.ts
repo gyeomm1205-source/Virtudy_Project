@@ -37,6 +37,12 @@ export function useAiHandler() {
             case 'SCORE':
                 if (typeof aiData.value === 'number') {
                     aiStore.setConcentrationScore(aiData.value);
+
+                    // [추가] 내 점수 변경 시 방송 (Broadcast)
+                    // 기존 AI_STATUS 토픽 사용 (status 대신 score 필드 포함)
+                    roomManager.sendLiveKitData('AI_STATUS', {
+                        score: aiData.value
+                    });
                 }
                 break;
 

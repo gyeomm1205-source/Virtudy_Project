@@ -14,6 +14,8 @@ export function useStudyRoom() {
     const focusEventType = ref<FocusEventType | null>(null);
     // [추가] 상대방 AI 상태 저장용 (key: participantId, value: status)
     const remoteParticipantStates = ref<Record<string, FocusEventType>>({});
+    // [추가] 상대방 집중도 점수 저장용 (key: participantId, value: score)
+    const remoteParticipantScores = ref<Record<string, number>>({});
 
     // null이 아니고 FOCUS가 아니면 '딴짓 중(true)'으로 판단
     const isDistracted = computed(() => focusEventType.value !== null && focusEventType.value !== 'FOCUS');
@@ -47,9 +49,17 @@ export function useStudyRoom() {
 
                 // [추가] 3. WebRTC Broadcast 데이터 처리 (상대방 AI 상태)
                 // senderId가 있고, topic이 AI_STATUS인 경우
-                if (senderId && payload && payload.topic === 'AI_STATUS' && payload.status) {
-                    console.log(`📡 [Remote-Status-Update] ${senderId}: ${payload.status}`);
-                    remoteParticipantStates.value[senderId] = payload.status as FocusEventType;
+                if (senderId && payload && payload.topic === 'AI_STATUS') {
+                    // 1. 상태(status) 업데이트
+                    if (payload.status) {
+                        console.log(`📡 [Remote-Status-Update] ${senderId}: ${payload.status}`);
+                        remoteParticipantStates.value[senderId] = payload.status as FocusEventType;
+                    }
+                    // 2. 점수(score) 업데이트
+                    if (typeof payload.score === 'number') {
+                        console.log(`📡 [Remote-Score-Update] ${senderId}: ${payload.score}`);
+                        remoteParticipantScores.value[senderId] = payload.score;
+                    }
                     return;
                 }
 
@@ -136,7 +146,8 @@ export function useStudyRoom() {
         error,
         messages,
         remoteTracks,
-        remoteParticipantStates, // [추가]
+        remoteParticipantStates,
+        remoteParticipantScores, // [추가]
         focusEventType,
         isDistracted,
         setDebugState, // [추가] 디버그용 함수 반환
