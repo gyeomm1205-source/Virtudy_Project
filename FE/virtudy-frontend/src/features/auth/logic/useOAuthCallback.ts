@@ -1,7 +1,7 @@
 
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '../../../stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { authAPI } from '../api/authAPI';
 
 /**
@@ -37,9 +37,13 @@ export const useOAuthCallback = () => {
       // 백엔드에 인가 코드 전송
       const response = await authAPI.kakaoCallback(code);
 
+      // 디버깅 코드 (나중에 지워야함)-------------------
+      console.log('DEBUG 1 : ', response)
+      // -----------------------------
+
       // 응답에서 토큰 및 신규/기존 유저 여부 추출
       const { needSignup: isNewUser, accessToken, ...signupInfo } = response.data;
-
+      
       if (isNewUser) {
         // 신규 유저 → 임시 가입 정보 저장 후 약관 페이지로
         authStore.setSignupInfo(signupInfo);
@@ -47,17 +51,30 @@ export const useOAuthCallback = () => {
         await router.push({ name: 'terms' });
       } else {
         // 기존 유저
-        const { nickName } = response.data;
+        const { nickName, userId } = response.data; // userId 추출
         if (!accessToken) {
           // isNewUser가 false인데 토큰이 없는 경우 -> 서버 오류
           throw new Error(
             '로그인에 실패했습니다. 서버에서 인증 토큰을 받지 못했습니다.',
           );
         }
+
+        // 디버깅 코드 (나중에 지워야함)-------------------
+      console.log('DEBUG 2 : ', response)
+      // -----------------------------
+
+      
         // 토큰 저장 후 유저 페이지로
         authStore.setToken(accessToken);
         if (nickName) {
-          authStore.setUserInfo({ nickName });
+          authStore.setUserInfo({
+            userId: userId || 'unknown', // userId 필수
+            nickName,
+            email: '',
+            avatarImageUrl: '',
+            jobType: '',
+            tier: ''
+          });
         }
         await router.push({ name: 'user' });
       }

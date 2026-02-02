@@ -7,10 +7,13 @@ import UserPage from '@/features/main/pages/UserPage.vue';
 import OAuthCallbackPage from '@/features/auth/pages/OAuthCallbackPage.vue'; // 콜백 처리를 위한 페이지
 import TermsOfServicePage from '@/features/onboarding/pages/TermsOfServicePage.vue';
 import OnboardingSurveyPage from '@/features/onboarding/pages/OnboardingSurveyView.vue';
-import StudyRoom from '@/components/StudyRoom.vue';
+import StudyRoomPage from '@/features/study-room/pages/StudyRoomPage.vue';
 import IntroductionPage from '@/features/introduction/pages/IntroductionPage.vue';
 import RankingPage from '@/features/ranking/pages/RankingPage.vue';
 import MyPage from '@/features/mypage/pages/MyPage.vue';
+import LobbyPage from '@/features/lobby/pages/LobbyPage.vue';
+import ReportPage from '@/features/report/pages/ReportPage.vue';
+import AvatarCreationPage from '@/features/avatar/pages/AvatarCreationPage.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -18,7 +21,14 @@ const router = createRouter({
     {
       path: '/study',
       name: 'study',
-      component: StudyRoom
+      component: StudyRoomPage,
+      meta: { hideGlobalNav: true }
+    },
+    {
+      path: '/study/:roomId',
+      name: 'StudyRoom',
+      component: StudyRoomPage,
+      meta: { hideGlobalNav: true }
     },
     {
       path: '/',
@@ -26,35 +36,42 @@ const router = createRouter({
       // 로그인 상태에 따라 GuestPage 또는 UserPage로 리다이렉트
       redirect: () => {
         const authStore = useAuthStore();
-        return authStore.isLoggedIn ? { name: 'user' } : { name: 'guest' };
+        // 로그인 상태면 UserPage('/user')로, 아니면 GuestPage('/guest')로 보냄
+        if (authStore.isLoggedIn) {
+          return { name: 'user' };
+        } else {
+          return { name: 'guest' };
+        }
       }
     },
     {
       path: '/guest',
       name: 'guest',
       component: GuestPage,
-      beforeEnter: () => {
+      beforeEnter: (to, from, next) => {
         const authStore = useAuthStore();
+        // 이미 로그인한 유저가 /guest로 오면 /user로 보냄
         if (authStore.isLoggedIn) {
-          // 이미 로그인했다면 UserPage로
-          return { name: 'user' };
+          return next({ name: 'user' });
         }
+        return next();
       }
     },
     {
       path: '/user',
       name: 'user',
       component: UserPage,
-      beforeEnter: () => {
+      beforeEnter: (to, from, next) => {
         const authStore = useAuthStore();
+        // 로그인 안 한 유저가 /user로 오면 /guest로 보냄
         if (!authStore.isLoggedIn) {
-          // 로그인을 안했다면 GuestPage로
-          return { name: 'guest' };
+          return next({ name: 'guest' });
         }
+        return next();
       }
     },
     {
-      path: '/login/callback/kakao',
+      path: '/auth/kakao/callback',
       name: 'kakao-callback',
       component: OAuthCallbackPage
     },
@@ -128,6 +145,31 @@ const router = createRouter({
           return { name: 'guest' };
         }
       }
+    },
+    // 아바타 생성 라우트
+    {
+      path: '/avatar/create',
+      name: 'avatar-create',
+      component: AvatarCreationPage,
+      // 로그인한 유저만 접근 가능하도록 설정
+      beforeEnter: (to, from, next) => {
+        const authStore = useAuthStore();
+        if (!authStore.isLoggedIn) {
+          alert('로그인이 필요한 서비스입니다.');
+          return next({ name: 'guest' });
+        }
+        return next();
+      }
+    },
+    {
+      path: '/lobby',
+      name: 'lobby',
+      component: LobbyPage
+    },
+    {
+      path: '/report',
+      name: 'report',
+      component: ReportPage
     }
   ]
 });
