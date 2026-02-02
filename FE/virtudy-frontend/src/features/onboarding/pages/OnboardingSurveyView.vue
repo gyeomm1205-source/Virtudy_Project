@@ -1,64 +1,138 @@
 <template>
-  <div>
-    <h1>학습 성향 조사</h1>
-    <form @submit.prevent="submitSurvey">
-      <div>
-        <label for="avg-study-time">일일 평균 공부 시간: </label>
-        <select id="avg-study-time" v-model="surveyData.avgStudyTime">
-          <option disabled value="">선택하세요</option>
-          <option v-for="option in studyTimeOptions" :key="option.value" :value="option.value">
-            {{ option.text }}
-          </option>
-        </select>
-      </div>
+  <div class="min-h-screen bg-[var(--color-cream2)]">
+    
+    <div class="text-center pt-[6rem] pb-[2rem]">
+      <h1 class="text-[var(--color-syrup)] text-[2.625rem] font-['Ram'] leading-[3rem] font-medium tracking-[-0.0525rem]">
+        학습 성향 조사
+      </h1>
+    </div>
 
-      <div>
-        <label for="goal-study-time">일 목표 공부 시간: </label>
-        <select id="goal-study-time" v-model="surveyData.goalStudyTime">
-          <option disabled value="">선택하세요</option>
-          <option v-for="option in studyTimeOptions" :key="option.value" :value="option.value">
-            {{ option.text }}
-          </option>
-        </select>
-      </div>
+    <div class="flex flex-col items-center pb-[4rem]">
+      <div class="max-w-[50rem] w-full px-[2rem]">
+        
+        <form @submit.prevent="submitSurvey" class="space-y-[2rem]">
+          
+          <!-- 일일 평균 공부 시간 -->
+          <div class="text-[var(--color-choco)] font-['PfStardust30S'] leading-normal">
+            <p class="text-[1.75rem] mb-[0.5rem] font-normal">일일 평균 공부 시간</p>
+            <select 
+              id="avg-study-time" 
+              v-model="surveyData.avgStudyTime"
+              class="w-full h-[3.25rem] px-[1rem] text-[1.125rem] text-[var(--color-syrup)] border border-[var(--color-choco)] rounded bg-white font-['PfStardust30S'] focus:outline-none focus:ring-2 focus:ring-[var(--color-choco)]"
+            >
+              <option disabled value="">선택하세요</option>
+              <option v-for="option in studyTimeOptions" :key="option.value" :value="option.value">
+                {{ option.text }}
+              </option>
+            </select>
+          </div>
 
-      <div>
-        <p>주 학습 시간대:</p>
-        <label v-for="slot in timeSlots" :key="slot.value">
-          <input type="radio" :value="slot.value" v-model="surveyData.preferredTimeSlots" name="preferredTimeSlotGroup" />
-          {{ slot.text }}
-        </label>
-      </div>
+          <!-- 일 목표 공부 시간 -->
+          <div class="text-[var(--color-choco)] font-['PfStardust30S'] leading-normal">
+            <p class="text-[1.75rem] mb-[0.5rem] font-normal">일 목표 공부 시간</p>
+            <select 
+              id="goal-study-time" 
+              v-model="surveyData.goalStudyTime"
+              class="w-full h-[3.25rem] px-[1rem] text-[1.125rem] text-[var(--color-syrup)] border border-[var(--color-choco)] rounded bg-white font-['PfStardust30S'] focus:outline-none focus:ring-2 focus:ring-[var(--color-choco)]"
+            >
+              <option disabled value="">선택하세요</option>
+              <option v-for="option in studyTimeOptions" :key="option.value" :value="option.value">
+                {{ option.text }}
+              </option>
+            </select>
+          </div>
 
-      <div>
-        <p>학습 스타일:</p>
-        <label>
-          <input type="radio" value="MARATHON" v-model="surveyData.studyStyle" />
-          마라톤형 (꾸준히 길게)
-        </label>
-        <label>
-          <input type="radio" value="SPRINTER" v-model="surveyData.studyStyle" />
-          스프린터형 (짧고 굵게)
-        </label>
-      </div>
+          <!-- 주 학습 시간대 -->
+          <div class="text-[var(--color-choco)] font-['PfStardust30S'] leading-normal">
+            <p class="text-[1.75rem] mb-[1rem] font-normal">주 학습 시간대</p>
+            <div class="space-y-[0.75rem]">
+              <label v-for="slot in timeSlots" :key="slot.value" class="flex items-center gap-[0.75rem] cursor-pointer select-none">
+                <div class="w-[2rem] flex items-center justify-center">
+                  <input 
+                    type="radio" 
+                    :value="slot.value" 
+                    v-model="surveyData.preferredTimeSlots" 
+                    name="preferredTimeSlotGroup"
+                    class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer"
+                  />
+                </div>
+                <span class="text-[var(--color-choco)] text-[1.125rem] font-['PfStardust30S'] font-normal">
+                  {{ slot.text }}
+                </span>
+              </label>
+            </div>
+          </div>
 
-      <div>
-        <label for="occupation">직업(신분): </label>
-        <select id="occupation" v-model="surveyData.occupation">
-          <option disabled value="">선택하세요</option>
-          <option v-for="option in jobOptions" :key="option.value" :value="option.value">
-            {{ option.text }}
-          </option>
-        </select>
-      </div>
+          <!-- 학습 스타일 -->
+          <div class="text-[var(--color-choco)] font-['PfStardust30S'] leading-normal">
+            <p class="text-[1.75rem] mb-[1rem] font-normal">학습 스타일</p>
+            <div class="space-y-[0.75rem]">
+              <label class="flex items-center gap-[0.75rem] cursor-pointer select-none">
+                <div class="w-[2rem] flex items-center justify-center">
+                  <input 
+                    type="radio" 
+                    value="MARATHON" 
+                    v-model="surveyData.studyStyle"
+                    class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer"
+                  />
+                </div>
+                <span class="text-[var(--color-choco)] text-[1.125rem] font-['PfStardust30S'] font-normal">
+                  마라톤형 (꾸준히 길게)
+                </span>
+              </label>
+              <label class="flex items-center gap-[0.75rem] cursor-pointer select-none">
+                <div class="w-[2rem] flex items-center justify-center">
+                  <input 
+                    type="radio" 
+                    value="SPRINTER" 
+                    v-model="surveyData.studyStyle"
+                    class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer"
+                  />
+                </div>
+                <span class="text-[var(--color-choco)] text-[1.125rem] font-['PfStardust30S'] font-normal">
+                  스프린터형 (짧고 굵게)
+                </span>
+              </label>
+            </div>
+          </div>
 
-      <button type="submit">제출하고 시작하기</button>
-    </form>
+          <!-- 직업(신분) -->
+          <div class="text-[var(--color-choco)] font-['PfStardust30S'] leading-normal">
+            <p class="text-[1.75rem] mb-[0.5rem] font-normal">직업(신분)</p>
+            <select 
+              id="occupation" 
+              v-model="surveyData.occupation"
+              class="w-full h-[3.25rem] px-[1rem] text-[1.125rem] text-[var(--color-syrup)] border border-[var(--color-choco)] rounded bg-white font-['PfStardust30S'] focus:outline-none focus:ring-2 focus:ring-[var(--color-choco)]"
+            >
+              <option disabled value="">선택하세요</option>
+              <option v-for="option in jobOptions" :key="option.value" :value="option.value">
+                {{ option.text }}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex justify-center pt-[2rem]">
+            <button 
+              type="submit"
+              :disabled="!canSubmit"
+              class="bg-[var(--color-butter)] border-2 border-[var(--color-choco)] px-[2rem] py-[1.25rem] rounded-[0.125rem] font-['Xcu'] text-[1.75rem] text-[var(--color-choco)] font-medium leading-none transition-all duration-200"
+              :class="{
+                'opacity-50 cursor-not-allowed': !canSubmit,
+                'hover:scale-105 active:scale-95 cursor-pointer': canSubmit
+              }"
+              style="box-shadow: 4px 4px 0px 0px var(--color-choco);"
+            >
+              제출하기
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/shared/api/axios.config.ts';
@@ -106,6 +180,14 @@ const surveyData = ref<SurveyData>({
   studyStyle: '', // 초기값 빈 문자열
   occupation: '',
 });
+
+const canSubmit = computed(() => (
+  !!surveyData.value.avgStudyTime &&
+  !!surveyData.value.goalStudyTime &&
+  !!surveyData.value.preferredTimeSlots &&
+  !!surveyData.value.studyStyle &&
+  !!surveyData.value.occupation
+));
 
 const submitSurvey = async () => {
   let signupInfo = authStore.signupInfo;
@@ -179,10 +261,5 @@ const submitSurvey = async () => {
 </script>
 
 <style scoped>
-div {
-  padding: 20px;
-}
-form div {
-  margin-bottom: 15px;
-}
+/* 기본 스타일은 Tailwind CSS 클래스로 처리 */
 </style>
