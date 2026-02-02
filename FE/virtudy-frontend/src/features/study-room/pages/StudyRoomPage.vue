@@ -12,6 +12,8 @@ import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
+import type { RoomData } from '@/features/lobby/types/lobby.types';
+import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
 // HEAD Imports
 import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
@@ -56,6 +58,10 @@ const localVideoRef = ref<HTMLVideoElement | null>(null);
 //[추가] 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
+const roomDetail = ref<RoomData | null>(null);
+const showEditModal = ref(false);
+const roomOwnerFlag = ref(false);
+const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.value);
 
 // -------------------------------------------------------------
 // 🪟 Document PIP 관련 로직
@@ -69,6 +75,7 @@ let pipWindow: Window | null = null;
 const isHoveringCopyButton = ref(false);
 const showCopyTooltip = ref(false);
 const tooltipMessage = ref('코드 복사');
+const isHoveringSettingsButton = ref(false);
 
 // [PIP용 데이터] 팀원 정보 가공 (ID와 상태 점수를 넘김)
 // 실제 팀원 점수 데이터가 있다면 이곳에 매핑 (현재는 Mock 65점)
@@ -176,6 +183,47 @@ const handleCopyMouseLeave = () => {
     }
 };
 
+const handleSettingsMouseEnter = () => {
+    isHoveringSettingsButton.value = true;
+};
+
+const handleSettingsMouseLeave = () => {
+    isHoveringSettingsButton.value = false;
+};
+
+const openEditRoomModal = () => {
+    if (!roomDetail.value) return;
+    showEditModal.value = true;
+};
+
+const handleEditSuccess = async () => {
+    try {
+        const { data } = await lobbyAPI.getRoomDetail(roomId);
+        roomDetail.value = data;
+        roomTitle.value = data.title || roomId;
+        roomDescription.value = data.description || '방 설명이 없습니다.';
+        if (!data.owner) {
+            roomOwnerFlag.value = await checkRoomOwner();
+        } else {
+            roomOwnerFlag.value = false;
+        }
+    } catch (err) {
+        console.error('방 정보 갱신 실패:', err);
+    }
+};
+
+const checkRoomOwner = async () => {
+    try {
+        if (!authStore.userId) return false;
+        const { data } = await lobbyAPI.getMyRooms(authStore.userId);
+        const matchedRoom = data.find((room) => room.roomId === roomId);
+        return !!matchedRoom?.owner;
+    } catch (err) {
+        console.warn('내 방 목록 조회 실패:', err);
+        return false;
+    }
+};
+
 // =================================================================
 // 🧪 [테스트/아바타] 설정
 // =================================================================
@@ -218,10 +266,16 @@ onMounted(() => {
         }
         try {
             const { data } = await lobbyAPI.getRoomDetail(roomId);
+            roomDetail.value = data;
             roomTitle.value = data.title || roomId;
             roomDescription.value = data.description || '방 설명이 없습니다.';
+            if (!data.owner) {
+                roomOwnerFlag.value = await checkRoomOwner();
+            }
         } catch (detailError) {
             console.warn('방 정보 조회 실패:', detailError);
+            roomDetail.value = null;
+            roomOwnerFlag.value = false;
             roomTitle.value = roomId;
             roomDescription.value = '';
         }
@@ -326,6 +380,17 @@ onUnmounted(() => {
 
                     <div class="room-controls-overlay">
                         <span class="member-count">👤 {{ remoteTracks.length + 1 }}/6</span>
+
+                        <button
+                            v-if="isRoomOwner"
+                            @click="openEditRoomModal"
+                            @mouseenter="handleSettingsMouseEnter"
+                            @mouseleave="handleSettingsMouseLeave"
+                            class="btn-settings"
+                            aria-label="방 설정"
+                        >
+                            설정
+                        </button>
                         
                         <!-- Pixel/Solid/Copy 버튼 -->
                         <div class="copy-button-container">
@@ -442,6 +507,13 @@ onUnmounted(() => {
             </div>
         </div>
     </div>
+
+    <CreateRoomModal
+        v-if="showEditModal"
+        :initialData="roomDetail"
+        @close="showEditModal = false"
+        @success="handleEditSuccess"
+    />
 </template>
 
 <style scoped>
@@ -498,6 +570,27 @@ onUnmounted(() => {
 }
 .btn-leave { background: #ff4757; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 .member-count { color: white; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+
+/* 설정 버튼 스타일 */
+.btn-settings {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    color: #FFF2CC;
+    font-family: 'PF Stardust S', sans-serif;
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 1;
+    transition: all 0.2s ease;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.btn-settings:hover {
+    color: #FFF2CC;
+    opacity: 0.8;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+}
 
 /* Pixel/Solid/Copy 버튼 스타일 */
 .copy-button-container {
