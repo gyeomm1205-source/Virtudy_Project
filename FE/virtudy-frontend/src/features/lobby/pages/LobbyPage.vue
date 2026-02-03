@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
@@ -228,6 +228,8 @@ const displayedRooms = computed(() => {
 
 
 // 초기 데이터 로드
+let roomsRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
 onMounted(() => {
   if (userId.value) {
     fetchAllRooms();
@@ -235,6 +237,17 @@ onMounted(() => {
     // 비로그인 상태 처리 (필요시)
     console.warn('로그인 정보가 없습니다. (게스트 모드)');
     fetchAllRooms(); // 공개방은 볼 수 있게 할 경우
+  }
+
+  roomsRefreshTimer = setInterval(() => {
+    fetchAllRooms();
+  }, 5000);
+});
+
+onUnmounted(() => {
+  if (roomsRefreshTimer) {
+    clearInterval(roomsRefreshTimer);
+    roomsRefreshTimer = null;
   }
 });
 </script>
