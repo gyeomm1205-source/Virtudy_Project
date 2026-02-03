@@ -15,8 +15,11 @@ import java.util.Optional;
 @Repository
 public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
     List<StudyRoom> findAllByStatus(RoomStatType status);
+
     Optional<StudyRoom> findByRoomIdAndStatus(String roomId, RoomStatType status);
+
     int countByOwnerIdAndStatus(Long ownerId, RoomStatType status);
+
     List<StudyRoom> findAllByOwnerIdAndStatus(Long ownerId, RoomStatType status);
 
     List<StudyRoom> findStudyRoomsByRoomIdIn(List<String> roomIds);
