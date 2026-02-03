@@ -48,8 +48,7 @@ public class StudySession extends BaseTimeEntity {
         this.startTime = LocalDateTime.now();
     }
 
-    public void close(int sessionRealStudyTime) { // sessionStudyTime 파라미터 받아서 this로 저장
+    public void close() {
         this.endTime = LocalDateTime.now();
-        this.sessionRealStudyTime = sessionRealStudyTime;
     }
 }

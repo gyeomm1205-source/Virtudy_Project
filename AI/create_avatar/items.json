@@ -1,0 +1,94 @@
+{
+    "hair_front": {
+        "bang": [
+            "hair_front_bangs_base.png",
+            "hair_front_bangs_line.png",
+            "hair_front_bangs_shadow.png"
+        ],
+        "center_part": [
+            "hair_front_center_part_base.png",
+            "hair_front_center_part_line.png",
+            "hair_front_center_part_shadow.png"
+        ],
+        "hair_front_none" : [
+            "hair_front_none_base.png",
+            "hair_front_none_line.png",
+            "hair_front_none_shadow.png"
+        ],
+        "hair_front_short" : [
+            "hair_front_short_line.png",
+            "hair_front_short_base.png",
+            "hair_front_short_shadow.png"
+        ],
+        "hair_front_side_part": [
+            "hair_front_side_part_base.png",
+            "hair_front_side_part_line.png",
+            "hair_front_side_part_shadow.png"
+        ]
+    },
+    "hair_back" : {
+        "hair_back_bob" : [
+            "hair_back_bob_base.png",
+            "hair_back_bob_line.png",
+            "hair_back_bob_shadow.png"
+        ],
+        "hair_back_long_curly": [
+            "hair_back_long_curly_base.png",
+            "hair_back_long_curly_line.png",
+            "hair_back_long_curly_shadow.png"
+        ],
+        "hair_back_long_straight" : [
+            "hair_back_long_straight_base.png",
+            "hair_back_long_straight_line.png",
+            "hair_back_long_straight_shadow.png"
+        ],
+        "hair_back_long_lowtail" : [
+            "hair_back_long_lowtail_line.png",
+            "hair_back_long_lowtail_shadow.png",
+            "hair_back_long_lowtail_base.png"
+        ],
+        "hair_back_short" : [
+            "hair_back_short_base.png",
+            "hair_back_short_line.png",
+            "hair_back_short_shadow.png"
+        ]
+    },
+    "eyes" : {
+        "eyes_cat" : [
+            "eyes_cat_base.png",
+            "eyes_cat_line.png"
+        ],
+        "eyes_droopy" : [
+            "eyes_droopy_base.png",
+            "eyes_droopy_line.png"
+        ],
+        "eyes_round" : [
+            "eyes_round_base.png",
+            "eyes_round_line.png"
+        ]
+    },
+    "accessory_glasses" : {
+        "accessory_glasses" : [
+            "accessory_glasses_default.png"
+        ]
+    },
+    "outfit" : {
+        "outfit_knit": [
+            "outfit_knit_line.png"
+        ],
+        "outfit_round_neck": [
+            "outfit_round_neck_line.png"
+        ],
+        "outfit_shirt" : [
+            "outfit_shirt_line.png"
+        ]
+    },
+    "face_shape" : {
+        "face_shape_default": [
+            "face_shape_default_base.png",
+            "face_shape_default_line.png",
+            "face_shape_default_shadow.png"
+        ]
+    }
+    
+}
