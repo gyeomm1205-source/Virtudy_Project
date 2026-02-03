@@ -21,7 +21,20 @@
       
       <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px]">
         <div class="absolute left-[54px] top-[83px] w-[146px] h-[146px] rounded-full overflow-hidden border-4 border-[var(--color-choco)]">
-          프로필 사진
+          <CharacterAvatar
+            v-if="hasAvatarConfig"
+            :config="authStore.userInfo!.avatar!"
+            class="w-full h-full"
+          />
+          <img
+            v-else-if="authStore.userInfo?.avatarImageUrl"
+            :src="authStore.userInfo.avatarImageUrl"
+            alt="프로필"
+            class="w-full h-full object-cover"
+          />
+          <div v-else class="w-full h-full flex items-center justify-center text-[var(--color-choco)] font-bold text-xl">
+            ME
+          </div>
         </div>
         
         <div class="absolute top-[260px] w-full flex flex-col gap-[10px]">
@@ -91,6 +104,7 @@ import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RoomList from '@/shared/ui/RoomList.vue';
 import CreateRoomModal from '../ui/CreateRoomModal.vue'; // 새로 만든 모달
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 
 import { maxMembers } from '@/shared/config/constants'; // 상수 import
 
@@ -99,6 +113,11 @@ const router = useRouter();
 // 1. Store & Hook 연결
 const authStore = useAuthStore();
 const { userId } = storeToRefs(authStore);
+
+const hasAvatarConfig = computed(() => {
+  if (!authStore.userInfo?.avatar) return false;
+  return Object.values(authStore.userInfo.avatar).some((value) => Boolean(value));
+});
 
 const { 
   publicRooms, 
@@ -253,6 +272,10 @@ const displayedRooms = computed(() => {
 let roomsRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
+  if (authStore.isLoggedIn && !authStore.userInfo) {
+    authStore.fetchUserInfo();
+  }
+
   if (userId.value) {
     fetchAllRooms();
   } else {
