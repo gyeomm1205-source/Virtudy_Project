@@ -35,6 +35,28 @@ app.add_middleware(
     allow_headers=["*"],         # 허용할 HTTP 헤더
 )
 
+# [DEBUG] Middleware to print headers
+class HeaderPrinterMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "websocket":
+            headers = dict(scope.get("headers", []))
+            print(f"\n[DEBUG] WebSocket Connection Attempt: {scope['path']}")
+            print("[DEBUG] Received Headers:")
+            for k, v in headers.items():
+                try:
+                    key = k.decode()
+                    value = v.decode()
+                    print(f"  {key}: {value}")
+                except:
+                    print(f"  {k}: {v}")
+            print("-" * 30)
+        await self.app(scope, receive, send)
+
+app.add_middleware(HeaderPrinterMiddleware)
+
 # 3. 라우터 등록
 # 이제 /makeAvatar 같은 API 주소를 사용할 수 있게 됩니다.
 app.include_router(avatar.router, prefix="/fastapi")
@@ -86,7 +108,7 @@ async def join_room(request: JoinRequest):
     
     return {"status": "started", "pid": p.pid, "message": f"Bot joining room {request.room_id}"}
 
-@app.websocket("/fastapi/ws/analysis/{room_id}/{member_id}")
+@app.websocket("/ws/analysis/{room_id}/{member_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str):
     """
     Handles WebSocket connections from the frontend.
