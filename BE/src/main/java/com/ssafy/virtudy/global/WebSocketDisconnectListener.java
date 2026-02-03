@@ -30,15 +30,10 @@ public class WebSocketDisconnectListener implements ApplicationListener<SessionD
             String memberId = (String) sessionAttributes.get("memberId");
             String roomId = (String) sessionAttributes.get("roomId");
 
-            String studyTimeStr = (String) sessionAttributes.get("study-time");
-
             if (memberId != null && roomId != null) {
                 log.info("User disconnected: memberId={}, roomId={}", memberId, roomId);
-
-                int sessionRealStudyTime = Integer.parseInt(studyTimeStr);
-                log.info("✅ 정상 종료 - 프론트 전달 시간: {}분", sessionRealStudyTime);
                 // DB에 퇴장 시간 기록
-                studySessionService.exitRoom(memberId, sessionRealStudyTime);
+                studySessionService.exitRoom(memberId);
 
                 // 다른 참여자들에게 퇴장 사실 알림
                 SignalMessage leaveMessage = new SignalMessage("leave", memberId, null, null);

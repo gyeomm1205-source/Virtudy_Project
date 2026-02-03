@@ -16,6 +16,9 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
     // 특정 방에서 아직 종료되지 않은(활성) 세션 목록 조회
     List<StudySession> findByRoomAndEndTimeIsNull(StudyRoom studyRoom);
 
+    // 특정 방에서 아직 종료되지 않은(활성) 세션 수 조회
+    int countByRoomAndEndTimeIsNull(StudyRoom studyRoom);
+
     // 특정 사용자의 활성 세션 조회
     Optional<StudySession> findByMemberAndEndTimeIsNull(Member member);
 
@@ -28,4 +31,6 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
     // 특정 기간 동안 종료된 세션 조회 (티어 스코어 갱신용)
     @Query("SELECT ss FROM StudySession ss WHERE ss.endTime BETWEEN :start AND :end")
     List<StudySession> findByEndTimeBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    List<StudySession> findAllByMemberAndStartTimeBetween(Member member, LocalDateTime start, LocalDateTime end);
 }

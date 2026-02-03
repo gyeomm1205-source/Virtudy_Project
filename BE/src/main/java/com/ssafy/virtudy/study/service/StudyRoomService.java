@@ -13,6 +13,7 @@ import com.ssafy.virtudy.study.dto.StudyRoomResponse;
 import com.ssafy.virtudy.study.dto.StudyRoomSaveRequest;
 import com.ssafy.virtudy.study.dto.StudyRoomUpdateRequest;
 import com.ssafy.virtudy.study.repository.StudyRoomRepository;
+import com.ssafy.virtudy.study.repository.StudySessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ public class StudyRoomService {
 
     private final StudyRoomRepository studyRoomRepository;
     private final RoomMemberRepository roomMemberRepository;
+    private final StudySessionRepository studySessionRepository;
 
     private final static int MAX_CREATE = 3;
     private final static int MAX_USER = 6;
@@ -65,7 +67,7 @@ public class StudyRoomService {
 
     public List<StudyRoomListResponse> findAllOpenRooms(Member member) {
         return studyRoomRepository.findAllByStatus(RoomStatType.OPEN).stream()
-                .map(room -> new AbstractMap.SimpleEntry<>(room, roomMemberRepository.countByRoom(room)))
+                .map(room -> new AbstractMap.SimpleEntry<>(room, studySessionRepository.countByRoomAndEndTimeIsNull(room)))
                 .sorted((e1, e2) -> {
                     StudyRoom r1 = e1.getKey();
                     int c1 = e1.getValue();
@@ -123,7 +125,7 @@ public class StudyRoomService {
                 })
                 .limit(MY_ROOM_LIST_SIZE)
                 .map(studyRoom -> {
-                    int currentUser = roomMemberRepository.countByRoom(studyRoom);
+                    int currentUser = studySessionRepository.countByRoomAndEndTimeIsNull(studyRoom);
                     boolean isOwner = studyRoom.getOwner().getId().equals(member.getId());
                     return new StudyRoomListResponse(studyRoom, currentUser, isOwner);
                 })
@@ -140,7 +142,7 @@ public class StudyRoomService {
     public StudyRoomResponse findRoomByCode(String roomId) {
         StudyRoom studyRoom = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));
-        int currentUser = roomMemberRepository.countByRoom(studyRoom);
+        int currentUser = studySessionRepository.countByRoomAndEndTimeIsNull(studyRoom);
         return new StudyRoomResponse(studyRoom, currentUser);
     }
 
