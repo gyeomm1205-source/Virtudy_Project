@@ -50,6 +50,16 @@
           @toggleFavorite="handleToggleFavorite" />
       </div>
 
+      <div
+        v-if="showFavoriteToast"
+        class="absolute left-1/2 top-[110px] -translate-x-1/2 z-40 border-2 bg-[var(--color-butter2)]/80 rounded-[20px] px-[18px] py-[10px]"
+        style="border-color: color-mix(in srgb, var(--color-choco) 80%, transparent); box-shadow: 4px 4px 0px 0px color-mix(in srgb, var(--color-choco) 80%, transparent);"
+      >
+        <span class="text-[var(--color-choco)] text-[18px] font-['PfStardust30S'] font-normal leading-none">
+          {{ favoriteToastMessage }}
+        </span>
+      </div>
+
     </main>
     
     <div class="flex-none">
@@ -106,8 +116,9 @@ const showModal = ref(false); // 모달 표시 여부
 const selectedRoom = ref<RoomData | null>(null);
 const currentFilter = ref<string>('all'); // 'all' | 'my'
 const searchQuery = ref<string>('');
-const currentPage = ref<number>(1);
-const ITEMS_PER_PAGE = 6;
+const showFavoriteToast = ref(false);
+const favoriteToastMessage = ref('');
+let favoriteToastTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Methods
 const goBack = () => router.back();
@@ -167,14 +178,12 @@ const handleRoomClick = async (room: any) => {
 // 탭 변경 (전체 <-> 내 스터디)
 const setFilter = (filter: string) => {
   currentFilter.value = filter;
-  currentPage.value = 1;
   searchQuery.value = '';
   fetchAllRooms(); // 탭 바꿀 때 데이터 갱신
 };
 
 const onSearchInput = (query: string) => {
   searchQuery.value = query;
-  currentPage.value = 1;
 };
 
 // Computed Properties (데이터 가공)
@@ -191,9 +200,10 @@ const filteredRooms = computed(() => {
 
   // 검색
   if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase();
+    const query = searchQuery.value.trim().toLowerCase();
     filtered = filtered.filter(room => 
-      room.title?.toLowerCase().includes(query)
+      room.title?.toLowerCase().includes(query) ||
+      String(room.roomId ?? '').toLowerCase().includes(query)
     );
   }
 
@@ -202,17 +212,29 @@ const filteredRooms = computed(() => {
 
 // ✅ [NEW] 하트 클릭 핸들러
 const handleToggleFavorite = async (roomId: string) => {
+  const targetRoom = myRooms.value.find(room => room.roomId === roomId);
   await toggleFavoriteRoom(roomId);
+  if (targetRoom?.title) {
+    const lastChar = targetRoom.title.trim().slice(-1);
+    const code = lastChar.charCodeAt(0);
+    const hasJong = code >= 0xac00 && code <= 0xd7a3 ? (code - 0xac00) % 28 !== 0 : false;
+    const particle = hasJong ? '을' : '를';
+    favoriteToastMessage.value = `${targetRoom.title}${particle} 최애방으로 선택했습니다!`;
+    showFavoriteToast.value = true;
+    if (favoriteToastTimer) {
+      clearTimeout(favoriteToastTimer);
+    }
+    favoriteToastTimer = setTimeout(() => {
+      showFavoriteToast.value = false;
+      favoriteToastTimer = null;
+    }, 2000);
+  }
 };
 
 // 페이지네이션 및 RoomList 컴포넌트 타입 매핑
 const displayedRooms = computed(() => {
-  const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
-  const end = start + ITEMS_PER_PAGE;
-  const slicedRooms = filteredRooms.value.slice(start, end);
-  
   // RoomList 컴포넌트가 요구하는 Room 타입으로 변환
-  return slicedRooms.map(room => ({
+  return filteredRooms.value.map(room => ({
     roomId: room.roomId,
     title: room.title,
     currentMembers: room.currentUser,
@@ -248,6 +270,10 @@ onUnmounted(() => {
   if (roomsRefreshTimer) {
     clearInterval(roomsRefreshTimer);
     roomsRefreshTimer = null;
+  }
+  if (favoriteToastTimer) {
+    clearTimeout(favoriteToastTimer);
+    favoriteToastTimer = null;
   }
 });
 </script>
