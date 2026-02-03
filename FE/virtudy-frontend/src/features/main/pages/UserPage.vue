@@ -127,7 +127,7 @@ const handleRandomMatch = async () => {
     const elapsed = Date.now() - startedAt;
     await delay(Math.max(0, 3000 - elapsed));
     if (controller.signal.aborted) return;
-    router.push(`/study/${data.userId}?token=${data.liveKitToken}`);
+    router.push(`/study/${data.roomId}?token=${data.liveKitToken}`);
   } catch (error) {
     if (controller.signal.aborted || isCanceledError(error)) {
       return;

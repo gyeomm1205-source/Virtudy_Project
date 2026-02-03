@@ -159,8 +159,8 @@ const handleRandomMatch = async () => {
   }
   try {
     const  data  = await lobbyAPI.enterRandomRoom(userId.value);
-    // 입장 성공 -> 스터디룸으로 이동 (userId를 사용)
-    router.push(`/study/${data.userId}?token=${data.liveKitToken}`);
+    // 입장 성공 -> 스터디룸으로 이동 (roomId를 사용)
+    router.push(`/study/${data.roomId}?token=${data.liveKitToken}`);
   } catch (e) {
     console.error(e);
     alert('입장 가능한 방이 없습니다.');
