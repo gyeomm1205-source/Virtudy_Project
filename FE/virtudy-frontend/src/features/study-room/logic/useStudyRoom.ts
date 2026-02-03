@@ -4,6 +4,11 @@ import { computed, ref, onUnmounted } from 'vue';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
 
 type FocusEventType = 'FOCUS' | 'SLEEP' | 'PHONE' | 'AWAY';
+type RoomInfoUpdate = {
+    roomId: string;
+    title?: string;
+    description?: string;
+};
 
 export function useStudyRoom() {
     const roomManager = RoomManager.getInstance();
@@ -16,6 +21,11 @@ export function useStudyRoom() {
     const remoteParticipantStates = ref<Record<string, FocusEventType>>({});
     // [추가] 상대방 집중도 점수 저장용 (key: participantId, value: score)
     const remoteParticipantScores = ref<Record<string, number>>({});
+    // [추가] 상대방 닉네임 저장용 (key: participantId, value: nickName)
+    const remoteParticipantNames = ref<Record<string, string>>({});
+    const localNickName = ref<string | null>(null);
+    // [추가] 방 정보 업데이트 이벤트
+    const roomInfoUpdate = ref<RoomInfoUpdate | null>(null);
 
     // null이 아니고 FOCUS가 아니면 '딴짓 중(true)'으로 판단
     const isDistracted = computed(() => focusEventType.value !== null && focusEventType.value !== 'FOCUS');
@@ -27,13 +37,16 @@ export function useStudyRoom() {
      * @param token LiveKit 접속 토큰 (필수)
      */
 
-    const joinRoom = async (roomId: string, userId: string, token?: string) => {
+    const joinRoom = async (roomId: string, userId: string, token?: string, nickName?: string) => {
         try {
             isConnected.value = false;
             error.value = null;
             messages.value = [];
             remoteTracks.value = [];
             remoteParticipantStates.value = {}; // 초기화
+            remoteParticipantScores.value = {};
+            remoteParticipantNames.value = {};
+            localNickName.value = nickName || userId;
 
             // 이전 리스너 제거 (중복 방지)
             // roomManager.removeAllListeners();
@@ -60,6 +73,21 @@ export function useStudyRoom() {
                         console.log(`📡 [Remote-Score-Update] ${senderId}: ${payload.score}`);
                         remoteParticipantScores.value[senderId] = payload.score;
                     }
+                    return;
+                }
+
+                // [추가] 상대방 닉네임 업데이트
+                if (senderId && payload && payload.topic === 'USER_INFO') {
+                    const nickName = payload.nickName || payload.data?.nickName;
+                    if (nickName) {
+                        remoteParticipantNames.value[senderId] = nickName;
+                    }
+                    return;
+                }
+
+                // [추가] 방 정보 업데이트 이벤트 처리
+                if (payload?.type === 'ROOM_UPDATED' && payload?.data) {
+                    roomInfoUpdate.value = payload.data as RoomInfoUpdate;
                     return;
                 }
 
@@ -102,6 +130,13 @@ export function useStudyRoom() {
                 );
             });
 
+            // 참가자 입장 리스너 등록 (닉네임 공유)
+            roomManager.onParticipantConnected((_participant) => {
+                if (localNickName.value) {
+                    roomManager.sendLiveKitData('USER_INFO', { nickName: localNickName.value });
+                }
+            });
+
             // 참가자 퇴장 리스너 등록 (아바타/상태 정리)
             roomManager.onParticipantDisconnected((participant) => {
                 console.log(`👋 참가자 퇴장 처리: ${participant.identity}`);
@@ -114,6 +149,9 @@ export function useStudyRoom() {
                 if (remoteParticipantScores.value[participant.identity] !== undefined) {
                     delete remoteParticipantScores.value[participant.identity];
                 }
+                if (remoteParticipantNames.value[participant.identity]) {
+                    delete remoteParticipantNames.value[participant.identity];
+                }
             });
 
             // RoomManager를 통해 입장
@@ -121,6 +159,10 @@ export function useStudyRoom() {
 
             isConnected.value = true;
             console.log('✅ useStudyRoom: 입장 완료 상태로 변경');
+
+            if (localNickName.value) {
+                roomManager.sendLiveKitData('USER_INFO', { nickName: localNickName.value });
+            }
 
         } catch (e: any) {
             console.error('방 입장 실패:', e);
@@ -137,6 +179,7 @@ export function useStudyRoom() {
         remoteTracks.value = [];
         remoteParticipantStates.value = {};
         remoteParticipantScores.value = {};
+        remoteParticipantNames.value = {};
     };
 
     // 채팅 전송
@@ -164,8 +207,10 @@ export function useStudyRoom() {
         remoteTracks,
         remoteParticipantStates,
         remoteParticipantScores, // [추가]
+        remoteParticipantNames,
         focusEventType,
         isDistracted,
         setDebugState, // [추가] 디버그용 함수 반환
+        roomInfoUpdate, // [추가]
     };
 }

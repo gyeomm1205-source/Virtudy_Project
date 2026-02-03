@@ -43,7 +43,9 @@ const {
     remoteTracks,
     remoteParticipantStates,
     remoteParticipantScores, // [추가]
+    remoteParticipantNames,
     isDistracted,
+    roomInfoUpdate,
 } = useStudyRoom();
 
 // 3.1 AI 핸들러 & 타이머 연결 ([Merge] Both)
@@ -210,6 +212,13 @@ const handleEditSuccess = async () => {
         } else {
             roomOwnerFlag.value = false;
         }
+
+        // [추가] 방 정보 변경을 다른 참가자에게 전파
+        RoomManager.getInstance().sendControlMessage('ROOM_UPDATED', {
+            roomId,
+            title: roomTitle.value,
+            description: roomDescription.value,
+        });
     } catch (err) {
         console.error('방 정보 갱신 실패:', err);
     }
@@ -279,9 +288,27 @@ onMounted(() => {
             roomDescription.value = '';
         }
         console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
-        await joinRoom(roomId, userId, token);
+        await joinRoom(roomId, userId, token, displayName.value);
     };
     init();
+});
+
+// [추가] 다른 참가자의 방 정보 업데이트 수신 처리
+watch(roomInfoUpdate, (update) => {
+    if (!update || update.roomId !== roomId) return;
+    if (typeof update.title === 'string') {
+        roomTitle.value = update.title || roomId;
+    }
+    if (typeof update.description === 'string') {
+        roomDescription.value = update.description || '방 설명이 없습니다.';
+    }
+    if (roomDetail.value) {
+        roomDetail.value = {
+            ...roomDetail.value,
+            title: roomTitle.value,
+            description: roomDescription.value,
+        };
+    }
 });
 
 watch(isConnected, (connected) => {
@@ -481,7 +508,7 @@ onUnmounted(() => {
                                 />
                             </div>
                             <div class="user-info">
-                                <span class="user-name">{{ rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
+                                <span class="user-name">{{ remoteParticipantNames[rt.participantId] || rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
                                 <span class="heart-icon" :style="{ color: getScoreColor(remoteParticipantScores[rt.participantId] || 50) }">♥</span>
                             </div>
                         </div>
