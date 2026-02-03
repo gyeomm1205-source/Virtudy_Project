@@ -23,14 +23,19 @@ export const useMyPage = () => {
     isLoading.value = true;
     try {
       const data = await getMyProfile();
-      userInfo.value = data;
+      const hasAvatarConfig = data.avatar && Object.values(data.avatar).some((value) => Boolean(value));
+      const mergedAvatar = hasAvatarConfig ? data.avatar : authStore.userInfo?.avatar;
+      userInfo.value = {
+        ...data,
+        avatar: mergedAvatar,
+      };
 
       // 스토어 정보도 최신화 (헤더 등 전역 반영을 위해)
       if (authStore.userInfo) {
         authStore.setUserInfo({
           ...authStore.userInfo,
           nickName: data.nickName,
-          avatar: data.avatar,
+          avatar: mergedAvatar,
           avatarImageUrl: data.avatarImageUrl ?? authStore.userInfo.avatarImageUrl,
         });
       }

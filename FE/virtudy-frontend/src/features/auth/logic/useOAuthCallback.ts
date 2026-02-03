@@ -66,7 +66,12 @@ export const useOAuthCallback = () => {
       
         // 토큰 저장 후 유저 페이지로
         authStore.setToken(accessToken);
-        if (nickName) {
+
+        // 로그인 직후 전체 프로필(아바타 포함) 다시 조회
+        await authStore.fetchUserInfo();
+
+        // fetchUserInfo 실패/미지원 대비 최소 정보 세팅
+        if (!authStore.userInfo && nickName) {
           authStore.setUserInfo({
             userId: userId || 'unknown', // userId 필수
             nickName,
@@ -76,6 +81,7 @@ export const useOAuthCallback = () => {
             tier: ''
           });
         }
+
         await router.push({ name: 'user' });
       }
     } catch (err) {

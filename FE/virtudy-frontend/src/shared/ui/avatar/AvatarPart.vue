@@ -41,6 +41,21 @@ const styleObject = computed(() => {
   left: 0;
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.svg-content {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+:deep(svg) {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 /* SVG 내부의 _base 레이어 색상 변경 로직
