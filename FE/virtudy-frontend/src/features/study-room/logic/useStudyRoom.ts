@@ -24,6 +24,7 @@ export function useStudyRoom() {
     // [추가] 상대방 닉네임 저장용 (key: participantId, value: nickName)
     const remoteParticipantNames = ref<Record<string, string>>({});
     const localNickName = ref<string | null>(null);
+    const localUserId = ref<string | null>(null);
     // [추가] 방 정보 업데이트 이벤트
     const roomInfoUpdate = ref<RoomInfoUpdate | null>(null);
 
@@ -47,6 +48,7 @@ export function useStudyRoom() {
             remoteParticipantScores.value = {};
             remoteParticipantNames.value = {};
             localNickName.value = nickName || userId;
+            localUserId.value = userId;
 
             // 이전 리스너 제거 (중복 방지)
             // roomManager.removeAllListeners();
@@ -85,6 +87,14 @@ export function useStudyRoom() {
                     return;
                 }
 
+                // [추가] 닉네임 요청 처리 (targetId가 나인 경우 응답)
+                if (payload && payload.topic === 'USER_INFO_REQUEST') {
+                    if (payload.targetId && payload.targetId === localUserId.value && localNickName.value) {
+                        roomManager.sendLiveKitData('USER_INFO', { nickName: localNickName.value });
+                    }
+                    return;
+                }
+
                 // [추가] 방 정보 업데이트 이벤트 처리
                 if (payload?.type === 'ROOM_UPDATED' && payload?.data) {
                     roomInfoUpdate.value = payload.data as RoomInfoUpdate;
@@ -118,6 +128,10 @@ export function useStudyRoom() {
                         participantId: participant.identity,
                         track: track,
                     });
+
+                    if (!remoteParticipantNames.value[participant.identity]) {
+                        roomManager.sendLiveKitData('USER_INFO_REQUEST', { targetId: participant.identity });
+                    }
                 }
             });
 
