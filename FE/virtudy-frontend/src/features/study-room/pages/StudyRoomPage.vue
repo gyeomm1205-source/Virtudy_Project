@@ -1092,7 +1092,7 @@ onUnmounted(() => {
 
 /* 텍스트 */
 .user-info {
-    width: 100%;
+    width: 90%;
     height: 40px; /* 이름표 높이 */
     /* 이름표 PNG 배경 */
     background: url('@/assets/room/nametag_bg.png') center/100% 100% no-repeat; 
