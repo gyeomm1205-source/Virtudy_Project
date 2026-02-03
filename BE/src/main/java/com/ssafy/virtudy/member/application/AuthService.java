@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-// TODO: 멤버 필드에 적합한 값이 들어갔는지 확인 필요
+// TODO: 모든 멤버 필드에 값이 대응되고 있는지 반드시 확인. 안 그러면 또 에러 뜸
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -40,8 +40,10 @@ public class AuthService {
      * @return
      */
     public MemberKakaoLoginResponse kakaoLogin(String code) {
-        // 1. 카카오 토큰 받기
+
+        // 1. 카카오 토큰 받기: 카카오 유저 정보 받아오는데 필요함
         String kakaoAccessToken = kakaoClient.getAccessToken(code);
+
         // 2. 카카오 유저 정보 받기
         KakaoUserInfo userInfo = kakaoClient.getUserInfo(kakaoAccessToken);
         String kakaoEmail = userInfo.getKakaoAccount().getEmail();
@@ -49,20 +51,22 @@ public class AuthService {
         // 3. 우리 DB에 있는지 확인
         Optional<Member> memberOpt = memberRepository.findByEmail(kakaoEmail);
 
-        if (memberOpt.isPresent()) {
+        if (memberOpt.isPresent()) { // 이미 존재하는 회원의 경우
 
             Member member = memberOpt.get();
 
-            // [추가] 탈퇴한 회원인지 체크!
+            // TODO 뭔가 여기 리팩토링 가능하게 생김 - 중복 코드가 좀 보이긴 하는데 묘안은 없음
+            // [CASE 1: 재가입 요청] 탈퇴한 회원인데 다시 카카오 로그인 시도 중
             if (member.getStatus() == MemberStatType.EXPIRED) {
-                // 방법 A: 아예 로그인 막기 (에러 발생)
-                throw new BaseException(BaseErrorCode.MEMBER_STATUS_NOT_VALID_ERROR);
-
-                // TODO 방법 B: "재가입 하시겠습니까?" 묻기 위해 needSignup=true로 보내기
-                // (기획에 따라 선택하세요. 지금은 A방식 추천)
+                return MemberKakaoLoginResponse.builder()
+                        .needSignup(true)
+                        .email(kakaoEmail)
+                        .tempNickname(userInfo.getKakaoAccount().getProfile().getNickname())
+                        .tempProfileImg(userInfo.getKakaoAccount().getProfile().getProfileImageUrl())
+                        .build();
             }
 
-            // [CASE 1] 이미 가입된 유저 -> 바로 로그인 성공 (JWT 발급)
+            // [CASE 2] 이미 가입된 유저 -> 바로 로그인 성공 (JWT 발급)
             String accessToken = jwtUtil.createAccessToken(MemberDto.from(member));
             String refreshToken = jwtUtil.createRefreshToken(MemberDto.from(member));
 
@@ -77,7 +81,7 @@ public class AuthService {
                     .refreshToken(refreshToken)
                     .build();
         } else {
-            // [CASE 2] 신규 유저 -> 가입 필요 응답 (정보만 줌)
+            // [CASE 3] 신규 유저 -> 가입 필요 응답 (정보만 줌)
             return MemberKakaoLoginResponse.builder()
                     .needSignup(true)
                     .email(kakaoEmail)
@@ -93,33 +97,56 @@ public class AuthService {
      * @return
      */
     public MemberKakaoLoginResponse signup(MemberSignUpRequest request) {
-        // 중복 검사 (이미 가입된 이메일인지)
-        if (memberRepository.existsByMemberId(request.getEmail())) {
-            throw new BaseException(BaseErrorCode.DUPLICATED_MEMBER);
+        Optional<Member> memberOpt = memberRepository.findByEmail(request.getEmail());
+
+        Member member; // 최종적으로 DB에 반영될 멤버 객체
+
+        if (memberOpt.isPresent()) { // 중복 검사 (이미 가입된 이메일인지)
+            Member existingMember = memberOpt.get();
+
+            if (existingMember.getStatus() == MemberStatType.ACTIVE) {
+                // 1. 중복 가입 시도
+                throw new BaseException(BaseErrorCode.DUPLICATED_MEMBER);
+            } else {
+                // 2. 재가입 시도: 유저가 다시 입력한 값으로 Member 다시 초기화
+                // MemberGameStat, MemberPreference 재정의 필요
+                member = processRejoin(existingMember, request);
+            }
+        } else {
+            // 3. 신규 회원 가입
+            member = processNewjoin(request);
         }
 
+        // 4. 토큰 발급 로직 - 2, 3번 모두 공통으로 해당됨
+        return generateTokenResponse(member);
+    }
+    private Member processNewjoin(MemberSignUpRequest request){
         Member newMember = Member.builder()
-                // [식별자 & 기본 정보]
                 .memberId(java.util.UUID.randomUUID().toString())
-                .email(request.getEmail())          // 실제 이메일 데이터
-                .nickName(request.getNickname())    // 사용자 입력 닉네임
+                .email(request.getEmail())          // 실제 이메일 데이터: 카카오 이메일
                 .password("")                       // 소셜 로그인은 비밀번호 없음 (빈 값)
 
-                // [사용자 선택 정보]
+                // [사용자 정보]
+                .nickName(request.getNickname())    // 사용자 입력 닉네임
                 .jobType(request.getJobType())      // 직업 (DTO Enum -> Entity Enum 바로 매핑)
+                .status(MemberStatType.ACTIVE)      // 가입 즉시 활성 상태
+                .avatarGenCount(0)                  // 아바타 생성 횟수 0회 초기화
+                .avatar(null)                       // 이미지 URL 빈 값 초기화
 
                 // [약관 동의 정보]
                 .isServiceAgreed(request.getIsServiceAgreed())
                 .isPersonalAgreed(request.getIsPersonaAgreed())
                 .isVideoAgreed(request.getIsVideoAgreed())
-
-                // [시스템 기본값 초기화] (NOT NULL 에러 방지)
-                .status(MemberStatType.ACTIVE)      // 가입 즉시 활성 상태
-                .avatarGenCount(0)                  // 아바타 생성 횟수 0회 초기화
-                .avatar(null)                // 이미지 URL 빈 값 초기화; TODO 아바타 이미지 생성 url 투입
                 .build();
+
         memberRepository.save(newMember);
 
+        createAndSavePreference(newMember, request);
+        createAndSaveGameStat(newMember);
+
+        return newMember;
+    }
+    private void createAndSavePreference(Member newMember, MemberSignUpRequest request){
         MemberPreference memberPreference = MemberPreference.builder()
                 .studyType(request.getStudyType())          // 1. 학습 성향
                 .targetHours(request.getTargetHours())      // 2. 1일 목표 공부 시간
@@ -127,12 +154,12 @@ public class AuthService {
                 .member(newMember)
                 .averageHours(request.getAverageHours())    // 4. 1일 평균 공부 시간
                 .prefId(String.valueOf(java.util.UUID.randomUUID()))
-                .jobType(request.getJobType())
+
                 .build();
 
         memberPreferenceRepository.save(memberPreference);
-
-        // TODO MemberGameStat 도 여기서 초기화해줘야 함
+    }
+    private void createAndSaveGameStat(Member newMember){
         MemberGameStat memberGameStat = MemberGameStat.builder()
                 .statId(String.valueOf(java.util.UUID.randomUUID()))
                 .member(newMember)
@@ -142,14 +169,40 @@ public class AuthService {
                 .build();
 
         memberGameStatRepository.save(memberGameStat);
+    }
+    private Member processRejoin(Member member, MemberSignUpRequest request){
+        // 1. Member 기본 정보 업데이트 및 상태 활성화 (rejoin 메서드 활용)
+        member.rejoin(
+                request.getNickname(),
+                request.getJobType(),
+                request.getIsServiceAgreed(),
+                request.getIsVideoAgreed(),
+                request.getIsPersonaAgreed()
+        );
 
+        // 2. 학습 성향 (Preference) 업데이트
+        memberPreferenceRepository.findByMember(member)
+                .ifPresent(pref -> pref.updatePreference(
+                                request.getStudyType(),
+                                request.getTargetHours(),
+                                request.getActiveTime(),
+                                request.getAverageHours())
+                );
 
+        // 3. 게임 스탯 (GameStat) 초기화
+        memberGameStatRepository.findByMember(member)
+                .ifPresent(MemberGameStat::resetStat);
+
+        return member;
+    }
+
+    private MemberKakaoLoginResponse generateTokenResponse(Member member){
         // 가입 완료 후 토큰 발급
-        String accessToken = jwtUtil.createAccessToken(MemberDto.from(newMember));
-        String refreshToken = jwtUtil.createRefreshToken(MemberDto.from(newMember));
+        String accessToken = jwtUtil.createAccessToken(MemberDto.from(member));
+        String refreshToken = jwtUtil.createRefreshToken(MemberDto.from(member));
 
         // [변경] Redis에 Refresh Token 저장
-        saveRefreshToken(newMember.getEmail(), refreshToken);
+        saveRefreshToken(member.getEmail(), refreshToken);
 
         return MemberKakaoLoginResponse.builder()
                 .needSignup(false)

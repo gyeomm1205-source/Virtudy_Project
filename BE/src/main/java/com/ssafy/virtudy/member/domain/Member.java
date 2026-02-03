@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.util.ArrayList;
@@ -77,10 +78,12 @@ public class Member extends BaseTimeEntity {
      */
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @Builder.Default // 빌더 패턴 사용 시 리스트 초기화 방지
+    @BatchSize(size = 100) // N+1 문제 완화를 위한 Batch Fetching
     private List<MemberPreference> preferences = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @Builder.Default
+    @BatchSize(size = 100) // N+1 문제 완화를 위한 Batch Fetching
     private List<MemberGameStat> gameStats = new ArrayList<>();
 
     public void setFavoriteRoom(StudyRoom studyRoom) {
@@ -100,4 +103,24 @@ public class Member extends BaseTimeEntity {
     public void updateStatus(MemberStatType status) {
         this.status = status;
     }
+
+    // 재가입 편의 메서드: setter 굳이 ? JPA dirty checking 으로도 충분히 가능할 듯 ㅇㅇ
+    public void rejoin(String nickName,
+                       JobType jobType,
+                       boolean isServiceAgreed,
+                       boolean isVideoAgreed,
+                       boolean isPersonalAgreed) {
+        this.nickName = nickName;
+        this.jobType = jobType;
+        this.isServiceAgreed = isServiceAgreed;
+        this.isVideoAgreed = isVideoAgreed;
+        this.isPersonalAgreed = isPersonalAgreed;
+        // 강제 초기화 부분
+        this.status = MemberStatType.ACTIVE; // 상태 부활!
+        this.avatarGenCount = 0; // 초기화 필요한 필드 리셋
+        this.avatar = null;
+        this.favoriteRoom = null;
+    }
+
+
 }
