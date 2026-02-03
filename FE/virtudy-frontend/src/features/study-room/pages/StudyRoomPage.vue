@@ -57,6 +57,7 @@ const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 // 4. 상태 변수
 const chatMessage = ref('');
 const localVideoRef = ref<HTMLVideoElement | null>(null);
+const chatListRef = ref<HTMLDivElement | null>(null);
 //[추가] 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
@@ -317,6 +318,24 @@ watch(isConnected, (connected) => {
     }
 });
 
+const scrollChatToBottom = () => {
+    nextTick(() => {
+        if (chatListRef.value) {
+            chatListRef.value.scrollTop = chatListRef.value.scrollHeight;
+        }
+    });
+};
+
+watch(() => messages.value.length, () => {
+    scrollChatToBottom();
+});
+
+watch(isChatOpen, (open) => {
+    if (open) {
+        scrollChatToBottom();
+    }
+});
+
 const attachLocalVideo = () => {
     const roomManager = RoomManager.getInstance();
     const room = roomManager.getRoom();
@@ -549,22 +568,22 @@ onUnmounted(() => {
                         <div class="h-px bg-[var(--color-choco)] opacity-80 shrink-0"></div>
 
                         <!-- 메시지 목록 -->
-                        <div class="flex-1 overflow-y-auto p-6 space-y-2.5">
+                        <div ref="chatListRef" class="chat-list flex-1 overflow-y-auto p-6 space-y-2.5">
                             <div v-for="(msg, idx) in messages" :key="idx" class="flex flex-col">
                                 <div v-if="msg.type === 'CHAT'">
                                     <!-- 내 메시지 -->
                                     <div v-if="msg.sender === userId" class="flex justify-end">
                                         <div class="flex flex-col items-end space-y-1.5">
                                             <div class="bg-[var(--color-butter2)] px-4 py-1 rounded-xl max-w-64">
-                                                <p class="text-[var(--color-choco)] text-[1.25rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
+                                                <p class="text-[var(--color-choco)] text-[1.3rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
                                             </div>
                                         </div>
                                     </div>
                                     <!-- 다른 사용자 메시지 -->
                                     <div v-else class="flex flex-col space-y-1.5">
-                                        <p class="text-[var(--color-cream2)] text-[0.9375rem] font-['PfStardust30S'] leading-normal tracking-[-0.0375rem]">{{ msg.sender }}</p>
-                                        <div class="bg-[var(--color-syrup)] px-4 py-1 rounded-xl max-w-64">
-                                            <p class="text-[var(--color-cream2)] text-[1.25rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
+                                        <p class="text-[var(--color-cream2)] text-[0.9375rem] font-['PfStardust30S'] leading-normal tracking-[-0.0375rem]">{{ remoteParticipantNames[msg.sender] || msg.sender }}</p>
+                                        <div class="bg-[var(--color-syrup)] px-4 py-1 rounded-xl max-w-64 w-fit">
+                                            <p class="text-[var(--color-cream2)] text-[1.3rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1017,6 +1036,16 @@ onUnmounted(() => {
 
 .btn-chat-open:hover {
     opacity: 0.85;
+}
+
+/* 채팅 스크롤바 숨김 */
+.chat-list {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.chat-list::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
 }
 
 
