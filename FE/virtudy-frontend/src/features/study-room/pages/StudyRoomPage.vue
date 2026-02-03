@@ -484,6 +484,7 @@ onUnmounted(() => {
                         />
                     </div>
                     
+                    <!-- 타이머 / PIP / 깨우기 버튼 영역 -->
                     <div class="timer-floating-widget">
                         <div class="hearts-container">
                             <img :src="heartIcon" class="heart-img" />
@@ -491,7 +492,6 @@ onUnmounted(() => {
                             <img :src="heartIcon" class="heart-img" />
                         </div>
 
-                        <!-- Window Frame -->
                         <div class="window-frame">
                             <div class="window-framing">
                                 <div class="window-title">
@@ -508,7 +508,7 @@ onUnmounted(() => {
                         
                         <div class="pip-btn-area">
                             <button @click="togglePip" class="btn-pip btn-pixel-action">
-                                {{ isPipActive ? 'PIP 종료' : '미니 모드 (PIP)' }}
+                                {{ isPipActive ? 'PIP종료' : 'PIP전환' }}
                             </button>
                             <button class="btn-pixel-action">깨우기!</button>
                         </div>
@@ -529,8 +529,8 @@ onUnmounted(() => {
                             </div>
                             
                             <div class="user-info">
-                                <span class="user-name">({{ displayName }})</span>
-                                <span class="heart-icon" :style="{ color: getScoreColor(aiStore.concentrationScore) }">♥</span>
+                                <span class="user-name">{{ displayName }}</span>
+                                <img :src="heartIcon" class="heart-img" />
                             </div>
                         </div>
 
@@ -929,27 +929,30 @@ onUnmounted(() => {
 /* 타이머 */
 .timer-floating-widget { 
     position: absolute; 
-    top: 100px; 
+    top: 20%; 
     right: 40px; 
     width: 323px;
-    height: 213.377px;
+    height: auto;
     z-index: 10; 
 }
 
 .hearts-container {
     display: flex;
+    justify-content: flex-end; /* 우측 정렬 */
     gap: 5px;
-    margin-bottom: 5px;
-    margin-right: 10px;
+    margin-bottom: -10px; /* 윈도우와 겹치지 않게 간격 조정 */
+    margin-right: 0px;
+    position: relative;
+    z-index: 11; /* 윈도우보다 위에 뜨도록 */
 }
-.heart-img { width: 24px; height: 24px; display: block; }
+.heart-img { width: 30px; height: 30px; display: block; margin-bottom: 3px;}
 
 .window-frame {
-    position: absolute;
+    position: relative;
     width: 323px;
     height: 200px;
     right: -10px;
-    top: 80px;
+    top: 10px;
     background: #fff8e5;
 }
 
@@ -983,37 +986,64 @@ onUnmounted(() => {
     font-size: 28.805px;
     color: white;
     font-weight: normal;
-    line-height: normal;
 }
 
+/* 타이머 디스플레이 중앙 정렬 */
 .timer-display {
     position: absolute;
-    left: 45px;
-    top: 137px;
+    width: 100%; /* 전체 너비 사용 */
+    top: 55%;
+    left: 47%;
+    transform: translate(-50%, -40%); /* 정중앙보다 약간 아래로 보정 */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 가로 중앙 정렬 */
+    justify-content: center;
+    text-align: center;
+    z-index: 5;
 }
 
 .pip-btn-area {
-    position: absolute;
-    top: 390px;
-    right: 40px;
+    position: relative;
+    top: 18px; /* 윈도우 프레임과의 간격 */
     width: 323px;
+    display: flex;
+    justify-content: center; /* 버튼 가운데 정렬 */
+    gap: 8px; /* 버튼 사이 간격 */
+    justify-content: flex-end; /* 우측 정렬 */
 }
-.btn-pip {
-    background: transparent;
-    color: var(--primary-butter, #FFD966);
-    border: none;
-    padding: 0;
-    width: 100%;
+
+/* 버튼 스타일 */
+.btn-pixel-action {
+    background: var(--color-butter2);
+    color: var(--color-choco); /* 텍스트 갈색 */
+    border: 2px solid var(--color-choco); /* 진한 갈색 테두리 */
+    border-radius: 50px; /* 둥근 알약 모양 */
+    padding: 10px;
     cursor: pointer;
-    font-family: exqt, sans-serif;
-    font-size: 1.75rem;
-    font-style: normal;
-    font-weight: 500;
+    font-family: 'PF Stardust S', sans-serif; /* 폰트 유지 */
+    font-size: 1.5rem;
     line-height: normal;
-    transition: opacity 0.2s;
+    
+    /* 픽셀 아트 느낌의 그림자 효과 */
+    box-shadow: 0px 4px 0px var(--color-choco); 
+    transform: translateY(0);
+    transition: all 0.1s;
+    
+    /* PIP 버튼 너비 리셋 */
+    width: 110px; 
+    max-width: 140px;
 }
-.btn-pip:hover { opacity: 0.8; }
-.btn-pip.active { opacity: 1; }
+
+/* 버튼 클릭/호버 효과 */
+.btn-pixel-action:active {
+    transform: translateY(4px); /* 눌리는 효과 */
+    box-shadow: 0px 0px 0px var(--color-choco);
+}
+
+.btn-pixel-action:hover {
+    filter: brightness(1.05);
+}
 
 /* 아바타 스트립: 긴 바(Bar)*/
 .avatar-strip {
@@ -1022,9 +1052,12 @@ onUnmounted(() => {
     left: 0;
     width: 100%;
     height: 50px; /* 바의 높이 */
-    
-    /* 긴 바의 배경색 */
     background-color:#FFC497; 
+
+    background-image: url('@/assets/room/footer_bar_bg.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
     
     display: flex;
     flex-direction: row;
@@ -1053,8 +1086,8 @@ onUnmounted(() => {
 .avatar-display {
     position: absolute;
     bottom: 100px; 
-    width: 140px;
-    height: 140px;
+    width: 180px;
+    height: 145px;
 }
 
 /* 텍스트 */
@@ -1062,23 +1095,23 @@ onUnmounted(() => {
     width: 100%;
     height: 40px; /* 이름표 높이 */
     /* 이름표 PNG 배경 */
-    background: url('@/assets/room/nametag_bg.png') center/contain no-repeat; 
-    background-color: #ffeaa7; /* 폴백 */
+    background: url('@/assets/room/nametag_bg.png') center/100% 100% no-repeat; 
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'PF Stardust S';
     color: #805143;
-    font-size: 0.9rem;
+    font-size: 1.7rem;
     z-index: 11;
     position: relative;
 }
 
 .user-name {
-    max-width: 100px;
+    max-width: 110px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    margin-bottom: 3px;
 }
 
 .heart-icon { 
