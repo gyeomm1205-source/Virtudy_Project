@@ -50,10 +50,10 @@ class Config:
     # Penalty/Reward per second
     REWARD_FOCUSED = 1.0        # [NEW] Reward for focusing
     PENALTY_FOCUSED = 0.0
-    PENALTY_DROWSY = 4.0        # Stricter penalty
-    PENALTY_PHONE = 4.0         
-    PENALTY_ABSENT = 6.0        
-    PENALTY_UNKNOWN = 0.5
+    PENALTY_DROWSY = 1.0        # Match reward rate (1 point/sec)
+    PENALTY_PHONE = 1.0         
+    PENALTY_ABSENT = 1.0        
+    PENALTY_UNKNOWN = 0.0
 
     # --- Kafka ---
     
