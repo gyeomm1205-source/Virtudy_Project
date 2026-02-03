@@ -102,6 +102,20 @@ export function useStudyRoom() {
                 );
             });
 
+            // 참가자 퇴장 리스너 등록 (아바타/상태 정리)
+            roomManager.onParticipantDisconnected((participant) => {
+                console.log(`👋 참가자 퇴장 처리: ${participant.identity}`);
+                remoteTracks.value = remoteTracks.value.filter(
+                    (p) => p.participantId !== participant.identity
+                );
+                if (remoteParticipantStates.value[participant.identity]) {
+                    delete remoteParticipantStates.value[participant.identity];
+                }
+                if (remoteParticipantScores.value[participant.identity] !== undefined) {
+                    delete remoteParticipantScores.value[participant.identity];
+                }
+            });
+
             // RoomManager를 통해 입장
             await roomManager.joinStudyRoom(roomId, userId, token);
 
@@ -121,6 +135,8 @@ export function useStudyRoom() {
         isConnected.value = false;
         messages.value = [];
         remoteTracks.value = [];
+        remoteParticipantStates.value = {};
+        remoteParticipantScores.value = {};
     };
 
     // 채팅 전송
