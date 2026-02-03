@@ -78,7 +78,7 @@ public class StudySessionService {
         token.setIdentity(member.getMemberId());
         token.addGrants(new RoomJoin(true), new RoomName(roomId));
 
-        return new SessionMemberInfoResponse(member, token.toJwt());
+        return new SessionMemberInfoResponse(member, token.toJwt(), roomId);
     }
 
     public SessionMemberInfoResponse enterRandomRoom(Member member) {
