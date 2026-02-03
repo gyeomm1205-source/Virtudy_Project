@@ -12,7 +12,7 @@ import livekit.rtc as rtc
 
 
 # Reuse imports from core modules
-from run import FeatureExtractor
+from core.feature_extractor import FeatureExtractor
 from core.types import FrameSignals, FocusState
 from core.config import Config
 from detectors.absence_detector import AbsenceDetector
@@ -37,7 +37,10 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
 
     frame_count = 0
     last_sent_time = 0
+    last_ear = None  # [NEW] For tracking EAR changes
     SEND_INTERVAL = 0.1 # Send data every 100ms
+    quality_ready = False
+    min_width, min_height = 1280, 720
 
     async for frame in video_stream:
         start_time = time.time()
@@ -67,44 +70,105 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
         # Flip for processing 
         img = cv2.flip(img, 1)
         h, w, _ = img.shape
+        proc_img = img
+        proc_scale_x = proc_scale_y = 1.0
+        if Config.PROCESSING_MAX_SIZE and max(w, h) > Config.PROCESSING_MAX_SIZE:
+            scale = Config.PROCESSING_MAX_SIZE / max(w, h)
+            new_w, new_h = int(w * scale), int(h * scale)
+            proc_img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            proc_scale_x = w / new_w
+            proc_scale_y = h / new_h
         
         # [DEBUG] Check resolution for the first 50 frames (to see if it scales up)
         if frame_count <= 50:
             print(f"[DEBUG] Frame Resolution: {w}x{h}", flush=True)
 
+        # Wait for high quality stream before running detection/calibration
+        if not quality_ready:
+            if w >= min_width and h >= min_height:
+                quality_ready = True
+                print(f"[INFO] High quality confirmed: {w}x{h}. Starting AI processing.", flush=True)
+            else:
+                if frame_count % 10 == 0:
+                    print(f"[INFO] Waiting for {min_width}x{min_height}... current {w}x{h}", flush=True)
+                continue
+
         # 1. Feature Extraction
-        feats = extractor.process(img)
+        feats = extractor.process(proc_img)
 
         # 2. Detectors
         sig_abs = abs_det.process(feats["face_detected"])
-        sig_drowsy = drowsy_det.process(feats["face_detected"], feats["ear"], feats["pitch"])
+        sig_drowsy = drowsy_det.process(
+            feats["face_detected"],
+            feats["ear"],
+            feats["pitch"],
+            feats.get("face_updated", True),
+        )
         sig_phone = phone_det.process(
             feats["phone_conf"], 
+            feats["is_cell_phone"],
             feats["face_detected"], 
             feats["pitch"], 
             feats["hand_interaction"],
-            feats["hand_near_face"]
+            feats["hand_near_face"],
+            feats.get("phone_near_face", False),
+            feats.get("phone_area_ratio", 0.0)
         )
         
         # [DEBUG] Print raw values to debug detection failure
-        # [DEBUG] Print raw values to debug detection failure
-        if feats['face_detected']:
-             ear_val = feats['ear'] if feats['ear'] is not None else 0.0
-             pitch_val = feats['pitch'] if feats['pitch'] is not None else 0.0
-             phone_val = feats['phone_conf']
-             
-             # Calculate FPS/Latency
-             process_time = time.time() - start_time
-             fps = 1.0 / process_time if process_time > 0 else 0
-             
-             # Print THRESHOLD to confirm it updated
-             print(f"[DEBUG] EAR: {ear_val:.3f} (Th: {Config.EAR_DROWSY_TH}), Pitch: {pitch_val:.3f} (Th: {Config.PITCH_PHONE_USE_TH}), Phone: {phone_val:.3f}, FPS: {fps:.1f}", flush=True)
+        if feats["face_detected"]:
+            ear_val = feats["ear"] if feats["ear"] is not None else 0.0
+            pitch_val = feats["pitch"] if feats["pitch"] is not None else 0.0
+            phone_val = feats["phone_conf"]
+
+            # Calculate FPS/Latency
+            process_time = time.time() - start_time
+            fps = 1.0 / process_time if process_time > 0 else 0.0
+
+            # Print threshold to confirm it updated (use adaptive threshold)
+            current_th = sig_drowsy.current_threshold
+            eyes_closed_status = "CLOSED" if ear_val < current_th else "OPEN"
+
+            # Highlight EAR changes
+            if last_ear is None:
+                last_ear = ear_val
+            ear_change = abs(ear_val - last_ear)
+
+            # Print always if eyes just closed/opened (big change), otherwise print every 10 frames
+            if ear_change > 0.05 or frame_count % 10 == 0:
+                print(
+                    f"[DEBUG] {eyes_closed_status} | EAR: {ear_val:.3f} (dEAR {ear_change:+.3f}, Th: {current_th:.3f}), "
+                    f"Pitch: {pitch_val:.3f} (Th: {Config.PITCH_PHONE_USE_TH}), "
+                    f"Phone: {phone_val:.3f}, Hand-Int: {feats['hand_interaction']}, "
+                    f"Hand-Near: {feats['hand_near_face']}, Phone-Near: {feats.get('phone_near_face', False)}, "
+                    f"Phone-Area: {feats.get('phone_area_ratio', 0.0):.3f}, "
+                    f"FPS: {fps:.1f}",
+                    flush=True,
+                )
+
+            last_ear = ear_val
         else:
-             print(f"[DEBUG] NO FACE DETECTED", flush=True)
+            print("[DEBUG] NO FACE DETECTED", flush=True)
 
         signals = FrameSignals(drowsy=sig_drowsy, absent=sig_abs, phone=sig_phone)
         decision = fuser.decide(signals)
         snap = scorer.update(decision.state)
+        
+        # [DEBUG_STATE] High visibility log
+        if frame_count % 3 == 0:  # More frequent for debugging
+            log_msg = f"[STATE] {decision.state.name} | Conf: {decision.confidence:.2f} | Reason: {decision.reason}"
+            if sig_phone.phone_present and not sig_phone.is_cell_phone:
+                log_msg += f" (Note: Phantom {feats.get('debug', {}).get('detected_classes', 'object')} Ignored)"
+            print(log_msg, flush=True)
+
+        if frame_count % 10 == 0:
+            ear_dbg = f"{sig_drowsy.ear:.3f}" if sig_drowsy.ear is not None else "None"
+            th_dbg = f"{sig_drowsy.current_threshold:.3f}" if sig_drowsy.current_threshold is not None else "None"
+            print(
+                f"[DEBUG_RAW] EAR={ear_dbg} Th={th_dbg} | PhoneInUse={sig_phone.phone_in_use} "
+                f"Score={sig_drowsy.drowsy_score}",
+                flush=True,
+            )
 
         # 3. Prepare & Send Data Payload (Simplified)
         current_time = time.time()
@@ -147,6 +211,42 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
             cv2.putText(display_frame, f"STATE: {last_valid_event}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             cv2.putText(display_frame, f"SCORE: {int(snap.score)}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 0), 2)
             
+            # Draw detection overlays
+            dbg = feats.get("debug", {})
+            phone_box = dbg.get("phone_box")
+            hand_centers = dbg.get("hand_centers", [])
+            face_center = dbg.get("face_center")
+            if phone_box:
+                x1, y1, x2, y2 = phone_box
+                x1, y1 = int(x1 * proc_scale_x), int(y1 * proc_scale_y)
+                x2, y2 = int(x2 * proc_scale_x), int(y2 * proc_scale_y)
+                cv2.rectangle(display_frame, (x1, y1), (x2, y2), (0, 165, 255), 2)
+                cv2.putText(display_frame, "phone", (x1, max(15, y1 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 2)
+            for hx, hy in hand_centers:
+                cx, cy = int(hx * proc_scale_x), int(hy * proc_scale_y)
+                cv2.circle(display_frame, (cx, cy), 6, (255, 0, 0), -1)
+            if face_center:
+                fx, fy = int(face_center[0] * proc_scale_x), int(face_center[1] * proc_scale_y)
+                cv2.circle(display_frame, (fx, fy), 6, (0, 255, 0), -1)
+
+            # Show key phone signals
+            phone_conf = feats.get("phone_conf", 0.0)
+            phone_near = feats.get("phone_near_face", False)
+            hand_int = feats.get("hand_interaction", False)
+            cv2.putText(
+                display_frame,
+                f"Phone: {phone_conf:.2f} Near:{phone_near} Hand:{hand_int}",
+                (10, 120),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (255, 255, 255),
+                2,
+            )
+            if proc_scale_x != 1.0 or proc_scale_y != 1.0:
+                proc_w = int(w / proc_scale_x)
+                proc_h = int(h / proc_scale_y)
+                cv2.putText(display_frame, f"PROC: {proc_w}x{proc_h}", (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
             # Show FPS
             process_time = time.time() - start_time
             fps = 1.0 / process_time if process_time > 0 else 0
@@ -166,7 +266,7 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
     except Exception as e:
         print(f"[DEBUG] Failed to publish {category} (Room likely closed): {e}")
 
-    # 2. Send via Queue (to Frontend Socket)
+
     # 2. Send via Queue (to Frontend Socket)
     if queue:
         try:
@@ -218,7 +318,9 @@ async def run_bot(url: str, token: str, room_id: str = "DEBUG_SESSION", queue: m
     @room.on("track_subscribed")
     def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
         if track.kind == rtc.TrackKind.KIND_VIDEO:
-            print(f"[INFO] Subscribed to Video Track from {participant.identity}", flush=True)
+            print(f"[INFO] Subscribed to video track from {participant.identity}", flush=True)
+            # [Add] Request HIGH quality immediately
+            asyncio.create_task(request_high_quality(publication))
             video_stream = rtc.VideoStream(track)
             asyncio.create_task(ai_process_loop(room, video_stream, room_id, queue, debug_visual))
 
@@ -251,6 +353,8 @@ async def run_bot(url: str, token: str, room_id: str = "DEBUG_SESSION", queue: m
                 # If already subscribed but logic didn't trigger (unlikely but safe)
                 if publication.subscribed and publication.track and publication.kind == rtc.TrackKind.KIND_VIDEO:
                      print(f"[INFO] Found existing subscribed video, starting loop for {identity}", flush=True)
+                     # [Add] Request HIGH quality for existing tracks
+                     asyncio.create_task(request_high_quality(publication))
                      video_stream = rtc.VideoStream(publication.track)
                      asyncio.create_task(ai_process_loop(room, video_stream, room_id, queue, debug_visual))
         
