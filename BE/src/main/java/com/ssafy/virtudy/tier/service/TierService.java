@@ -6,6 +6,7 @@ import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.domain.MemberGameStat;
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
 import com.ssafy.virtudy.member.repository.MemberRepository;
+import com.ssafy.virtudy.rank.service.RankService;
 import com.ssafy.virtudy.study.domain.StudySession;
 import com.ssafy.virtudy.study.dto.StudyAnalysisResult;
 import com.ssafy.virtudy.tier.dto.TierResponse;
@@ -35,6 +36,9 @@ public class TierService {
     private final StudyAnalysisService studyAnalysisService;
     private final RedisTemplate<String, String> redisTemplate;
     // private final com.ssafy.virtudy.study.service.RedisLogService redisLogService; // 제거
+
+   // RankService
+   private final RankService rankService;
 
     private static final String DIAMOND = "DIAMOND";
     private static final String PLATINUM = "PLATINUM";
@@ -151,6 +155,9 @@ public class TierService {
         } catch (Exception e) {
             log.error("Redis 티어 점수 업데이트 실패: memberId={}, score={}", member.getMemberId(), updatedScore, e);
         }
+
+        // 랭킹 점수 업데이트와 동시에 랭킹 업데이트
+        rankService.refreshUserScore(member.getMemberId(), updatedScore);
     }
 
 

@@ -57,7 +57,9 @@ public class SecurityConfig {
                                             "/api/auth/login",
                                             "/api/auth/signup",
                                             "/api/auth/reissue",
-                                            "/api/auth/kakao/callback"
+                                            "/api/auth/kakao/callback",
+                                            "/ws/**",
+                                            "/ws/info/**"
                 ).permitAll()
                 .anyRequest().authenticated())
                 .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
