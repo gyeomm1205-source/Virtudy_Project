@@ -86,7 +86,7 @@ async def join_room(request: JoinRequest):
     
     return {"status": "started", "pid": p.pid, "message": f"Bot joining room {request.room_id}"}
 
-@app.websocket("/ws/analysis/{room_id}/{member_id}")
+@app.websocket("/fastapi/ws/analysis/{room_id}/{member_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str):
     """
     Handles WebSocket connections from the frontend.
