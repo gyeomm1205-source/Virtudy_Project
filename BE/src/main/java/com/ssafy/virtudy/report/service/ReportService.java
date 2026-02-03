@@ -243,33 +243,54 @@ public class ReportService {
     /**
      * 3. 안정감 (Stability) 계산
      * 공식: 100 - (졸음 감지 횟수 * 5)
-     * 졸음 없이 얼마나 안정적으로 학습 상태를 유지했는지를 평가합니다.
+     * 졸음 상태 구간(Interval)의 개수를 셉니다.
+     * 예: FOCUS -> SLEEP -> SLEEP -> FOCUS 인 경우, SLEEP 구간은 1회입니다.
      */
     private int calculateStability(List<StudyLog> logs) {
-        long sleepCount = logs.stream()
-                .filter(log -> log.getEventType() == StudyEventType.SLEEP)
-                .count();
+        int sleepIntervals = 0;
+        StudyEventType lastType = null;
+
+        for (StudyLog log : logs) {
+            if (log.getEventType() == StudyEventType.SLEEP) {
+                // 이전 타입이 SLEEP이 아니었다면 새로운 졸음 구간 시작
+                if (lastType != StudyEventType.SLEEP) {
+                    sleepIntervals++;
+                }
+            }
+            lastType = log.getEventType();
+        }
         
-        // 졸음 1회당 5점 감점 (최소 0점)
-        int score = 100 - ((int) sleepCount * 5);
+        // 졸음 구간 1회당 5점 감점 (최소 0점)
+        int score = 100 - (sleepIntervals * 5);
         return Math.max(0, score);
     }
 
     /**
      * 4. 의지력 (Willpower) 계산
      * 공식: 100 - (딴짓 감지 횟수 * 5)
-     * 핸드폰 사용이나 자리 비움 같은 유혹(딴짓)을 얼마나 잘 억제했는지 평가합니다.
-     * (고도화 시: 딴짓 발생 후 다시 공부로 복귀하는 데 걸린 시간을 반영할 수 있습니다.)
+     * 딴짓(PHONE, AWAY) 상태 구간의 개수를 셉니다.
      */
     private int calculateWillPower(List<StudySession> sessions, List<StudyLog> logs) {
-        long distractionCount = logs.stream()
-                .filter(log -> log.getEventType() == StudyEventType.PHONE || log.getEventType() == StudyEventType.AWAY)
-                .count();
+        int distractionIntervals = 0;
+        boolean wasDistracted = false; 
+        for (StudyLog log : logs) {
+            boolean isDistraction = (log.getEventType() == StudyEventType.PHONE || log.getEventType() == StudyEventType.AWAY);
+            
+            if (isDistraction) {
+                // 이전 타입이 딴짓 타입이 아니면 카운트
+                if (!wasDistracted) {
+                    distractionIntervals++;
+                }
+                wasDistracted = true;
+            } else {
+                wasDistracted = false;
+            }
+        }
         
-        if (distractionCount == 0) return 100;
+        if (distractionIntervals == 0) return 100;
         
-        // 딴짓 1회당 5점 감점
-        int score = 100 - ((int) distractionCount * 5);
+        // 딴짓 구간 1회당 5점 감점
+        int score = 100 - (distractionIntervals * 5);
         return Math.max(0, score);
     }
 

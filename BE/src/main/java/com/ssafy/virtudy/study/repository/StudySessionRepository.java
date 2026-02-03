@@ -4,6 +4,7 @@ import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.study.domain.StudyRoom;
 import com.ssafy.virtudy.study.domain.StudySession;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,6 +32,10 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
     // 특정 기간 동안 종료된 세션 조회 (티어 스코어 갱신용)
     @Query("SELECT ss FROM StudySession ss WHERE ss.endTime BETWEEN :start AND :end")
     List<StudySession> findByEndTimeBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StudySession s SET s.sessionRealStudyTime = s.sessionRealStudyTime + :time WHERE s.member.memberId = :memberId AND s.endTime IS NULL")
+    void accumulateTime(@Param("memberId") String memberId, @Param("time") int time);
 
     List<StudySession> findAllByMemberAndStartTimeBetween(Member member, LocalDateTime start, LocalDateTime end);
 }

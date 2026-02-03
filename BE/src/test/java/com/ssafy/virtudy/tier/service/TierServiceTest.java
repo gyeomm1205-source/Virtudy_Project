@@ -36,6 +36,31 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.ssafy.virtudy.group.domain.RoomMember;
+import com.ssafy.virtudy.group.repository.RoomMemberRepository;
+import com.ssafy.virtudy.rank.service.RankService;
+import com.ssafy.virtudy.study.domain.StudyRoom;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class TierServiceTest {
 
@@ -54,6 +79,10 @@ class TierServiceTest {
     private RedisTemplate<String, String> redisTemplate;
     @Mock
     private ZSetOperations<String, String> zSetOperations;
+    @Mock
+    private RoomMemberRepository roomMemberRepository;
+    @Mock
+    private RankService rankService;
 
 
     /**
@@ -162,6 +191,44 @@ class TierServiceTest {
         assertThat(stat.getTierScore()).isEqualTo(700); // 100 + (60*10)
         verify(memberGameStatRepository).save(stat);
         verify(zSetOperations).add(eq("rank:private:season:1"), eq("test-id"), eq(700.0));
+        
+        // 팀 점수 업데이트 호출 검증 (RoomMember가 없으면 호출 X)
+        verify(roomMemberRepository).findAllByMemberAndRoomStatusOpen(any());
+    }
+
+    @Test
+    @DisplayName("티어 점수 갱신 시, 속한 팀 점수도 함께 갱신되어야 한다")
+    void scheduleTierUpdate_WithTeam() {
+        // given
+        Member member = createMember("test-id");
+        StudySession session = StudySession.builder().member(member).build();
+        MemberGameStat stat = createMemberGameStat(member, 100, 1000); // 기존 100점
+        
+        StudyRoom room = StudyRoom.builder().roomId("room-1").roomTierScore(500).build();
+        RoomMember roomMember = RoomMember.builder().room(room).member(member).build();
+
+        given(studySessionRepository.findByEndTimeBetween(any(), any()))
+                .willReturn(Collections.singletonList(session));
+        given(studyAnalysisService.analyzeSession(any())).willReturn(createAnalysisResult(10)); // +100점
+        given(memberGameStatRepository.findByMember(member)).willReturn(Optional.of(stat));
+        given(redisTemplate.opsForZSet()).willReturn(zSetOperations);
+        
+        // Mock: 멤버가 방에 속해 있음
+        given(roomMemberRepository.findAllByMemberAndRoomStatusOpen(any()))
+                .willReturn(List.of(roomMember));
+
+        // when
+        tierService.scheduleTierUpdate();
+
+        // then
+        // 1. 멤버 점수: 100 + 100 = 200
+        assertThat(stat.getTierScore()).isEqualTo(200);
+        
+        // 2. 팀 점수: 500 + 100(변동분) = 600
+        assertThat(room.getRoomTierScore()).isEqualTo(600);
+        
+        // 3. 랭킹 서비스 호출 확인
+        verify(rankService).refreshTeamScore(eq("room-1"), eq(600.0));
     }
 
     private void verifyTimeRange(List<LocalDateTime> capturedTimes) {

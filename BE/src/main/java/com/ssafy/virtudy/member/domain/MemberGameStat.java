@@ -24,6 +24,7 @@ public class MemberGameStat {
     @JoinColumn(name = "MEMBER_ID")
     private Member member; // FK
 
+    //--- TODO point, totalStudyTime 삭제 고려
     @Column(nullable = false)
     @Builder.Default
     private int point = 0;
@@ -31,6 +32,8 @@ public class MemberGameStat {
     @Column(nullable = false)
     @Builder.Default
     private int totalStudyTime = 0;
+    //-----
+
 
     @Column(nullable = false)
     @Builder.Default
