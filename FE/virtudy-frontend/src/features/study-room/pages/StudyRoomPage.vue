@@ -19,6 +19,9 @@ import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 import { getScoreColor } from '../logic/scoreUtils'; 
 import PipDashboard from '../ui/PipDashboard.vue';
+import heartIcon from '@/assets/room/heart_pixel.svg?url';
+
+console.log("하트 아이콘 값:", heartIcon);
 
 // 1. 라우터 및 스토어 설정
 const route = useRoute();
@@ -468,7 +471,26 @@ onUnmounted(() => {
                         <button @click="handleLeave" class="btn-leave">나가기</button>
                     </div>
                     
-                    <div class="combined-timer-widget">
+                    <div class="frame-wrapper">
+                        <img 
+                            src="@/assets/room/bg_photo_1.png" 
+                            alt="Background Photo" 
+                            class="scene-photo"
+                        />
+                        <img 
+                            src="@/assets/room/frame_border.png" 
+                            alt="Frame" 
+                            class="scene-frame"
+                        />
+                    </div>
+                    
+                    <div class="timer-floating-widget">
+                        <div class="hearts-container">
+                            <img :src="heartIcon" class="heart-img" />
+                            <img :src="heartIcon" class="heart-img" />
+                            <img :src="heartIcon" class="heart-img" />
+                        </div>
+
                         <!-- Window Frame -->
                         <div class="window-frame">
                             <div class="window-framing">
@@ -483,12 +505,13 @@ onUnmounted(() => {
                             <StudyTimer />
                             <FocusTimer :seconds="focusSeconds" />
                         </div>
-                    </div>
-
-                    <div class="pip-btn-area">
-                        <button @click="togglePip" class="btn-pip" :class="{ active: isPipActive }">
-                            {{ isPipActive ? 'PIP 종료' : 'PIP전환' }}
-                        </button>
+                        
+                        <div class="pip-btn-area">
+                            <button @click="togglePip" class="btn-pip btn-pixel-action">
+                                {{ isPipActive ? 'PIP 종료' : '미니 모드 (PIP)' }}
+                            </button>
+                            <button class="btn-pixel-action">깨우기!</button>
+                        </div>
                     </div>
 
                     <div class="avatar-strip">
@@ -506,7 +529,7 @@ onUnmounted(() => {
                             </div>
                             
                             <div class="user-info">
-                                <span class="user-name">나 ({{ displayName }})</span>
+                                <span class="user-name">({{ displayName }})</span>
                                 <span class="heart-icon" :style="{ color: getScoreColor(aiStore.concentrationScore) }">♥</span>
                             </div>
                         </div>
@@ -666,8 +689,15 @@ onUnmounted(() => {
 .content-wrapper { display: flex; flex: 1; height: 100vh; overflow: hidden; }
 
 /* 메인 윈도우 */
-.main-window-area { flex: 3; position: relative; background-color: #a29bfe; overflow: hidden; }
-/* [NEW] 좌측 상단 방 정보 오버레이 */
+.main-window-area { 
+    flex: 3; 
+    position: relative; 
+    background: url('@/assets/room/room_wood_bg.png') center/cover no-repeat;
+    background-color: #dcd0c0; /* 이미지 로드 전 폴백 색상 */
+    overflow: hidden; 
+}
+
+/* 좌측 상단 방 정보 오버레이 */
 .room-info-overlay {
     position: absolute;
     top: 20px;
@@ -760,7 +790,7 @@ onUnmounted(() => {
     transform: translate(4px, 4px);
     box-shadow: none;
 }
-/* 멤버 수 표시: 피그마 디자인 정확 구현 */
+/* 멤버 수 표시 */
 .member-count {
     color: var(--text-stroke-choco, #805143);
     /* p */
@@ -776,7 +806,7 @@ onUnmounted(() => {
     letter-spacing: 0;
 }
 
-/* 설정 버튼 스타일: 피그마 디자인 정확 구현 */
+/* 설정 버튼 스타일: */
 .btn-settings {
     background: transparent;
     border: none;
@@ -839,6 +869,41 @@ onUnmounted(() => {
     animation: tooltipFadeIn 0.2s ease-in-out;
 }
 
+/* 액자 + 사진 래퍼 */
+.frame-wrapper {
+    position: absolute;
+    top: 50%;
+    left: 40%;
+    transform: translate(-50%, -50%); /* 화면 정중앙 */
+    width: 700px;  /* 액자 PNG 크기에 맞춰 조정 필요 */
+    height: 450px; /* 액자 PNG 크기에 맞춰 조정 필요 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 사진 (뒤) - z-index 낮음 */
+.scene-photo {
+    position: absolute;
+    top: 20px;   /* 프레임 두께 고려하여 내부 배치 */
+    left: 20px;  /* 프레임 두께 고려하여 내부 배치 */
+    width: calc(100% - 40px);
+    height: calc(100% - 40px);
+    object-fit: cover;
+    z-index: 1;
+}
+
+/* 프레임 (앞) - z-index 높음 */
+.scene-frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none; /* 클릭 통과 */
+}
+
 .tooltip-arrow {
     position: absolute;
     bottom: 100%;
@@ -862,14 +927,22 @@ onUnmounted(() => {
     }
 }
 /* 타이머 */
-.combined-timer-widget { 
+.timer-floating-widget { 
     position: absolute; 
     top: 100px; 
     right: 40px; 
     width: 323px;
     height: 213.377px;
-    z-index: 5; 
+    z-index: 10; 
 }
+
+.hearts-container {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+    margin-right: 10px;
+}
+.heart-img { width: 24px; height: 24px; display: block; }
 
 .window-frame {
     position: absolute;
@@ -984,19 +1057,21 @@ onUnmounted(() => {
     height: 140px;
 }
 
-/* 텍스트*/
+/* 텍스트 */
 .user-info {
-    /* 바 내부 중앙 정렬 */
+    width: 100%;
+    height: 40px; /* 이름표 높이 */
+    /* 이름표 PNG 배경 */
+    background: url('@/assets/room/nametag_bg.png') center/contain no-repeat; 
+    background-color: #ffeaa7; /* 폴백 */
     display: flex;
     align-items: center;
-    gap: 6px;
-    
-    color: #fff; /* 글자색 */
-    font-weight: bold;
-    font-size: 1rem;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-    /* 배경(strip)보다는 위 */
-    z-index: 15; 
+    justify-content: center;
+    font-family: 'PF Stardust S';
+    color: #805143;
+    font-size: 0.9rem;
+    z-index: 11;
+    position: relative;
 }
 
 .user-name {
