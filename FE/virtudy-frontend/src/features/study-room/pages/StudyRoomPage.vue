@@ -20,6 +20,12 @@ import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 import { getScoreColor } from '../logic/scoreUtils'; 
 import PipDashboard from '../ui/PipDashboard.vue';
 import heartIcon from '@/assets/room/heart_pixel.svg?url';
+// 섬광탄 관련 Imports
+import { useFlashbang } from '../logic/useFlashbang';
+import FlashbangEffect from '../ui/FlashbangEffect.vue';
+import WakeUpModal from '../ui/WakeUpModal.vue';
+// 디버그 패널 임포트 (배포 시 제거 권장)
+import DebugControls from '../ui/DebugControls.vue';
 
 console.log("하트 아이콘 값:", heartIcon);
 
@@ -71,6 +77,20 @@ const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.va
 
 // 채팅창 열림/닫힘 상태
 const isChatOpen = ref(true);
+
+
+// 섬광탄 훅 초기화 
+const { 
+    isStunned, 
+    showSentFeedback, 
+    isModalOpen, 
+    drowsyParticipants, 
+    isWakeUpAvailable, 
+    openModal, 
+    closeModal, 
+    sendFlashbang,
+    triggerStunEffect, // 테스트용 공개 메서드 (배포 시에는 제거 권장)
+} = useFlashbang(remoteParticipantScores, remoteParticipantNames);
 
 // -------------------------------------------------------------
 // 🪟 Document PIP 관련 로직
@@ -386,6 +406,20 @@ onUnmounted(() => {
 
 <template>
     <div class="page-container">
+        <!-- 섬광탄 효과 컴포넌트 -->
+        <FlashbangEffect :visible="isStunned" />
+
+        <div v-if="showSentFeedback" class="feedback-toast">
+            ✨ 섬광탄 발사 완료!
+        </div>
+
+        <WakeUpModal 
+            :isOpen="isModalOpen"
+            :targets="drowsyParticipants"
+            @close="closeModal"
+            @send="sendFlashbang"
+        />
+
         <!-- pip 로직 추가 -->
         <div ref="pipSourceContainerRef" style="display: none;">
             <div ref="pipDashboardRef" class="pip-content-root">
@@ -395,6 +429,9 @@ onUnmounted(() => {
                     :aiScore="aiStore.concentrationScore"
                     :aiStatus="aiStore.focusStatus"
                     :teammates="teammatesData"
+                    :isWakeUpAvailable="isWakeUpAvailable"
+                    :onOpenWakeUpModal="openModal"
+                    :isStunned="isStunned"
                 />
             </div>
         </div>
@@ -427,6 +464,14 @@ onUnmounted(() => {
                             <div class="mini-bar">
                                 <div class="fill" :style="{ width: aiStore.concentrationScore + '%', background: aiStore.concentrationScore < 50 ? 'red' : 'green' }"></div>
                             </div>
+                        </div>
+                        <div>
+                            <DebugControls 
+                                :scores="remoteParticipantScores"
+                                :names="remoteParticipantNames"
+                                :isStunned="isStunned"
+                                :onTriggerStun="triggerStunEffect"
+                            />
                         </div>
                     </div>
 
@@ -510,7 +555,14 @@ onUnmounted(() => {
                             <button @click="togglePip" class="btn-pip btn-pixel-action">
                                 {{ isPipActive ? 'PIP종료' : 'PIP전환' }}
                             </button>
-                            <button class="btn-pixel-action">깨우기!</button>
+                            <button 
+                                class="btn-pixel-action btn-wakeup"
+                                :class="{ 'active': isWakeUpAvailable }"
+                                :disabled="!isWakeUpAvailable"
+                                @click="openModal"
+                            >
+                                깨우기!
+                            </button>
                         </div>
                     </div>
 
@@ -1044,6 +1096,44 @@ onUnmounted(() => {
 .btn-pixel-action:hover {
     filter: brightness(1.05);
 }
+
+/* 깨우기 버튼 스타일 */
+.btn-wakeup {
+    background: #e0e0e0; /* 비활성: 회색 */
+    color: #999;
+    border-color: #999;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none !important;
+}
+
+.btn-wakeup.active:active {
+    transform: translateY(4px);
+}
+
+/* 활성화 상태 (노란색) */
+.btn-wakeup.active {
+    background: #FFD966; 
+    color: #805143;
+    border-color: #805143;
+    cursor: pointer;
+    box-shadow: 0px 4px 0px #805143;
+    animation: bounce 1s infinite; /* 통통 튀는 애니메이션 */
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.feedback-toast {
+    position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: #FFF2CC;
+    padding: 15px 30px; border-radius: 30px;
+    font-family: 'PfStardust30S'; z-index: 3000;
+    animation: fadeOut 2s forwards;
+}
+@keyframes fadeOut { 0% {opacity: 1;} 80% {opacity: 1;} 100% {opacity: 0;} }
 
 /* 아바타 스트립: 긴 바(Bar)*/
 .avatar-strip {
