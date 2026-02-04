@@ -5,7 +5,7 @@
       <GlobalNavBar />
     </div>
     
-    <main class="flex-1 w-full relative min-h-[850px]">
+    <main class="flex-1 w-full relative min-h-[850px] lobby-main">
       
       <div class="absolute left-[76px] top-[119px] w-[54px] h-[54px] cursor-pointer hover:scale-110 transition-transform" @click="goBack">
         <svg viewBox="0 0 54 54" class="w-full h-full" fill="var(--color-choco)">
@@ -19,8 +19,8 @@
         </h1>
       </div>
       
-      <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px]">
-        <div class="absolute left-[94px] top-[119px] w-[200px] h-[243px]">
+      <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px] lobby-actions">
+        <div class="absolute left-[100px] top-[140px] w-[200px] h-[200px]">
           <CharacterAvatar
             v-if="hasAvatarConfig"
             :config="authStore.userInfo!.avatar!"
@@ -34,7 +34,7 @@
           />
         </div>
         
-        <div class="absolute top-[260px] w-full flex flex-col gap-[10px]">
+        <div class="absolute top-[260px] w-full flex flex-col gap-[10px] lobby-action-buttons">
           <button class="butter-btn bg-[var(--color-butter)] w-full" @click="handleRandomMatch">
             <span class="text-[var(--color-choco)] text-[28px] font-['Xcu'] font-medium leading-none">
               랜덤매칭
@@ -49,7 +49,7 @@
         </div>
       </div>
       
-      <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px]">
+      <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px] lobby-roomlist">
         <RoomList 
           :rooms="displayedRooms"
           :isMyRoomTab="currentFilter === 'myRooms'"  @roomClick="handleRoomClick"
@@ -83,6 +83,13 @@
     @success="fetchAllRooms" 
   />
 
+  <MatchingModal
+    v-if="isEntering"
+    title-text="입장 중..."
+    subtitle-text="잠시만 기다려주세요..."
+    @close="isEntering = false"
+  />
+
   </div>
 </template>
 
@@ -102,6 +109,7 @@ import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RoomList from '@/shared/ui/RoomList.vue';
 import CreateRoomModal from '../ui/CreateRoomModal.vue'; // 새로 만든 모달
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import MatchingModal from '@/shared/ui/MatchingModal.vue';
 
 import { maxMembers } from '@/shared/config/constants'; // 상수 import
 
@@ -135,6 +143,7 @@ const searchQuery = ref<string>('');
 const showFavoriteToast = ref(false);
 const favoriteToastMessage = ref('');
 let favoriteToastTimer: ReturnType<typeof setTimeout> | null = null;
+const isEntering = ref(false);
 
 // Methods
 const goBack = () => router.back();
@@ -185,8 +194,17 @@ const handleRandomMatch = async () => {
 
 // 방 클릭 (입장 로직)
 const handleRoomClick = async (room: any) => {
-  // RoomList에서 넘어오는 room 객체의 ID 사용
-  await joinRoom(room.roomId);
+  if (isEntering.value) return;
+  isEntering.value = true;
+  try {
+    // RoomList에서 넘어오는 room 객체의 ID 사용
+    const success = await joinRoom(room.roomId);
+    if (!success) {
+      isEntering.value = false;
+    }
+  } catch {
+    isEntering.value = false;
+  }
 };
 
 
@@ -297,3 +315,45 @@ onUnmounted(() => {
   }
 });
 </script>
+
+<style scoped>
+@media (max-width: 1280px) {
+  .lobby-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 140px;
+    gap: 28px;
+  }
+
+  .lobby-actions {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(92vw, 360px);
+    height: auto;
+    order: 2;
+  }
+
+  .lobby-roomlist {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(95vw, 720px);
+    height: auto;
+    order: 1;
+  }
+
+  .lobby-action-buttons {
+    position: static;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .lobby-action-buttons > button {
+    width: 100%;
+  }
+}
+</style>

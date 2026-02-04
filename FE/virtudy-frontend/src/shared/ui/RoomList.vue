@@ -5,10 +5,9 @@
         <button 
           @click="setFilter('all')"
           :class="[
-            'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[20px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
-            currentFilter === 'all' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
+            'filter-tab border-2 border-[var(--color-choco)] border-solid px-[32px] py-[20px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
+            currentFilter === 'all' ? 'bg-[var(--color-butter)] tab-active' : 'bg-[var(--color-cream)] tab-inactive'
           ]"
-          style="box-shadow: 4px 4px 0px 0px var(--color-choco);"
         >
           <span class="text-[var(--color-choco)] text-[24px] font-['PfStardust30S'] font-normal leading-none">
             전체
@@ -17,10 +16,9 @@
         <button 
           @click="setFilter('myRooms')"
           :class="[
-            'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[20px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
-            currentFilter === 'myRooms' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
+            'filter-tab border-2 border-[var(--color-choco)] border-solid px-[32px] py-[20px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
+            currentFilter === 'myRooms' ? 'bg-[var(--color-butter)] tab-active' : 'bg-[var(--color-cream)] tab-inactive'
           ]"
-          style="box-shadow: 4px 4px 0px 0px var(--color-choco);"
         >
           <span class="text-[var(--color-choco)] text-[24px] font-['PfStardust30S'] font-normal leading-none">
             내 방
@@ -31,16 +29,16 @@
       <button
         v-if="currentFilter === 'myRooms'"
         @click="toggleFavoriteSelect"
-        class="absolute right-3 top-[37px] border-2 border-[var(--color-choco)] border-solid px-[18px] py-[6px] rounded-[20px] bg-[var(--color-butter2)] shadow-[4px_4px_0px_0px_var(--color-choco)] hover:scale-105 transition-transform"
+        class="absolute right-3 top-[40px] h-[2.0625rem] border-2 border-[var(--color-choco)] border-solid px-[18px] py-[6px] rounded-[20px] bg-[var(--color-butter2)] shadow-[4px_4px_0px_0px_var(--color-choco)] hover:scale-105 transition-transform"
       >
-        <span class="text-[var(--color-choco)] text-[18px] font-['PfStardust30S'] font-normal leading-none">
+        <span class="text-[var(--color-choco)] text-[20px] font-['PfStardust30S'] font-normal leading-none inline-flex items-center translate-y-[-2px]">
           최애방 선택하기
         </span>
       </button>
       
       <div 
         v-if="currentFilter === 'all'"
-        class="absolute right-3 top-[35px] w-[219px] border-2 border-[var(--color-choco)] border-solid bg-[var(--color-cream2)] flex items-center h-[2.0625rem] p-[0.45831rem] gap-[0.625rem]" 
+        class="absolute right-3 top-[40px] w-[219px] border-2 border-[var(--color-choco)] border-solid bg-[var(--color-cream2)] flex items-center h-[2.0625rem] p-[0.45831rem] gap-[0.625rem]" 
         style="box-shadow: 3.667px 3.667px 0px 0px var(--color-choco);"
       >
         <div class="w-[21px] h-[21px] flex items-center justify-center">
@@ -56,7 +54,7 @@
           autocapitalize="off"
           autocomplete="off"
           autocorrect="off"
-          class="flex-1 min-w-0 truncate bg-transparent border-none outline-none text-[var(--color-syrup)] text-[18px] font-['PfStardust30S'] font-normal leading-normal tracking-[-0.7px]"
+          class="flex-1 min-w-0 truncate bg-transparent border-none outline-none text-[var(--color-choco)] text-[18px] font-['PfStardust30S'] font-normal leading-normal tracking-[-0.7px]"
           @input="onSearch"
           @paste="onSearch"
         />
@@ -206,11 +204,6 @@
         </button>
       </div>
       
-      <div class="absolute right-0 top-[0px]">
-        <span class="text-[var(--color-butter2)] text-[20px] font-['PfStardust30S'] font-normal leading-none tracking-[-0.8px]">
-          {{ String(pageStart).padStart(2, '0') }}-{{ String(pageEnd).padStart(2, '0') }}
-        </span>
-      </div>
     </div>
   </div>
 </template>
@@ -254,15 +247,11 @@ const selectingFavorite = ref(false);
 const searchQuery = ref<string>('');
 const currentPage = ref<number>(1);
 const ITEMS_PER_PAGE = 6;
-const MAX_PAGES = 20;
 
 // Computed
 const totalRooms = computed(() => filteredRooms.value.length);
-const totalPages = computed(() => MAX_PAGES);
 const hasRooms = computed(() => totalRooms.value > 0);
 const maxNavigablePage = computed(() => Math.max(1, Math.ceil(totalRooms.value / ITEMS_PER_PAGE)));
-const pageStart = computed(() => (currentPage.value - 1) * ITEMS_PER_PAGE + 1);
-const pageEnd = computed(() => Math.min(currentPage.value * ITEMS_PER_PAGE, MAX_PAGES * ITEMS_PER_PAGE));
 
 const filteredRooms = computed(() => {
   let filtered = [...props.rooms];
@@ -291,7 +280,7 @@ const displayedRooms = computed(() => {
 const visiblePages = computed(() => {
   const pages: number[] = [];
   const windowSize = 5;
-  const total = totalPages.value;
+  const total = maxNavigablePage.value;
   
   let start = currentPage.value - Math.floor(windowSize / 2);
   let end = start + windowSize - 1;
@@ -387,3 +376,19 @@ watch(() => props.rooms, () => {
   }
 });
 </script>
+
+<style scoped>
+.filter-tab {
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.tab-active {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 0px 0px var(--color-choco);
+}
+
+.tab-inactive {
+  transform: translateY(2px);
+  box-shadow: 2px 2px 0px 0px var(--color-choco);
+}
+</style>

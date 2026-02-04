@@ -10,7 +10,7 @@ import { Track } from 'livekit-client';
 import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
 import { useStudyStore } from '@/stores/studyStore';
 
-// UI 컴포넌트 임포트
+// UI ?????? ?????
 import StudyTimer from '@/shared/ui/StudyTimer.vue';
 import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
@@ -18,12 +18,13 @@ import StudyRoomChat from '../ui/StudyRoomChat.vue';
 import PipDashboard from '../ui/PipDashboard.vue';
 import FlashbangEffect from '../ui/FlashbangEffect.vue';
 import WakeUpModal from '../ui/WakeUpModal.vue';
+import MatchingModal from '@/shared/ui/MatchingModal.vue';
 import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
 
-// 디버그 패널 임포트 (배포 시 제거 권장)
+// ???????? ?????(??? ????? ???)
 import DebugControls from '../ui/DebugControls.vue';
 
-// API 임포트
+// API ?????
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 import type { AvatarConfig } from '@/shared/types/common.types';
 import type { RoomData } from '@/features/lobby/types/lobby.types';
@@ -37,10 +38,10 @@ import bgPhoto1 from '@/assets/room/bg_photo_1.png';
 import bgPhoto2 from '@/assets/room/bg_photo_2.png';
 import bgPhoto3 from '@/assets/room/bg_photo_3.png';
 
-// =================================================================
-
+// ==========================================================
 // 라우터 및 스토어 설정
 const route = useRoute();
+const entryFrom = computed(() => route.query.from);
 const router = useRouter();
 const authStore = useAuthStore();
 const studyStore = useStudyStore();
@@ -119,6 +120,24 @@ const roomDetail = ref<RoomData | null>(null);
 const showEditModal = ref(false);
 const roomOwnerFlag = ref(false);
 const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.value);
+
+// 채팅창 열림/닫힘 상태
+const isChatOpen = ref(true);
+const isRoomReady = ref(false);
+
+watch(isConnected, async (val) => {
+    if (val) {
+        await nextTick();
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                isRoomReady.value = true;
+            }, 50);
+        });
+    } else {
+        isRoomReady.value = false;
+    }
+}, { immediate: true });
+
 
 // 섬광탄 훅 초기화 
 const { 
@@ -320,10 +339,8 @@ const checkRoomOwner = async () => {
     }
 };
 
-// =================================================================
-// 🧪 [테스트/아바타] 설정
-// =================================================================
-
+// ==========================================================// 🧪 [테스트/아바타] 설정
+// ==========================================================
 // 내 아바타 설정 (실사용: 스토어에서 가져오기)
 const myAvatarConfig = computed<AvatarConfig>(() => {
     return authStore.userInfo?.avatar ?? {
@@ -413,10 +430,8 @@ const bgHeartStyle = computed(() => {
 const TEAM_AVG_INTERVAL_MS = 5000;
 let teamAverageInterval: number | undefined;
 
-// =================================================================
-// 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
-// =================================================================
-
+// ==========================================================// 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
+// ==========================================================
 onMounted(async () => {
     if (!roomId) { alert('잘못된 접근입니다.'); router.replace('/lobby'); return; }
 
@@ -643,19 +658,22 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <div v-if="!isConnected" class="loading-overlay">
+        <div v-if="!isConnected && error" class="loading-overlay">
             <div class="loading-content">
-                <div v-if="error" class="error-msg">
-                    <p>🚫 입장 실패</p>
+                <div class="error-msg">
+                    <p>입장 실패</p>
                     <p>{{ error }}</p>
                     <button @click="router.replace('/lobby')" class="btn-retry">돌아가기</button>
                 </div>
-                <div v-else>
-                    <div class="spinner"></div>
-                    <p>입장 중...</p>
-                </div>
             </div>
         </div>
+
+        <MatchingModal
+            v-else-if="!isRoomReady && !entryFrom"
+            title-text="입장 중..."
+            subtitle-text="잠시만 기다려주세요..."
+            @close="router.replace('/lobby')"
+        />
 
         <div v-else class="room-layout">
             
@@ -881,7 +899,8 @@ onUnmounted(() => {
 .page-container {
     width: 100vw;
     height: 100vh;
-    background-color: #f0f2f5;
+    background: url('@/assets/room/room_wood_bg.png') center/cover no-repeat;
+    background-color: #dcd0c0;
     overflow: hidden;
 }
 

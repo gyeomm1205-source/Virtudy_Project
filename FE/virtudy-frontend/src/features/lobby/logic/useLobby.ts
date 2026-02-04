@@ -101,7 +101,7 @@ export function useLobby() {
   };
 
   // 방 입장 (토큰 발급 -> 페이지 이동)
-  const joinRoom = async (roomId: string, password?: string) => {
+  const joinRoom = async (roomId: string, password?: string): Promise<boolean> => {
     if (!userId.value) {
       alert('로그인이 필요한 서비스입니다.');
       return;
@@ -119,7 +119,8 @@ export function useLobby() {
       // 토큰 없이 스터디 룸 페이지로 이동
       router.push({ 
         name: 'StudyRoom', 
-        params: { roomId }
+        params: { roomId },
+        query: { from: 'lobby' }
       });
 
     } catch (e: any) {
