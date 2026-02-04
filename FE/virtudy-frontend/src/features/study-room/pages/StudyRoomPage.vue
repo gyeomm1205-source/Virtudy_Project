@@ -4,45 +4,52 @@ import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { jwtDecode } from 'jwt-decode';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
-// [Merge] Combined Imports
 import { useFocusTimer } from '../logic/useFocusTimer';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
 import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
 import { useStudyStore } from '@/stores/studyStore';
+
+// UI 컴포넌트 임포트
 import StudyTimer from '@/shared/ui/StudyTimer.vue';
 import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
-import type { AvatarConfig } from '@/shared/types/common.types';
-import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
-import type { RoomData } from '@/features/lobby/types/lobby.types';
+import StudyRoomChat from '../ui/StudyRoomChat.vue';
+import PipDashboard from '../ui/PipDashboard.vue';
+import FlashbangEffect from '../ui/FlashbangEffect.vue';
+import WakeUpModal from '../ui/WakeUpModal.vue';
 import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
+
+// 디버그 패널 임포트 (배포 시 제거 권장)
+import DebugControls from '../ui/DebugControls.vue';
+
+// API 임포트
+import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
+import type { AvatarConfig } from '@/shared/types/common.types';
+import type { RoomData } from '@/features/lobby/types/lobby.types';
+
 // HEAD Imports
 import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 import { getScoreColor } from '../logic/scoreUtils'; 
-import PipDashboard from '../ui/PipDashboard.vue';
+import { useFlashbang } from '../logic/useFlashbang';
 import bgPhoto1 from '@/assets/room/bg_photo_1.png';
 import bgPhoto2 from '@/assets/room/bg_photo_2.png';
 import bgPhoto3 from '@/assets/room/bg_photo_3.png';
-// 섬광탄 관련 Imports
-import { useFlashbang } from '../logic/useFlashbang';
-import FlashbangEffect from '../ui/FlashbangEffect.vue';
-import WakeUpModal from '../ui/WakeUpModal.vue';
-// 디버그 패널 임포트 (배포 시 제거 권장)
-import DebugControls from '../ui/DebugControls.vue';
 
-// 1. 라우터 및 스토어 설정
+// =================================================================
+
+// 라우터 및 스토어 설정
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const studyStore = useStudyStore();
 const { accessToken, currentRoomId } = storeToRefs(studyStore);
 
-// 2. URL에서 정보 추출
+// URL에서 정보 추출
 const roomId = route.params.roomId as string;
 const userId = (route.query.userId as string) || authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
-//[추가] 사용자 닉네임 표시용
+// 사용자 닉네임 표시용
 const displayName = computed(() => authStore.userInfo?.nickName || userId);
 
 const getValidStudyToken = (): string | null => {
@@ -51,7 +58,6 @@ const getValidStudyToken = (): string | null => {
         router.replace('/guest');
         return null;
     }
-
     try {
         const decoded = jwtDecode<{ exp?: number }>(accessToken.value);
         if (decoded?.exp && Date.now() / 1000 >= decoded.exp) {
@@ -60,16 +66,14 @@ const getValidStudyToken = (): string | null => {
             return null;
         }
     } catch (error) {
-        console.warn('유효하지 않은 스터디 토큰입니다.', error);
         studyStore.clearToken();
         router.replace('/guest');
         return null;
     }
-
     return accessToken.value;
 };
 
-// 3. 로직 훅
+// 로직 훅
 const { 
     joinRoom, 
     leaveRoom, 
@@ -87,16 +91,14 @@ const {
     roomInfoUpdate,
 } = useStudyRoom();
 
-// 3.1 AI 핸들러 & 타이머 연결 ([Merge] Both)
+// AI 핸들러 & 타이머 연결
 useAiHandler();
 const aiStore = useStudyRoomAiStore();
 const canRunFocusTimer = computed(() => isConnected.value && !isDistracted.value);
 const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 
-// 4. 상태 변수
-const chatMessage = ref('');
+// 상태 변수
 const localVideoRef = ref<HTMLVideoElement | null>(null);
-const chatListRef = ref<HTMLDivElement | null>(null);
 // 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
@@ -104,10 +106,6 @@ const roomDetail = ref<RoomData | null>(null);
 const showEditModal = ref(false);
 const roomOwnerFlag = ref(false);
 const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.value);
-
-// 채팅창 열림/닫힘 상태
-const isChatOpen = ref(true);
-
 
 // 섬광탄 훅 초기화 
 const { 
@@ -129,6 +127,14 @@ const isPipActive = ref(false);
 const pipDashboardRef = ref<HTMLElement | null>(null); 
 const pipSourceContainerRef = ref<HTMLElement | null>(null);
 let pipWindow: Window | null = null;
+
+const closePip = () => {
+    if (pipWindow) {
+        pipWindow.close();
+        pipWindow = null;
+    }
+    isPipActive.value = false;
+};
 
 // 코드 복사 버튼 관련 상태
 const isHoveringCopyButton = ref(false);
@@ -305,7 +311,7 @@ const checkRoomOwner = async () => {
 // 🧪 [테스트/아바타] 설정
 // =================================================================
 
-// 1) 내 아바타 설정 (실사용: 스토어에서 가져오기)
+// 내 아바타 설정 (실사용: 스토어에서 가져오기)
 const myAvatarConfig = computed<AvatarConfig>(() => {
     return authStore.userInfo?.avatar ?? {
         hairFront: '',
@@ -318,7 +324,7 @@ const myAvatarConfig = computed<AvatarConfig>(() => {
     };
 });
 
-// 2) AI 상태 매핑 Helpers
+// AI 상태 매핑 Helpers
 // HEAD의 aiStore.focusStatus (FOCUS, SLEEP, PHONE, AWAY)를 Avatar Props (0/1)로 변환
 const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
 const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
@@ -388,39 +394,33 @@ let teamAverageInterval: number | undefined;
 // 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
 // =================================================================
 
-onMounted(() => {
-    const init = async () => {
-        if (!roomId) {
-            alert('잘못된 접근입니다.');
-            router.replace('/lobby');
-            return;
-        }
+onMounted(async () => {
+    if (!roomId) { alert('잘못된 접근입니다.'); router.replace('/lobby'); return; }
 
-        const validToken = getValidStudyToken();
-        if (!validToken) return;
+    const validToken = getValidStudyToken();
+    if (!validToken) return;
 
-        if (!authStore.userInfo) {
-            await authStore.fetchUserInfo(); //입장시 유저 정보 로드
-        }
-        try {
-            const { data } = await lobbyAPI.getRoomDetail(roomId);
-            roomDetail.value = data;
-            roomTitle.value = data.title || roomId;
-            roomDescription.value = data.description || '방 설명이 없습니다.';
-            if (!data.owner) {
-                roomOwnerFlag.value = await checkRoomOwner();
-            }
-        } catch (detailError) {
-            console.warn('방 정보 조회 실패:', detailError);
-            roomDetail.value = null;
-            roomOwnerFlag.value = false;
-            roomTitle.value = roomId;
-            roomDescription.value = '';
-        }
-        console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
-        await joinRoom(roomId, userId, validToken, displayName.value, myAvatarConfig.value);
-    };
-    init();
+    if (!authStore.userInfo) await authStore.fetchUserInfo();
+
+    // 아바타 미생성 시 입장 차단
+    if (!authStore.userInfo?.avatar || !authStore.userInfo.avatar.hairFront) {
+        alert("아바타를 먼저 만들어주세요!");
+        router.push('/avatar');
+        return;
+    }
+
+    try {
+        const { data } = await lobbyAPI.getRoomDetail(roomId);
+        roomDetail.value = data;
+        roomTitle.value = data.title || roomId;
+        roomDescription.value = data.description || '';
+        if (!data.owner) roomOwnerFlag.value = await checkRoomOwner();
+    } catch {
+        roomTitle.value = roomId;
+    }
+
+    await joinRoom(roomId, userId, validToken, displayName.value, myAvatarConfig.value);
+    
 
     const updateTeamAverage = () => {
         teamAverageScore.value = computeAverageScore();
@@ -496,18 +496,12 @@ const handleLeave = () => {
             'study-time': String(focusMinutes),
         });
         studyStore.clearToken();
+
+        // PIP 강제 종료
+        closePip();
+
         router.replace('/lobby'); // 로비로 이동
     }
-};
-
-const handleSendChat = () => {
-    if (!chatMessage.value.trim()) return;
-    sendChat(chatMessage.value);
-    chatMessage.value = '';
-};
-
-const toggleChat = () => {
-    isChatOpen.value = !isChatOpen.value;
 };
 
 onUnmounted(() => {
@@ -519,6 +513,7 @@ onUnmounted(() => {
     leaveRoom({
         'study-time': String(focusMinutes),
     });
+    closePip();
 });
 </script>
 
@@ -755,8 +750,8 @@ onUnmounted(() => {
                         
                         <!-- Timer Display -->
                         <div class="timer-display">
-                            <StudyTimer />
                             <FocusTimer :seconds="focusSeconds" />
+                            <StudyTimer />
                         </div>
                         
                         <div class="pip-btn-area">
@@ -833,103 +828,12 @@ onUnmounted(() => {
                     </div>
                 </main>
 
-                <!-- 채팅 영역 -->
-                <aside 
-                    class="flex flex-col h-full w-80 min-w-80"
-                >
-                    <!-- 채팅창이 열려있을 때 -->
-                    <div 
-                        v-if="isChatOpen" 
-                        class="bg-[var(--color-choco)] h-full flex flex-col overflow-hidden"
-                    >
-                        <!-- 채팅 헤더 -->
-                        <div class="flex items-center justify-center pt-1 px-1 pb-1 shrink-0">
-                            <div class="relative w-[19.9375rem] h-[3.25rem]">
-                                <!-- Window Title 배경 (Rectangle2) -->
-                                <div class="absolute inset-0 bg-[var(--color-butter2)]"></div>
-                                <!-- 채팅 제목 -->
-                                <div class="absolute left-[0.6875rem] top-1/2 transform -translate-y-1/2">
-                                    <h3 class="text-[var(--color-choco)] text-[2rem] font-['exqt'] font-medium leading-normal">채팅</h3>
-                                </div>
-                                <!-- X 버튼 -->
-                                <button 
-                                    @click="toggleChat"
-                                    class="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="2.25rem" height="2.25rem" viewBox="0 0 36 36" fill="none">
-                                        <path d="M21 19.5H22.5V21H24V22.5H25.5V24H27V25.5H28.5V27H30V28.5H31.5V30H33V31.5H31.5V33H30V31.5H28.5V30H27V28.5H25.5V27H24V25.5H22.5V24H21V22.5H19.5V21H16.5V22.5H15V24H13.5V25.5H12V27H10.5V28.5H9V30H7.5V31.5H6V33H4.5V31.5H3V30H4.5V28.5H6V27H7.5V25.5H9V24H10.5V22.5H12V21H13.5V19.5H15V16.5H13.5V15H12V13.5H10.5V12H9V10.5H7.5V9H6V7.5H4.5V6H3V4.5H4.5V3H6V4.5H7.5V6H9V7.5H10.5V9H12V10.5H13.5V12H15V13.5H16.5V15H19.5V13.5H21V12H22.5V10.5H24V9H25.5V7.5H27V6H28.5V4.5H30V3H31.5V4.5H33V6H31.5V7.5H30V9H28.5V10.5H27V12H25.5V13.5H24V15H22.5V16.5H21V19.5Z" fill="#DFA67B"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- 구분선 -->
-                        <div class="h-px bg-[var(--color-choco)] opacity-80 shrink-0"></div>
-
-                        <!-- 메시지 목록 -->
-                        <div ref="chatListRef" class="chat-list flex-1 overflow-y-auto p-6 space-y-2.5">
-                            <div v-for="(msg, idx) in messages" :key="idx" class="flex flex-col">
-                                <div v-if="msg.type === 'CHAT'">
-                                    <!-- 내 메시지 -->
-                                    <div v-if="msg.sender === userId" class="flex justify-end">
-                                        <div class="flex flex-col items-end space-y-1.5">
-                                            <div class="bg-[var(--color-butter2)] px-4 py-1 rounded-xl max-w-64">
-                                                <p class="text-[var(--color-choco)] text-[1.3rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- 다른 사용자 메시지 -->
-                                    <div v-else class="flex flex-col space-y-1.5">
-                                        <p class="text-[var(--color-cream2)] text-[0.9375rem] font-['PfStardust30S'] leading-normal tracking-[-0.0375rem]">{{ remoteParticipantNames[msg.sender] || msg.sender }}</p>
-                                        <div class="bg-[var(--color-syrup)] px-4 py-1 rounded-xl max-w-64 w-fit">
-                                            <p class="text-[var(--color-cream2)] text-[1.3rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- 시스템 메시지 -->
-                                <div v-else class="flex justify-center">
-                                    <div class="text-[var(--color-cream)] text-sm opacity-70">🔔 {{ msg.type }} 이벤트</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 메시지 입력 박스 (Figma Frame 6 디자인) -->
-                        <div class="p-[15px] shrink-0">
-                            <div class="bg-[#fff8e5] border-2 border-[#fff2cc] rounded-[12px] flex items-center justify-between h-[50px] px-[20px] py-[10px]">
-                                <input 
-                                    v-model="chatMessage" 
-                                    @keyup.enter="handleSendChat" 
-                                    type="text" 
-                                    placeholder="Type a message"
-                                    class="flex-1 bg-transparent text-[#805143] text-[20px] font-['PfStardust30S'] leading-normal tracking-[-0.8px] placeholder:opacity-40 outline-none"
-                                />
-                                <button 
-                                    @click="handleSendChat" 
-                                    class="w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity overflow-hidden relative"
-                                >
-                                    <div class="absolute translate-y-0.5 inset-[10.68%_10.66%_10.66%_10.66%]">
-                                        <img alt="send" class="block max-w-none size-full" src="https://www.figma.com/api/mcp/asset/b9d70265-6324-4b42-bf69-7dfa3a62b17a" />
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 채팅창이 닫혀있을 때 표시할 영역 (흰 배경) -->
-                    <div 
-                        v-else
-                        class="flex-1 bg-white flex items-center justify-end"
-                    >
-                        <button 
-                            @click="toggleChat"
-                            class="btn-chat-open"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                <path d="M12.5 15L7.5 10L12.5 5" stroke="#805143" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                    </div>
-                </aside>
+                <StudyRoomChat
+                    :messages="messages"
+                    :userId="userId"
+                    :userNames="remoteParticipantNames"
+                    :onSendMessage="sendChat"
+                />
 
             </div>
         </div>
