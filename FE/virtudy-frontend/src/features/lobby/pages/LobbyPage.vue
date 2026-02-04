@@ -20,7 +20,7 @@
       </div>
       
       <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px]">
-        <div class="absolute left-[100px] top-[140px] w-[200px] h-[200px]">
+        <div class="absolute left-[94px] top-[119px] w-[200px] h-[243px]">
           <CharacterAvatar
             v-if="hasAvatarConfig"
             :config="authStore.userInfo!.avatar!"
