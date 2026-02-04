@@ -3,7 +3,7 @@
     <GlobalNavBar />
 
     <div
-      class="absolute left-[31rem] top-[23.75rem] z-10"
+      class="absolute left-[30rem] top-[20.3rem] z-10"
       :style="{ width: '14rem', height: '16rem' }"
     >
       <CharacterAvatar

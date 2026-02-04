@@ -779,35 +779,6 @@ onUnmounted(() => {
                         <div class="avatar-card local">
                             <video ref="localVideoRef" autoplay muted playsinline class="hidden-video"></video>
                             
-                        <div class="avatar-display">
-<CharacterAvatar 
-                                    :config="myAvatarConfig"
-                                    :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
-                                    :aiPhone="getAiPhone(aiStore.focusStatus)"
-                                    :aiAbsent="getAiAbsent(aiStore.focusStatus)"
-                                />
-                        </div>
-                            
-                            <div class="user-info">
-                                <span class="user-name">{{ displayName }}</span>
-                                <svg
-                                    class="heart-svg"
-                                    :style="getHeartStyle(aiStore.concentrationScore)"
-                                    aria-label="my-focus-heart"
-                                    viewBox="0 0 32 24"
-                                >
-                                    <use href="#heart-pixel-symbol" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        <div v-for="rt in remoteTracks" :key="rt.participantId" class="avatar-card remote">
-                            <video 
-                                :ref="(el) => { if(el) rt.track.attach(el as HTMLMediaElement) }"
-                                autoplay playsinline 
-                                class="hidden-video"
-                            ></video>
-                            
                             <div class="avatar-display">
                                 <CharacterAvatar 
                                     :config="myAvatarConfig"
@@ -816,7 +787,7 @@ onUnmounted(() => {
                                     :aiAbsent="getAiAbsent(aiStore.focusStatus)"
                                 />
                             </div>
-
+                            
                             <div class="user-info">
                                 <span class="user-name">{{ displayName }}</span>
                                 <svg
