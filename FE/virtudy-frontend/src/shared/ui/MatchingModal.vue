@@ -41,8 +41,8 @@ const props = withDefaults(defineProps<{
   titleText?: string;
   subtitleText?: string;
 }>(), {
-  titleText: '?? ?...',
-  subtitleText: '??? ??????...'
+  titleText: '\uB9E4\uCE6D \uC911...',
+  subtitleText: '\uC7A0\uC2DC\uB9CC \uAE30\uB2E4\uB824\uC8FC\uC138\uC694...'
 
 });
 
