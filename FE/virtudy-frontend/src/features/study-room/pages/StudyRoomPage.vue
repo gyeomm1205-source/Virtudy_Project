@@ -158,10 +158,12 @@ const togglePip = async () => {
 
     try {
         // 이미지 비율 고려하여 세로형 창 생성
+        const minPipWidth = 200;
+        const minPipHeight = 300;
         // @ts-ignore
         pipWindow = await window.documentPictureInPicture.requestWindow({
-            width: 200, 
-            height: 280,
+            width: minPipWidth, 
+            height: minPipHeight,
         });
 
         if (!pipWindow) return;
@@ -185,9 +187,18 @@ const togglePip = async () => {
 
         // DOM 이동
         if (pipDashboardRef.value) {
-            pipWindow.document.body.append(pipDashboardRef.value);
+            const pipRoot = pipDashboardRef.value;
+            // 기본 표시 보장 (스타일 복사 실패 시에도 화면이 안 비도록)
+            pipRoot.style.display = 'block';
+            pipRoot.style.width = '100%';
+            pipRoot.style.height = '100%';
+            pipRoot.style.background = '#FFF4D9';
+
+            pipWindow.document.body.append(pipRoot);
             // PIP 창 바디 스타일 (여백 제거)
             pipWindow.document.body.style.margin = '0';
+            pipWindow.document.body.style.padding = '0';
+            pipWindow.document.body.style.background = '#FFF4D9';
         }
 
         isPipActive.value = true;
