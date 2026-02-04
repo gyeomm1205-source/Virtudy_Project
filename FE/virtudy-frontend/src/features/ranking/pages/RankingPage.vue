@@ -2,7 +2,10 @@
   <div class="min-h-screen bg-[var(--color-syrup)] relative w-full flex flex-col">
     <GlobalNavBar />
 
-    <div class="absolute left-[21.5rem] top-[8.5rem] w-[4rem] h-[4rem] z-10">
+    <div
+      class="absolute left-[21.5rem] top-[8.5rem] z-10"
+      :style="{ width: avatarSize, height: avatarSize }"
+    >
       <CharacterAvatar
         v-if="hasAvatarConfig"
         :config="displayAvatar!"
@@ -215,6 +218,8 @@ import type { RankItem } from '../types/ranking.types';
 
 const authStore = useAuthStore();
 const router = useRouter();
+
+const avatarSize = '8rem';
 
 const displayAvatar = computed(() => myRankInfo.value?.avatar ?? authStore.userInfo?.avatar);
 const hasAvatarConfig = computed(() => {
