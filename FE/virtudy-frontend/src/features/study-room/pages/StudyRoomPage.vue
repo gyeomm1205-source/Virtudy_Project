@@ -10,7 +10,7 @@ import { Track } from 'livekit-client';
 import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
 import { useStudyStore } from '@/stores/studyStore';
 
-// UI ?????? ?????
+// UI ???? ???
 import StudyTimer from '@/shared/ui/StudyTimer.vue';
 import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
@@ -21,10 +21,10 @@ import WakeUpModal from '../ui/WakeUpModal.vue';
 import MatchingModal from '@/shared/ui/MatchingModal.vue';
 import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
 
-// ???????? ?????(??? ????? ???)
+// ??? ?? ??? (?? ? ?? ??)
 import DebugControls from '../ui/DebugControls.vue';
 
-// API ?????
+// API ???
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 import type { AvatarConfig } from '@/shared/types/common.types';
 import type { RoomData } from '@/features/lobby/types/lobby.types';
@@ -122,7 +122,6 @@ const roomOwnerFlag = ref(false);
 const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.value);
 
 // 채팅창 열림/닫힘 상태
-const isChatOpen = ref(true);
 const isRoomReady = ref(false);
 
 watch(isConnected, async (val) => {

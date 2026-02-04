@@ -43,6 +43,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   titleText: '?? ?...',
   subtitleText: '??? ??????...'
+
 });
 
 defineEmits(['close']);
