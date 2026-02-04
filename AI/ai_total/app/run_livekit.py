@@ -137,7 +137,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
 
             last_sent_time = current_time
 
-async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None, target_id: str = None):
+async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None):
     # 1. Send via LiveKit
     payload = json.dumps({"category": category, "value": value})
 
@@ -149,8 +149,6 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
         try:
             # 프론트엔드 에러 해결의 핵심: participantId 추가
             queue_payload = {"eventType": category, "value": value}
-            if target_id:
-                queue_payload["participantId"] = target_id
             
             queue.put(queue_payload)
             # print(f"[DEBUG] Queue Put: {category} -> {value} (User: {target_id})") 

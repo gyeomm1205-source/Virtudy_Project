@@ -137,21 +137,12 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
 
             last_sent_time = current_time
 
-async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None, target_id: str = None):
+async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None):
     
 
 
     payload_dict = {"category": category, "value": value}
     
-    # [수정] target_id가 None만 아니면 (빈 문자열이라도) 무조건 넣기
-    if target_id is not None:
-        payload_dict["participantId"] = target_id
-    else:
-        # 만약 진짜 없으면 "UNKNOWN"이라도 넣어서 프론
-        # ID가 없으면 "UNKNOWN"이라도 보내서 프론트엔드 에러 방지
-        print(f"[WARN] Sending data without ID! Category: {category}", flush=True)
-        payload_dict["participantId"] = "UNKNOWN"
-
     payload = json.dumps(payload_dict)
     data = payload.encode('utf-8')
     await room.local_participant.publish_data(data, reliable=False)
@@ -162,8 +153,6 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
             # 프론트엔드 에러 해결의 핵심: participantId 추가
             queue_payload = {"eventType": category, "value": value}
             
-            queue_payload["participantId"] = payload_dict["participantId"]
-
             queue.put(queue_payload)
             # print(f"[DEBUG] Queue Put: {category} -> {value} (User: {target_id})") 
         except Exception as e:
