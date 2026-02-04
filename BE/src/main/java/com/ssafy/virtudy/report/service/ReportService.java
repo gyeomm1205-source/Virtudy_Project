@@ -167,7 +167,7 @@ public class ReportService {
      * 일 평균 공부 시간 (분)
      * 총 공부 시간 합계 / 7일
      */
-    private int calculateTotalStudyTime(List<StudySession> sessions) {
+    public int calculateTotalStudyTime(List<StudySession> sessions) {
         if (sessions.isEmpty()) return 0;
         long totalStudyTime = sessions.stream()
                 .mapToLong(StudySession::getSessionRealStudyTime)
@@ -222,13 +222,15 @@ public class ReportService {
      * 공식: (총 순 공부 시간 / 총 세션 체류 시간) * 100
      * 책상에 앉아있던 시간 중 실제로 집중(RealStudyTime)한 비율을 의미합니다.
      */
-    private int calculateFocusDepth(List<StudySession> sessions) {
+    public int calculateFocusDepth(List<StudySession> sessions) {
         long totalDurationMin = 0;
         long totalNetStudyMin = 0;
         
         for (StudySession session : sessions) {
             // 세션 전체 시간 (Start ~ End)
-            long duration = Duration.between(session.getStartTime(), session.getEndTime()).toMinutes();
+            // 진행 중인 세션(endTime == null)인 경우 현재 시간 기준으로 계산
+            LocalDateTime endTime = session.getEndTime() != null ? session.getEndTime() : LocalDateTime.now();
+            long duration = Duration.between(session.getStartTime(), endTime).toMinutes();
             totalDurationMin += duration;
             // 순 공부 시간 (StudyLogAnalysis 결과)
             totalNetStudyMin += session.getSessionRealStudyTime();
@@ -335,7 +337,9 @@ public class ReportService {
             
             // 세션 종료 시점까지 집중이 유지되었다면 마지막 구간 계산
             if (isFocusing) {
-                 int duration = (int) Duration.between(lastFocusStart, sessionEnd).toSeconds();
+                 // 진행 중인 세션일 경우 현재 시간까지 계산
+                 LocalDateTime end = sessionEnd != null ? sessionEnd : LocalDateTime.now();
+                 int duration = (int) Duration.between(lastFocusStart, end).toSeconds();
                  if (duration > maxFocusSec) maxFocusSec = duration;
             }
         }
