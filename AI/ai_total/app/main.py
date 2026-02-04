@@ -126,9 +126,29 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str)
     """
     Handles WebSocket connections from the frontend.
     """
+
+    # 1. 먼저 로그 출력 (이미 잘 하고 계심)
+    print(f"[DEBUG] WebSocket Connection Attempt: {room_id}")
+
     await websocket.accept()
     logger.info(f"WebSocket connected: Room {room_id}, Member {member_id}")
     
+    # 3. 토큰 검사 (쿠키 확인)
+    # Authorization 헤더는 없을 확률이 높으니 쿠키를 우선 확인하세요.
+    cookie_token = websocket.cookies.get("accessToken") # 혹은 refreshToken
+
+    if not cookie_token:
+        print("[ERROR] 토큰이 없습니다. 연결 종료.")
+        await websocket.close(code=1008) # 1008: 정책 위반
+        cookie_token = websocket.cookies.get("refreshToken")
+        return
+    
+    # 두 토큰 다 없으면 에러 처리
+    if not cookie_token:
+        print(f"[ERROR] 토큰(Access/Refresh)이 모두 없습니다. 쿠키: {websocket.cookies.keys()}")
+        await websocket.close(code=1008) 
+        return
+
     # Try to get queue, but don't give up if missing (bot might join later)
     queue = active_queues.get(room_id)
     if not queue:
