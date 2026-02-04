@@ -2,11 +2,11 @@
   <div class="min-h-screen bg-[var(--color-cream2)] relative w-full flex flex-col">
     <GlobalNavBar />
     
-    <div class="flex-1 flex justify-center items-start pt-[8rem] pb-[8rem] px-[1rem]">
+    <div class="flex-1 flex justify-center items-start pt-[8rem] pb-[8rem] px-[1rem] user-page-main">
       
-      <div class="flex gap-[2rem] w-full max-w-[60rem]">
+      <div class="flex gap-[2rem] w-full max-w-[60rem] user-columns">
         
-        <div class="w-[29.5rem] flex flex-col gap-[1rem]">
+        <div class="w-[29.5rem] flex flex-col gap-[1rem] user-left">
           <UserProfile 
             :nick-name="userInfo.nickName"
             :tier-score="userInfo.tierScore"
@@ -26,7 +26,7 @@
           />
         </div>
         
-        <div class="w-[29.5rem]">
+        <div class="w-[29.5rem] user-right">
           <RankingSectionMini 
             :private-top5="privateTop5"
             :team-top5="teamTop5"
@@ -39,7 +39,12 @@
     <GlobalFooter />
   </div>
 
-  <MatchingModal v-if="isMatchingModalOpen" @close="cancelRandomMatch" />
+  <MatchingModal
+    v-if="isMatchingModalOpen"
+    title-text="매칭 중..."
+    subtitle-text="잠시만 기다려주세요..."
+    @close="cancelRandomMatch"
+  />
   <CreateRoomModal
     v-if="isCreateRoomModalOpen"
     @close="isCreateRoomModalOpen = false"
@@ -50,7 +55,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onActivated } from 'vue'; // [추가] onActivated
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/authStore'; 
+import { useAuthStore } from '@/stores/authStore';
+import { useStudyStore } from '@/stores/studyStore'; 
 import { useMainRanking } from '@/features/ranking/logic/useMainRanking';
 import { getMyProfile } from '@/features/mypage/api/mypageApi';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
@@ -66,6 +72,7 @@ import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const studyStore = useStudyStore();
 
 const userInfo = ref<UserProfileResponse>({
   userId: "",
@@ -128,7 +135,8 @@ const handleRandomMatch = async () => {
     const elapsed = Date.now() - startedAt;
     await delay(Math.max(0, 3000 - elapsed));
     if (controller.signal.aborted) return;
-    router.push(`/study/${data.roomId}?token=${data.liveKitToken}`);
+    studyStore.setToken(data.liveKitToken, data.roomId);
+    router.push({ name: 'StudyRoom', params: { roomId: data.roomId }, query: { from: 'user' } });
   } catch (error) {
     if (controller.signal.aborted || isCanceledError(error)) {
       return;
@@ -212,3 +220,23 @@ onActivated(() => {
   fetchUserData();
 });
 </script>
+
+<style scoped>
+@media (max-width: 1280px) {
+  .user-page-main {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+
+  .user-columns {
+    flex-direction: column;
+    align-items: center;
+    max-width: 100%;
+  }
+
+  .user-left,
+  .user-right {
+    width: min(95vw, 29.5rem);
+  }
+}
+</style>

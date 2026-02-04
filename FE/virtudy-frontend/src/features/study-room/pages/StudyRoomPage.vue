@@ -13,6 +13,7 @@ import { useStudyStore } from '@/stores/studyStore';
 import StudyTimer from '@/shared/ui/StudyTimer.vue';
 import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import MatchingModal from '@/shared/ui/MatchingModal.vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 import type { RoomData } from '@/features/lobby/types/lobby.types';
@@ -34,6 +35,7 @@ import DebugControls from '../ui/DebugControls.vue';
 
 // 1. 라우터 및 스토어 설정
 const route = useRoute();
+const entryFrom = computed(() => route.query.from);
 const router = useRouter();
 const authStore = useAuthStore();
 const studyStore = useStudyStore();
@@ -107,6 +109,20 @@ const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.va
 
 // 채팅창 열림/닫힘 상태
 const isChatOpen = ref(true);
+const isRoomReady = ref(false);
+
+watch(isConnected, async (val) => {
+    if (val) {
+        await nextTick();
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                isRoomReady.value = true;
+            }, 50);
+        });
+    } else {
+        isRoomReady.value = false;
+    }
+}, { immediate: true });
 
 
 // 섬광탄 훅 초기화 
@@ -638,19 +654,22 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <div v-if="!isConnected" class="loading-overlay">
+        <div v-if="!isConnected && error" class="loading-overlay">
             <div class="loading-content">
-                <div v-if="error" class="error-msg">
-                    <p>🚫 입장 실패</p>
+                <div class="error-msg">
+                    <p>입장 실패</p>
                     <p>{{ error }}</p>
                     <button @click="router.replace('/lobby')" class="btn-retry">돌아가기</button>
                 </div>
-                <div v-else>
-                    <div class="spinner"></div>
-                    <p>입장 중...</p>
-                </div>
             </div>
         </div>
+
+        <MatchingModal
+            v-else-if="!isRoomReady && !entryFrom"
+            title-text="입장 중..."
+            subtitle-text="잠시만 기다려주세요..."
+            @close="router.replace('/lobby')"
+        />
 
         <div v-else class="room-layout">
             
@@ -790,14 +809,6 @@ onUnmounted(() => {
                             
                             <div class="user-info">
                                 <span class="user-name">{{ displayName }}</span>
-                                <svg
-                                    class="heart-svg"
-                                    :style="getHeartStyle(remoteParticipantScores[rt.participantId] ?? 50)"
-                                    aria-label="teammate-focus-heart"
-                                    viewBox="0 0 32 24"
-                                >
-                                    <use href="#heart-pixel-symbol" />
-                                </svg>
                             </div>
                         </div>
 
@@ -949,7 +960,8 @@ onUnmounted(() => {
 .page-container {
     width: 100vw;
     height: 100vh;
-    background-color: #f0f2f5;
+    background: url('@/assets/room/room_wood_bg.png') center/cover no-repeat;
+    background-color: #dcd0c0;
     overflow: hidden;
 }
 
