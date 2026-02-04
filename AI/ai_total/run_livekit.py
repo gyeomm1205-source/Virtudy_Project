@@ -200,7 +200,7 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                      # [Fix] Request High Quality Video for AI Analysis
                      publication.set_video_quality(rtc.VideoQuality.HIGH)
                      video_stream = rtc.VideoStream(publication.track)
-                     asyncio.create_task(ai_process_loop(room, video_stream, queue))
+                     asyncio.create_task(ai_process_loop(room, video_stream, queue, identity))
                      pass
                 
                 # 2. 구독 안 됨 -> 구독 시도
