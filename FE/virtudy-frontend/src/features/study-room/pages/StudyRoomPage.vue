@@ -326,8 +326,8 @@ const computeAverageScore = () => {
     return scores.reduce((acc, v) => acc + v, 0) / scores.length;
 };
 
-const averageScore = computed(() => computeAverageScore());
-const bgState = computed<BgState>(() => getStateFromScore(averageScore.value));
+const teamAverageScore = ref<number>(100);
+const bgState = computed<BgState>(() => getStateFromScore(teamAverageScore.value));
 
 const bgPhotoSrc = computed(() => {
     if (bgState.value === 'GREEN') return bgPhoto1;
@@ -340,6 +340,9 @@ const bgHeartStyle = computed(() => {
     if (bgState.value === 'YELLOW') return getHeartStyle(70);
     return getHeartStyle(30);
 });
+
+const TEAM_AVG_INTERVAL_MS = 5000;
+let teamAverageInterval: number | undefined;
 
 // =================================================================
 // 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
@@ -375,6 +378,13 @@ onMounted(() => {
         await joinRoom(roomId, userId, token, displayName.value);
     };
     init();
+
+    const updateTeamAverage = () => {
+        teamAverageScore.value = computeAverageScore();
+    };
+
+    updateTeamAverage();
+    teamAverageInterval = window.setInterval(updateTeamAverage, TEAM_AVG_INTERVAL_MS);
 });
 
 // [추가] 다른 참가자의 방 정보 업데이트 수신 처리
@@ -457,6 +467,10 @@ const toggleChat = () => {
 };
 
 onUnmounted(() => {
+    if (teamAverageInterval) {
+        window.clearInterval(teamAverageInterval);
+        teamAverageInterval = undefined;
+    }
     const focusMinutes = Math.floor(focusSeconds.value / 60);
     leaveRoom({
         'study-time': String(focusMinutes),
