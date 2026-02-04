@@ -25,6 +25,25 @@
     </button>
 
     <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem]">
+      <div class="absolute top-[0.5rem] left-0 w-full flex justify-center">
+        <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)] bg-[var(--color-cream)]">
+          <CharacterAvatar
+            v-if="hasAvatarConfig"
+            :config="authStore.userInfo!.avatar!"
+            class="w-full h-full"
+          />
+          <img
+            v-else-if="authStore.userInfo?.avatarImageUrl"
+            :src="authStore.userInfo.avatarImageUrl"
+            alt="프로필"
+            class="w-full h-full object-cover"
+          />
+          <div v-else class="w-full h-full flex items-center justify-center text-[var(--color-choco)] font-bold text-xl">
+            ME
+          </div>
+        </div>
+      </div>
+
       <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[0.625rem]">
         <button 
           @click="goToMyPage"
@@ -168,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useWeeklyReport } from '../logic/useWeeklyReport';
 
@@ -176,9 +195,12 @@ import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';
 import WeeklyCalendar from '../pages/WeeklyCalendar.vue';
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import { useAuthStore } from '@/stores/authStore';
 
 const router = useRouter();
 const showCalendar = ref(false);
+const authStore = useAuthStore();
 
 const { 
   reportData, 
@@ -189,6 +211,16 @@ const {
 } = useWeeklyReport();
 
 const hasReport = computed(() => Boolean(reportData.value && reportData.value.reportId));
+const hasAvatarConfig = computed(() => {
+  if (!authStore.userInfo?.avatar) return false;
+  return Object.values(authStore.userInfo.avatar).some((value) => Boolean(value));
+});
+
+onMounted(() => {
+  if (authStore.isLoggedIn && !authStore.userInfo) {
+    authStore.fetchUserInfo();
+  }
+});
 
 const formatDateRange = (startDate: Date, endDate: Date) => {
   const monthNames = [

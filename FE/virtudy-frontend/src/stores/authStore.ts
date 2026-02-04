@@ -12,6 +12,11 @@ export const useAuthStore = defineStore('auth', () => {
   const signupInfo = ref(localStorage.getItem('signupInfo') ? JSON.parse(localStorage.getItem('signupInfo')!) : null); // 신규 유저 임시 정보
   const userInfo = ref<User | null>(localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')!) : null); // 추가 정보(닉네임 등) 저장용
 
+  const hasAvatarConfig = (avatar?: AvatarConfig | null) => {
+    if (!avatar) return false;
+    return Object.values(avatar).some((value) => Boolean(value));
+  };
+
   // 게터 (Getters)
   const isLoggedIn = computed(() => !!accessToken.value);
 
@@ -101,8 +106,14 @@ export const useAuthStore = defineStore('auth', () => {
       // 작성하신 MemberController의 주소로 요청
       const { data } = await api.get('/members/profile');
 
-      // 받아온 데이터를 스토어에 저장
-      userInfo.value = data;
+      const mergedAvatar = hasAvatarConfig(data.avatar) ? data.avatar : userInfo.value?.avatar;
+
+      // 받아온 데이터를 스토어에 저장 + 로컬 스토리지 동기화
+      setUserInfo({
+        ...data,
+        avatar: mergedAvatar,
+        avatarImageUrl: data.avatarImageUrl ?? userInfo.value?.avatarImageUrl,
+      });
       console.log('내 정보 가져오기 성공:', data);
     } catch (error) {
       console.error('내 정보 불러오기 실패:', error);

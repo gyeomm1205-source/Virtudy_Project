@@ -21,7 +21,12 @@
           <!-- 아바타와 순위 정보 -->
           <div class="flex items-center gap-[1.5rem] translate-x-[1rem]">
             <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)] bg-[var(--color-cream)] shadow-md ">
-              <img v-if="authStore.userInfo?.avatarImageUrl" :src="authStore.userInfo.avatarImageUrl" alt="프로필"
+              <CharacterAvatar
+                v-if="hasAvatarConfig"
+                :config="authStore.userInfo!.avatar!"
+                class="w-full h-full"
+              />
+              <img v-else-if="authStore.userInfo?.avatarImageUrl" :src="authStore.userInfo.avatarImageUrl" alt="프로필"
                 class="w-full h-full object-cover" />
               <div v-else
                 class="w-full h-full flex items-center justify-center text-[var(--color-choco)] font-bold text-xl">
@@ -201,18 +206,24 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useRanking } from '../logic/useRanking';
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 
 // [중요] RankItem 인터페이스 임포트 (Ranking.types.ts에 정의된 것)
 import type { RankItem } from '../types/ranking.types';
 
 const authStore = useAuthStore();
 const router = useRouter();
+
+const hasAvatarConfig = computed(() => {
+  if (!authStore.userInfo?.avatar) return false;
+  return Object.values(authStore.userInfo.avatar).some((value) => Boolean(value));
+});
 
 const {
   rankType, searchKeyword, rankList, myRankInfo, isLoading,

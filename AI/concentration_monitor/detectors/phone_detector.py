@@ -33,17 +33,22 @@ class PhoneDetector:
         # 1. Inputs
         # [NEW] Dual Threshold Logic
         # Candidate: Weakly detected (Needs corroboration like hand or head down)
-        phone_candidate = is_cell_phone and phone_conf >= Config.PHONE_CANDIDATE_TH and phone_area_ratio >= Config.PHONE_BOX_AREA_TH
+        area_th = Config.PHONE_BOX_AREA_TH_HAND if (hand_interaction or phone_conf >= Config.PHONE_CONF_FOR_USE) else Config.PHONE_BOX_AREA_TH
+        phone_candidate = is_cell_phone and phone_conf >= Config.PHONE_CANDIDATE_TH and phone_area_ratio >= area_th
         
         # Confirmed: Strongly detected (Standalone)
-        phone_confirmed = is_cell_phone and phone_conf >= Config.PHONE_CONFIRMED_TH and phone_area_ratio >= Config.PHONE_BOX_AREA_TH
+        phone_confirmed = is_cell_phone and phone_conf >= Config.PHONE_CONFIRMED_TH and phone_area_ratio >= area_th
         
         looking_down = (head_pitch is not None and head_pitch > Config.PITCH_PHONE_USE_TH)
         looking_down_hold = (head_pitch is not None and head_pitch > Config.PITCH_PHONE_HOLD_TH)
+        looking_down_release = (head_pitch is not None and head_pitch > Config.PITCH_PHONE_RELEASE_TH)
         # Use only direct hand-phone interaction as evidence.
-        # Proxy signals (hand_near_face + phone_near_face) caused false ON holds.
+        # Also allow a no-hand path if phone is near face AND looking down (strong use posture).
         hand_present = hand_interaction
-        phone_use_evidence = hand_present
+        posture_ok = looking_down or phone_near_face
+        strict_use = phone_candidate and hand_present and posture_ok
+        no_hand_use = phone_confirmed and (looking_down or phone_near_face) and (phone_conf >= Config.PHONE_CONF_FOR_USE)
+        phone_use_evidence = strict_use or no_hand_use
         
         # 2. Logic Conditions
         # (A) Fast Condition: Candidate + (Hand or Head Down)
@@ -86,7 +91,7 @@ class PhoneDetector:
             # [NEW] Fast Focus (Recovery):
             # If I look UP (not looking down) AND there is no strong phone signal -> Immediate OFF
             # This fixes the "slow recovery" issue.
-            if (not looking_down) and (not phone_confirmed):
+            if (not looking_down_release) and (not phone_confirmed):
                  self.state = "OFF"
                  self._reset_timers()
                  return PhoneSignal(

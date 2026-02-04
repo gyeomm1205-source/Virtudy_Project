@@ -19,6 +19,15 @@ import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 import { getScoreColor } from '../logic/scoreUtils'; 
 import PipDashboard from '../ui/PipDashboard.vue';
+import heartIcon from '@/assets/room/heart_pixel.svg?url';
+// 섬광탄 관련 Imports
+import { useFlashbang } from '../logic/useFlashbang';
+import FlashbangEffect from '../ui/FlashbangEffect.vue';
+import WakeUpModal from '../ui/WakeUpModal.vue';
+// 디버그 패널 임포트 (배포 시 제거 권장)
+import DebugControls from '../ui/DebugControls.vue';
+
+console.log("하트 아이콘 값:", heartIcon);
 
 // 1. 라우터 및 스토어 설정
 const route = useRoute();
@@ -57,6 +66,7 @@ const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 // 4. 상태 변수
 const chatMessage = ref('');
 const localVideoRef = ref<HTMLVideoElement | null>(null);
+const chatListRef = ref<HTMLDivElement | null>(null);
 //[추가] 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
@@ -67,6 +77,20 @@ const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.va
 
 // 채팅창 열림/닫힘 상태
 const isChatOpen = ref(true);
+
+
+// 섬광탄 훅 초기화 
+const { 
+    isStunned, 
+    showSentFeedback, 
+    isModalOpen, 
+    drowsyParticipants, 
+    isWakeUpAvailable, 
+    openModal, 
+    closeModal, 
+    sendFlashbang,
+    triggerStunEffect, // 테스트용 공개 메서드 (배포 시에는 제거 권장)
+} = useFlashbang(remoteParticipantScores, remoteParticipantNames);
 
 // -------------------------------------------------------------
 // 🪟 Document PIP 관련 로직
@@ -317,6 +341,24 @@ watch(isConnected, (connected) => {
     }
 });
 
+const scrollChatToBottom = () => {
+    nextTick(() => {
+        if (chatListRef.value) {
+            chatListRef.value.scrollTop = chatListRef.value.scrollHeight;
+        }
+    });
+};
+
+watch(() => messages.value.length, () => {
+    scrollChatToBottom();
+});
+
+watch(isChatOpen, (open) => {
+    if (open) {
+        scrollChatToBottom();
+    }
+});
+
 const attachLocalVideo = () => {
     const roomManager = RoomManager.getInstance();
     const room = roomManager.getRoom();
@@ -364,6 +406,20 @@ onUnmounted(() => {
 
 <template>
     <div class="page-container">
+        <!-- 섬광탄 효과 컴포넌트 -->
+        <FlashbangEffect :visible="isStunned" />
+
+        <div v-if="showSentFeedback" class="feedback-toast">
+            ✨ 섬광탄 발사 완료!
+        </div>
+
+        <WakeUpModal 
+            :isOpen="isModalOpen"
+            :targets="drowsyParticipants"
+            @close="closeModal"
+            @send="sendFlashbang"
+        />
+
         <!-- pip 로직 추가 -->
         <div ref="pipSourceContainerRef" style="display: none;">
             <div ref="pipDashboardRef" class="pip-content-root">
@@ -373,6 +429,9 @@ onUnmounted(() => {
                     :aiScore="aiStore.concentrationScore"
                     :aiStatus="aiStore.focusStatus"
                     :teammates="teammatesData"
+                    :isWakeUpAvailable="isWakeUpAvailable"
+                    :onOpenWakeUpModal="openModal"
+                    :isStunned="isStunned"
                 />
             </div>
         </div>
@@ -405,6 +464,14 @@ onUnmounted(() => {
                             <div class="mini-bar">
                                 <div class="fill" :style="{ width: aiStore.concentrationScore + '%', background: aiStore.concentrationScore < 50 ? 'red' : 'green' }"></div>
                             </div>
+                        </div>
+                        <div>
+                            <DebugControls 
+                                :scores="remoteParticipantScores"
+                                :names="remoteParticipantNames"
+                                :isStunned="isStunned"
+                                :onTriggerStun="triggerStunEffect"
+                            />
                         </div>
                     </div>
 
@@ -449,8 +516,27 @@ onUnmounted(() => {
                         <button @click="handleLeave" class="btn-leave">나가기</button>
                     </div>
                     
-                    <div class="combined-timer-widget">
-                        <!-- Window Frame -->
+                    <div class="frame-wrapper">
+                        <img 
+                            src="@/assets/room/bg_photo_1.png" 
+                            alt="Background Photo" 
+                            class="scene-photo"
+                        />
+                        <img 
+                            src="@/assets/room/frame_border.png" 
+                            alt="Frame" 
+                            class="scene-frame"
+                        />
+                    </div>
+                    
+                    <!-- 타이머 / PIP / 깨우기 버튼 영역 -->
+                    <div class="timer-floating-widget">
+                        <div class="hearts-container">
+                            <img :src="heartIcon" class="heart-img" />
+                            <img :src="heartIcon" class="heart-img" />
+                            <img :src="heartIcon" class="heart-img" />
+                        </div>
+
                         <div class="window-frame">
                             <div class="window-framing">
                                 <div class="window-title">
@@ -464,12 +550,20 @@ onUnmounted(() => {
                             <StudyTimer />
                             <FocusTimer :seconds="focusSeconds" />
                         </div>
-                    </div>
-
-                    <div class="pip-btn-area">
-                        <button @click="togglePip" class="btn-pip" :class="{ active: isPipActive }">
-                            {{ isPipActive ? 'PIP 종료' : 'PIP전환' }}
-                        </button>
+                        
+                        <div class="pip-btn-area">
+                            <button @click="togglePip" class="btn-pip btn-pixel-action">
+                                {{ isPipActive ? 'PIP종료' : 'PIP전환' }}
+                            </button>
+                            <button 
+                                class="btn-pixel-action btn-wakeup"
+                                :class="{ 'active': isWakeUpAvailable }"
+                                :disabled="!isWakeUpAvailable"
+                                @click="openModal"
+                            >
+                                깨우기!
+                            </button>
+                        </div>
                     </div>
 
                     <div class="avatar-strip">
@@ -487,8 +581,8 @@ onUnmounted(() => {
                             </div>
                             
                             <div class="user-info">
-                                <span class="user-name">나 ({{ displayName }})</span>
-                                <span class="heart-icon" :style="{ color: getScoreColor(aiStore.concentrationScore) }">♥</span>
+                                <span class="user-name">{{ displayName }}</span>
+                                <img :src="heartIcon" class="heart-img" />
                             </div>
                         </div>
 
@@ -549,22 +643,22 @@ onUnmounted(() => {
                         <div class="h-px bg-[var(--color-choco)] opacity-80 shrink-0"></div>
 
                         <!-- 메시지 목록 -->
-                        <div class="flex-1 overflow-y-auto p-6 space-y-2.5">
+                        <div ref="chatListRef" class="chat-list flex-1 overflow-y-auto p-6 space-y-2.5">
                             <div v-for="(msg, idx) in messages" :key="idx" class="flex flex-col">
                                 <div v-if="msg.type === 'CHAT'">
                                     <!-- 내 메시지 -->
                                     <div v-if="msg.sender === userId" class="flex justify-end">
                                         <div class="flex flex-col items-end space-y-1.5">
                                             <div class="bg-[var(--color-butter2)] px-4 py-1 rounded-xl max-w-64">
-                                                <p class="text-[var(--color-choco)] text-[1.25rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
+                                                <p class="text-[var(--color-choco)] text-[1.3rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
                                             </div>
                                         </div>
                                     </div>
                                     <!-- 다른 사용자 메시지 -->
                                     <div v-else class="flex flex-col space-y-1.5">
-                                        <p class="text-[var(--color-cream2)] text-[0.9375rem] font-['PfStardust30S'] leading-normal tracking-[-0.0375rem]">{{ msg.sender }}</p>
-                                        <div class="bg-[var(--color-syrup)] px-4 py-1 rounded-xl max-w-64">
-                                            <p class="text-[var(--color-cream2)] text-[1.25rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
+                                        <p class="text-[var(--color-cream2)] text-[0.9375rem] font-['PfStardust30S'] leading-normal tracking-[-0.0375rem]">{{ remoteParticipantNames[msg.sender] || msg.sender }}</p>
+                                        <div class="bg-[var(--color-syrup)] px-4 py-1 rounded-xl max-w-64 w-fit">
+                                            <p class="text-[var(--color-cream2)] text-[1.3rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -647,8 +741,15 @@ onUnmounted(() => {
 .content-wrapper { display: flex; flex: 1; height: 100vh; overflow: hidden; }
 
 /* 메인 윈도우 */
-.main-window-area { flex: 3; position: relative; background-color: #a29bfe; overflow: hidden; }
-/* [NEW] 좌측 상단 방 정보 오버레이 */
+.main-window-area { 
+    flex: 3; 
+    position: relative; 
+    background: url('@/assets/room/room_wood_bg.png') center/cover no-repeat;
+    background-color: #dcd0c0; /* 이미지 로드 전 폴백 색상 */
+    overflow: hidden; 
+}
+
+/* 좌측 상단 방 정보 오버레이 */
 .room-info-overlay {
     position: absolute;
     top: 20px;
@@ -741,7 +842,7 @@ onUnmounted(() => {
     transform: translate(4px, 4px);
     box-shadow: none;
 }
-/* 멤버 수 표시: 피그마 디자인 정확 구현 */
+/* 멤버 수 표시 */
 .member-count {
     color: var(--text-stroke-choco, #805143);
     /* p */
@@ -757,7 +858,7 @@ onUnmounted(() => {
     letter-spacing: 0;
 }
 
-/* 설정 버튼 스타일: 피그마 디자인 정확 구현 */
+/* 설정 버튼 스타일: */
 .btn-settings {
     background: transparent;
     border: none;
@@ -820,6 +921,41 @@ onUnmounted(() => {
     animation: tooltipFadeIn 0.2s ease-in-out;
 }
 
+/* 액자 + 사진 래퍼 */
+.frame-wrapper {
+    position: absolute;
+    top: 50%;
+    left: 40%;
+    transform: translate(-50%, -50%); /* 화면 정중앙 */
+    width: 700px;  /* 액자 PNG 크기에 맞춰 조정 필요 */
+    height: 450px; /* 액자 PNG 크기에 맞춰 조정 필요 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 사진 (뒤) - z-index 낮음 */
+.scene-photo {
+    position: absolute;
+    top: 20px;   /* 프레임 두께 고려하여 내부 배치 */
+    left: 20px;  /* 프레임 두께 고려하여 내부 배치 */
+    width: calc(100% - 40px);
+    height: calc(100% - 40px);
+    object-fit: cover;
+    z-index: 1;
+}
+
+/* 프레임 (앞) - z-index 높음 */
+.scene-frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none; /* 클릭 통과 */
+}
+
 .tooltip-arrow {
     position: absolute;
     bottom: 100%;
@@ -843,21 +979,32 @@ onUnmounted(() => {
     }
 }
 /* 타이머 */
-.combined-timer-widget { 
+.timer-floating-widget { 
     position: absolute; 
-    top: 100px; 
+    top: 20%; 
     right: 40px; 
     width: 323px;
-    height: 213.377px;
-    z-index: 5; 
+    height: auto;
+    z-index: 10; 
 }
 
+.hearts-container {
+    display: flex;
+    justify-content: flex-end; /* 우측 정렬 */
+    gap: 5px;
+    margin-bottom: -10px; /* 윈도우와 겹치지 않게 간격 조정 */
+    margin-right: 0px;
+    position: relative;
+    z-index: 11; /* 윈도우보다 위에 뜨도록 */
+}
+.heart-img { width: 30px; height: 30px; display: block; margin-bottom: 3px;}
+
 .window-frame {
-    position: absolute;
+    position: relative;
     width: 323px;
     height: 200px;
     right: -10px;
-    top: 80px;
+    top: 10px;
     background: #fff8e5;
 }
 
@@ -891,37 +1038,102 @@ onUnmounted(() => {
     font-size: 28.805px;
     color: white;
     font-weight: normal;
-    line-height: normal;
 }
 
+/* 타이머 디스플레이 중앙 정렬 */
 .timer-display {
     position: absolute;
-    left: 45px;
-    top: 137px;
+    width: 100%; /* 전체 너비 사용 */
+    top: 55%;
+    left: 47%;
+    transform: translate(-50%, -40%); /* 정중앙보다 약간 아래로 보정 */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 가로 중앙 정렬 */
+    justify-content: center;
+    text-align: center;
+    z-index: 5;
 }
 
 .pip-btn-area {
-    position: absolute;
-    top: 390px;
-    right: 40px;
+    position: relative;
+    top: 18px; /* 윈도우 프레임과의 간격 */
     width: 323px;
+    display: flex;
+    justify-content: center; /* 버튼 가운데 정렬 */
+    gap: 8px; /* 버튼 사이 간격 */
+    justify-content: flex-end; /* 우측 정렬 */
 }
-.btn-pip {
-    background: transparent;
-    color: var(--primary-butter, #FFD966);
-    border: none;
-    padding: 0;
-    width: 100%;
+
+/* 버튼 스타일 */
+.btn-pixel-action {
+    background: var(--color-butter2);
+    color: var(--color-choco); /* 텍스트 갈색 */
+    border: 2px solid var(--color-choco); /* 진한 갈색 테두리 */
+    border-radius: 50px; /* 둥근 알약 모양 */
+    padding: 10px;
     cursor: pointer;
-    font-family: exqt, sans-serif;
-    font-size: 1.75rem;
-    font-style: normal;
-    font-weight: 500;
+    font-family: 'PF Stardust S', sans-serif; /* 폰트 유지 */
+    font-size: 1.5rem;
     line-height: normal;
-    transition: opacity 0.2s;
+    
+    /* 픽셀 아트 느낌의 그림자 효과 */
+    box-shadow: 0px 4px 0px var(--color-choco); 
+    transform: translateY(0);
+    transition: all 0.1s;
+    
+    /* PIP 버튼 너비 리셋 */
+    width: 110px; 
+    max-width: 140px;
 }
-.btn-pip:hover { opacity: 0.8; }
-.btn-pip.active { opacity: 1; }
+
+/* 버튼 클릭/호버 효과 */
+.btn-pixel-action:active {
+    transform: translateY(4px); /* 눌리는 효과 */
+    box-shadow: 0px 0px 0px var(--color-choco);
+}
+
+.btn-pixel-action:hover {
+    filter: brightness(1.05);
+}
+
+/* 깨우기 버튼 스타일 */
+.btn-wakeup {
+    background: #e0e0e0; /* 비활성: 회색 */
+    color: #999;
+    border-color: #999;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none !important;
+}
+
+.btn-wakeup.active:active {
+    transform: translateY(4px);
+}
+
+/* 활성화 상태 (노란색) */
+.btn-wakeup.active {
+    background: #FFD966; 
+    color: #805143;
+    border-color: #805143;
+    cursor: pointer;
+    box-shadow: 0px 4px 0px #805143;
+    animation: bounce 1s infinite; /* 통통 튀는 애니메이션 */
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.feedback-toast {
+    position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: #FFF2CC;
+    padding: 15px 30px; border-radius: 30px;
+    font-family: 'PfStardust30S'; z-index: 3000;
+    animation: fadeOut 2s forwards;
+}
+@keyframes fadeOut { 0% {opacity: 1;} 80% {opacity: 1;} 100% {opacity: 0;} }
 
 /* 아바타 스트립: 긴 바(Bar)*/
 .avatar-strip {
@@ -930,9 +1142,12 @@ onUnmounted(() => {
     left: 0;
     width: 100%;
     height: 50px; /* 바의 높이 */
-    
-    /* 긴 바의 배경색 */
     background-color:#FFC497; 
+
+    background-image: url('@/assets/room/footer_bar_bg.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
     
     display: flex;
     flex-direction: row;
@@ -961,30 +1176,32 @@ onUnmounted(() => {
 .avatar-display {
     position: absolute;
     bottom: 100px; 
-    width: 140px;
-    height: 140px;
+    width: 180px;
+    height: 145px;
 }
 
-/* 텍스트*/
+/* 텍스트 */
 .user-info {
-    /* 바 내부 중앙 정렬 */
+    width: 90%;
+    height: 40px; /* 이름표 높이 */
+    /* 이름표 PNG 배경 */
+    background: url('@/assets/room/nametag_bg.png') center/100% 100% no-repeat; 
     display: flex;
     align-items: center;
-    gap: 6px;
-    
-    color: #fff; /* 글자색 */
-    font-weight: bold;
-    font-size: 1rem;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-    /* 배경(strip)보다는 위 */
-    z-index: 15; 
+    justify-content: center;
+    font-family: 'PF Stardust S';
+    color: #805143;
+    font-size: 1.7rem;
+    z-index: 11;
+    position: relative;
 }
 
 .user-name {
-    max-width: 100px;
+    max-width: 110px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    margin-bottom: 3px;
 }
 
 .heart-icon { 
@@ -1017,6 +1234,16 @@ onUnmounted(() => {
 
 .btn-chat-open:hover {
     opacity: 0.85;
+}
+
+/* 채팅 스크롤바 숨김 */
+.chat-list {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.chat-list::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
 }
 
 

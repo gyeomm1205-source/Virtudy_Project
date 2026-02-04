@@ -1,7 +1,7 @@
 <template>
   <div class="h-[686px] w-[691px]">
     <div class="h-[62px] relative mb-[20px]">
-      <div class="absolute left-[31px] top-[9px] flex gap-0">
+      <div class="absolute left-[31px] top-[25px] flex gap-0 z-0">
         <button 
           @click="setFilter('all')"
           :class="[
@@ -31,7 +31,7 @@
       <button
         v-if="currentFilter === 'myRooms'"
         @click="toggleFavoriteSelect"
-        class="absolute right-0 top-[14px] border-2 border-[var(--color-choco)] border-solid px-[18px] py-[6px] rounded-[20px] bg-[var(--color-butter2)] shadow-[4px_4px_0px_0px_var(--color-choco)] hover:scale-105 transition-transform"
+        class="absolute right-3 top-[37px] border-2 border-[var(--color-choco)] border-solid px-[18px] py-[6px] rounded-[20px] bg-[var(--color-butter2)] shadow-[4px_4px_0px_0px_var(--color-choco)] hover:scale-105 transition-transform"
       >
         <span class="text-[var(--color-choco)] text-[18px] font-['PfStardust30S'] font-normal leading-none">
           최애방 선택하기
@@ -40,25 +40,30 @@
       
       <div 
         v-if="currentFilter === 'all'"
-        class="absolute right-0 top-[14px] w-[219px] border-2 border-[var(--color-choco)] border-solid bg-[var(--color-cream2)] h-[33px] flex items-center px-[7px] gap-[10px]" 
+        class="absolute right-3 top-[35px] w-[219px] border-2 border-[var(--color-choco)] border-solid bg-[var(--color-cream2)] flex items-center h-[2.0625rem] p-[0.45831rem] gap-[0.625rem]" 
         style="box-shadow: 3.667px 3.667px 0px 0px var(--color-choco);"
       >
         <div class="w-[21px] h-[21px] flex items-center justify-center">
-          <svg viewBox="0 0 21 21" class="w-[19.636px] h-[19.636px]">
-            <path d="M8 2C11.314 2 14 4.686 14 8C14 9.248 13.587 10.397 12.897 11.324L18.707 17.071C19.098 17.461 19.098 18.095 18.707 18.485C18.317 18.876 17.683 18.876 17.293 18.485L11.486 12.678C10.559 13.368 9.41 13.781 8.162 13.781C4.848 13.781 2.162 11.095 2.162 7.781C2.162 4.467 4.848 1.781 8.162 1.781Z" fill="var(--color-choco)"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M18.0001 16.3637V15.5455H17.1819V14.7273H16.3637V13.9091H15.5455V13.0909H13.9092V12.2728H14.7274V10.6364H15.5455V5.72728H14.7274V4.09092H13.9092V3.27273H13.091V2.45455H12.2728V1.63637H10.6364V0.818184H5.72734V1.63637H4.09097V2.45455H3.27279V3.27273H2.4546V4.09092H1.63642V5.72728H0.818237V10.6364H1.63642V12.2728H2.4546V13.0909H3.27279V13.9091H4.09097V14.7273H5.72734V15.5455H10.6364V14.7273H12.2728V13.9091H13.091V15.5455H13.9092V16.3637H14.7274V17.1819H15.5455V18H16.3637V18.8182H18.0001V18H18.8183V16.3637H18.0001ZM9.81825 12.2728V13.0909H6.54552V12.2728H4.90915V11.4546H4.09097V9.8182H3.27279V6.54547H4.09097V4.9091H4.90915V4.09092H6.54552V3.27273H9.81825V4.09092H11.4546V4.9091H12.2728V6.54547H13.091V9.8182H12.2728V11.4546H11.4546V12.2728H9.81825Z" fill="#805143"/>
           </svg>
         </div>
         <input 
           v-model="searchQuery"
           type="text" 
-          placeholder="Search"
-          class="flex-1 bg-transparent border-none outline-none text-[var(--color-syrup)] text-[18px] font-['PfStardust30S'] font-normal leading-normal tracking-[-0.7px]"
+          placeholder="방 제목, 코드를 입력하세요"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          autocorrect="off"
+          class="flex-1 min-w-0 truncate bg-transparent border-none outline-none text-[var(--color-syrup)] text-[18px] font-['PfStardust30S'] font-normal leading-normal tracking-[-0.7px]"
           @input="onSearch"
+          @paste="onSearch"
         />
       </div>
     </div>
     
-    <div class="bg-[var(--color-cream2)] border-2 border-[var(--color-choco)] border-solid h-[589px] rounded-[20px] p-[20px] overflow-clip" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
+    <div class="relative z-10 bg-[var(--color-cream2)] border-2 border-[var(--color-choco)] border-solid h-[589px] rounded-[20px] p-[20px] overflow-clip" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
       <div class="grid grid-cols-2 gap-[20px] h-full">
         <div 
           v-for="(room, index) in displayedRooms" 
@@ -83,20 +88,20 @@
               </svg>
             </button>
 
-            <div v-if="room.owner" class="flex gap-[8px] mr-[10px] z-10">
+            <div v-if="room.owner" class="flex gap-[10px] mr-[10px] z-10">
               <button 
                 @click.stop="emit('edit', room)" 
-                class="w-[24px] h-[24px] flex items-center justify-center hover:scale-110 transition-transform bg-[var(--color-cream)] rounded-full border border-[var(--color-choco)]"
+                class="text-[var(--color-syrup)] text-[22px] font-['PfStardust30S'] font-normal leading-none"
                 title="방 정보 수정"
               >
-                <span class="text-[14px] leading-none">✏️</span>
+                수정
               </button>
               <button 
                 @click.stop="emit('delete', room.roomId!)" 
-                class="w-[24px] h-[24px] flex items-center justify-center hover:scale-110 transition-transform bg-[var(--color-cream)] rounded-full border border-[var(--color-choco)]"
+                class="text-[var(--color-syrup)] text-[22px] font-['PfStardust30S'] font-normal leading-none"
                 title="방 삭제"
               >
-                <span class="text-[12px] leading-none pt-[2px]">🗑️</span>
+                삭제
               </button>
             </div>
 
@@ -142,84 +147,68 @@
     </div>
     
     <div class="h-[28px] mt-[15px] flex items-center justify-center relative">
-      <div class="flex items-center gap-[24px]">
+      <div class="flex items-center gap-[1rem]">
         <button 
           @click="goToFirstPage" 
-          :disabled="currentPage === 1"
-          class="w-[28px] h-[28px] relative disabled:opacity-50"
+          :disabled="currentPage === 1 || !hasRooms"
+          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform"
         >
-          <svg viewBox="0 0 28 28" class="w-full h-full">
-            <rect width="28" height="28" fill="var(--color-choco)" opacity="0.3"/>
-          </svg>
-          <svg viewBox="0 0 20 20" class="absolute inset-1">
-            <path d="M15 5L10 10L15 15" stroke="var(--color-choco)" stroke-width="2" fill="none"/>
-            <path d="M11 5L6 10L11 15" stroke="var(--color-choco)" stroke-width="2" fill="none"/>
+          <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
+            <path d="M13 5L8 10L13 15L12 16L6 10L12 4L13 5Z" />
+            <path d="M9 5L4 10L9 15L8 16L2 10L8 4L9 5Z" />
           </svg>
         </button>
         
         <button 
           @click="goToPrevPage" 
-          :disabled="currentPage === 1"
-          class="w-[28px] h-[28px] relative disabled:opacity-50"
+          :disabled="currentPage === 1 || !hasRooms"
+          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform"
         >
-          <svg viewBox="0 0 28 28" class="w-full h-full">
-            <rect width="28" height="28" fill="var(--color-choco)" opacity="0.3"/>
-          </svg>
-          <svg viewBox="0 0 20 20" class="absolute inset-1">
-            <path d="M12 5L7 10L12 15" stroke="var(--color-choco)" stroke-width="2" fill="none"/>
+          <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
+            <path d="M13 5L8 10L13 15L12 16L6 10L12 4L13 5Z" />
           </svg>
         </button>
         
-        <div class="flex items-center gap-[12px]">
+        <div class="flex items-center gap-[0.75rem]">
           <button 
             v-for="pageNum in visiblePages" 
             :key="pageNum"
             @click="goToPage(pageNum)"
-            class="w-[28px] h-[28px] flex items-center justify-center"
+            class="w-[2rem] h-[2rem] flex items-center justify-center hover:scale-110 transition-transform font-['PfStardust30S'] text-[1.25rem]"
+            :class="[
+              pageNum === currentPage ? 'text-[var(--color-butter)] drop-shadow-[1px_1px_0_var(--color-choco)]' : 'text-[var(--color-choco)]',
+              (!hasRooms || pageNum > maxNavigablePage) ? 'pointer-events-none opacity-30' : ''
+            ]"
           >
-            <span 
-              :class="[
-                'text-[20px] font-[PfStardust30S] font-normal leading-none tracking-[-0.8px] text-center',
-                pageNum === currentPage ? 'text-[var(--color-butter)]' : 'text-[var(--color-choco)]'
-              ]"
-              :style="pageNum === currentPage ? 'text-shadow: 1px 1px 0px var(--color-butter2);' : 'text-shadow: 1px 1px 0px var(--color-butter2);'"
-            >
-              {{ pageNum }}
-            </span>
+            {{ pageNum }}
           </button>
         </div>
         
         <button 
           @click="goToNextPage" 
-          :disabled="currentPage === totalPages"
-          class="w-[28px] h-[28px] relative disabled:opacity-50"
+          :disabled="currentPage >= maxNavigablePage || !hasRooms"
+          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform"
         >
-          <svg viewBox="0 0 28 28" class="w-full h-full">
-            <rect width="28" height="28" fill="var(--color-choco)" opacity="0.3"/>
-          </svg>
-          <svg viewBox="0 0 20 20" class="absolute inset-1">
-            <path d="M8 5L13 10L8 15" stroke="var(--color-choco)" stroke-width="2" fill="none"/>
+          <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
+            <path d="M7 5L12 10L7 15L8 16L14 10L8 4L7 5Z" />
           </svg>
         </button>
         
         <button 
           @click="goToLastPage" 
-          :disabled="currentPage === totalPages"
-          class="w-[28px] h-[28px] relative disabled:opacity-50"
+          :disabled="currentPage >= maxNavigablePage || !hasRooms"
+          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform"
         >
-          <svg viewBox="0 0 28 28" class="w-full h-full">
-            <rect width="28" height="28" fill="var(--color-choco)" opacity="0.3"/>
-          </svg>
-          <svg viewBox="0 0 20 20" class="absolute inset-1">
-            <path d="M5 5L10 10L5 15" stroke="var(--color-choco)" stroke-width="2" fill="none"/>
-            <path d="M9 5L14 10L9 15" stroke="var(--color-choco)" stroke-width="2" fill="none"/>
+          <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
+            <path d="M7 5L12 10L7 15L8 16L14 10L8 4L7 5Z" />
+            <path d="M11 5L16 10L11 15L12 16L18 10L12 4L11 5Z" />
           </svg>
         </button>
       </div>
       
-      <div class="absolute right-0 top-[6px]">
+      <div class="absolute right-0 top-[0px]">
         <span class="text-[var(--color-butter2)] text-[20px] font-['PfStardust30S'] font-normal leading-none tracking-[-0.8px]">
-          {{ String(Math.min((currentPage - 1) * 6 + 1, totalRooms)).padStart(2, '0') }}-{{ String(Math.min(currentPage * 6, totalRooms)).padStart(2, '0') }} / {{ totalRooms }}
+          {{ String(pageStart).padStart(2, '0') }}-{{ String(pageEnd).padStart(2, '0') }}
         </span>
       </div>
     </div>
@@ -265,10 +254,15 @@ const selectingFavorite = ref(false);
 const searchQuery = ref<string>('');
 const currentPage = ref<number>(1);
 const ITEMS_PER_PAGE = 6;
+const MAX_PAGES = 20;
 
 // Computed
 const totalRooms = computed(() => filteredRooms.value.length);
-const totalPages = computed(() => Math.max(1, Math.ceil(totalRooms.value / ITEMS_PER_PAGE)));
+const totalPages = computed(() => MAX_PAGES);
+const hasRooms = computed(() => totalRooms.value > 0);
+const maxNavigablePage = computed(() => Math.max(1, Math.ceil(totalRooms.value / ITEMS_PER_PAGE)));
+const pageStart = computed(() => (currentPage.value - 1) * ITEMS_PER_PAGE + 1);
+const pageEnd = computed(() => Math.min(currentPage.value * ITEMS_PER_PAGE, MAX_PAGES * ITEMS_PER_PAGE));
 
 const filteredRooms = computed(() => {
   let filtered = [...props.rooms];
@@ -280,7 +274,8 @@ const filteredRooms = computed(() => {
   if (currentFilter.value === 'all' && searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(room => 
-      room.title.toLowerCase().includes(query)
+      room.title.toLowerCase().includes(query) ||
+      (room.roomId ?? '').toLowerCase().includes(query)
     );
   }
   
@@ -295,13 +290,26 @@ const displayedRooms = computed(() => {
 
 const visiblePages = computed(() => {
   const pages: number[] = [];
-  const start = Math.max(1, currentPage.value - 2);
-  const end = Math.min(totalPages.value, currentPage.value + 2);
+  const windowSize = 5;
+  const total = totalPages.value;
   
+  let start = currentPage.value - Math.floor(windowSize / 2);
+  let end = start + windowSize - 1;
+
+  if (start < 1) {
+    start = 1;
+    end = Math.min(total, windowSize);
+  }
+
+  if (end > total) {
+    end = total;
+    start = Math.max(1, end - windowSize + 1);
+  }
+
   for (let i = start; i <= end; i++) {
     pages.push(i);
   }
-  
+
   return pages;
 });
 
@@ -316,6 +324,10 @@ const setFilter = (filter: string) => {
 };
 
 const onSearch = () => {
+  if (currentFilter.value !== 'all') {
+    currentFilter.value = 'all';
+    emit('filterChange', 'all');
+  }
   currentPage.value = 1;
   emit('search', searchQuery.value);
 };
@@ -335,32 +347,43 @@ const onFavoriteClick = (roomId: string) => {
 };
 
 const goToPage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
+  if (!hasRooms.value) return;
+  if (page >= 1 && page <= maxNavigablePage.value) {
     currentPage.value = page;
   }
 };
 
 const goToFirstPage = () => {
+  if (!hasRooms.value) return;
   currentPage.value = 1;
 };
 
 const goToLastPage = () => {
-  currentPage.value = totalPages.value;
+  if (!hasRooms.value) return;
+  currentPage.value = maxNavigablePage.value;
 };
 
 const goToPrevPage = () => {
+  if (!hasRooms.value) return;
   if (currentPage.value > 1) {
     currentPage.value--;
   }
 };
 
 const goToNextPage = () => {
-  if (currentPage.value < totalPages.value) {
+  if (!hasRooms.value) return;
+  if (currentPage.value < maxNavigablePage.value) {
     currentPage.value++;
   }
 };
 
 watch(() => props.rooms, () => {
-  // currentPage.value = 1; // 필요에 따라 주석 해제
+  if (!hasRooms.value) {
+    currentPage.value = 1;
+    return;
+  }
+  if (currentPage.value > maxNavigablePage.value) {
+    currentPage.value = maxNavigablePage.value;
+  }
 });
 </script>
