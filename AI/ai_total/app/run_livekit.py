@@ -208,6 +208,7 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                     publication.set_subscribed(True)
                     # 구독하면 자동으로 on_track_subscribed가 호출되므로 
                     # 여기서 ai_process_loop를 직접 실행할 필요는 없습니다.
+                    
         # ==============================================================================
         # [추가] 봇 인내심 기르기 (입장 후 30초 대기)
         # ==============================================================================
