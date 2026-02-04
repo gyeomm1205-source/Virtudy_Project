@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from .routers import avatar
 from .database import Base, engine
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, APIRouter
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 import asyncio
 import multiprocessing
@@ -12,23 +12,12 @@ import json
 
 from fastapi.middleware.cors import CORSMiddleware
 
-
-main_router = APIRouter()
-
 # 1. 데이터베이스 테이블 생성
 # (서버 시작 시 models.py에 정의된 테이블이 없으면 자동으로 만들어줍니다)
 Base.metadata.create_all(bind=engine)
 
 # 2. FastAPI 앱 인스턴스 생성 (이게 꼭 있어야 합니다!)
 app = FastAPI()
-
-# Initialize Logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-
 
 # 1. 허용할 오리진(도메인) 목록 정의
 origins = [
@@ -46,28 +35,6 @@ app.add_middleware(
     allow_headers=["*"],         # 허용할 HTTP 헤더
 )
 
-# [DEBUG] Middleware to print headers
-class HeaderPrinterMiddleware:
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] == "websocket":
-            headers = dict(scope.get("headers", []))
-            print(f"\n[DEBUG] WebSocket Connection Attempt: {scope['path']}")
-            print("[DEBUG] Received Headers:")
-            for k, v in headers.items():
-                try:
-                    key = k.decode()
-                    value = v.decode()
-                    print(f"  {key}: {value}")
-                except:
-                    print(f"  {k}: {v}")
-            print("-" * 30)
-        await self.app(scope, receive, send)
-
-app.add_middleware(HeaderPrinterMiddleware)
-
 # 3. 라우터 등록
 # 이제 /makeAvatar 같은 API 주소를 사용할 수 있게 됩니다.
 app.include_router(avatar.router, prefix="/fastapi")
@@ -75,7 +42,7 @@ app.include_router(avatar.router, prefix="/fastapi")
 app.include_router(main_router, prefix="/fastapi")
  
 # 4. (선택사항) 서버가 잘 켜졌는지 확인하는 테스트용 루트 경로
-@main_router.get("/")
+@app.get("/")
 async def root():
     return {"message": "Avatar AI Server is running!"}
 
@@ -103,7 +70,7 @@ def bot_process(url: str, token: str, queue: multiprocessing.Queue):
         print(f"[ERROR] Bot Process Crashed: {e}", flush=True)
         logger.error(f"Bot execution failed: {e}")
 
-@main_router.post("/bot/join")
+@app.post("/fastapi/bot/join")
 async def join_room(request: JoinRequest):
     """
     Triggers a new AI bot instance to join a LiveKit room.
@@ -121,70 +88,34 @@ async def join_room(request: JoinRequest):
     
     return {"status": "started", "pid": p.pid, "message": f"Bot joining room {request.room_id}"}
 
-@main_router.websocket("/ws/analysis/{room_id}/{member_id}")
+@app.websocket("/fastapi/ws/analysis/{room_id}/{member_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str):
     """
     Handles WebSocket connections from the frontend.
     """
-
-    # 1. 먼저 로그 출력 (이미 잘 하고 계심)
-    print(f"[DEBUG] WebSocket Connection Attempt: {room_id}")
-
     await websocket.accept()
     logger.info(f"WebSocket connected: Room {room_id}, Member {member_id}")
     
-    # 3. 토큰 검사 (쿠키 확인)
-    # Authorization 헤더는 없을 확률이 높으니 쿠키를 우선 확인하세요.
-    cookie_token = websocket.cookies.get("accessToken") # 혹은 refreshToken
-
-    if not cookie_token:
-        print("[ERROR] 토큰이 없습니다. 연결 종료.")
-        await websocket.close(code=1008) # 1008: 정책 위반
-        cookie_token = websocket.cookies.get("refreshToken")
-        return
-    
-    # 두 토큰 다 없으면 에러 처리
-    if not cookie_token:
-        print(f"[ERROR] 토큰(Access/Refresh)이 모두 없습니다. 쿠키: {websocket.cookies.keys()}")
-        await websocket.close(code=1008) 
-        return
-
-    # Try to get queue, but don't give up if missing (bot might join later)
     queue = active_queues.get(room_id)
     if not queue:
-        logger.warning(f"No active AI bot found for room {room_id}. Waiting for bot to join...")
+        logger.warning(f"No active AI bot found for room {room_id}. Queue Missing!")
     else:
         logger.info(f"Queue found for room {room_id}. Listening for data...")
     
     try:
         while True:
-            # If queue is missing, try to find it again
-            if queue is None:
-                queue = active_queues.get(room_id)
-                if queue:
-                    logger.info(f"Bot joined! Queue found for room {room_id}.")
-                else:
-                    # Still no queue, wait a bit and retry
-                    await asyncio.sleep(1)
-                    continue
-
-            # Queue exists, check for data
-            if not queue.empty():
-                try:
-                    data = queue.get_nowait()
-                    # logger.info(f"Sending data to WS: {data}")
-                    print(f"[DEBUG] Sending to FE: {data['value']} ({data['eventType']})")
-                    await websocket.send_json(data)
-                except multiprocessing.queues.Empty:
-                    pass
+            if queue and not queue.empty():
+                data = queue.get()
+                # logger.info(f"Sending data to WS: {data}") # Too noisy, uncomment if needed
+                print(f"[DEBUG] Sending to FE: {data['value']} ({data['eventType']})") # Explicit print for user
+                await websocket.send_json(data)
             else:
                 await asyncio.sleep(0.01) # Faster polling
-
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected: Room {room_id}, Member {member_id}")
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
 
-@main_router.get("/health")
+@app.get("/health")
 async def health_check():
     return {"status": "ok"}
