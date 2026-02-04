@@ -64,7 +64,7 @@ public class StudyStateHelper {
                 long secondsLeft = currentTimeBuffer % 60;
                 
                 redisTemplate.opsForHash().increment(deltaKey, FIELD_TIME_MIN, minutesToAdd);
-                redisTemplate.opsForHash().put(deltaKey, FIELD_TIME_BUFFER, secondsLeft); // 덮어쓰기 (Safe for single user flow)
+                redisTemplate.opsForHash().put(deltaKey, FIELD_TIME_BUFFER, String.valueOf(secondsLeft)); // 덮어쓰기 (Safe for single user flow)
                 // 만약 동시성 이슈가 걱정된다면 Lua Script 필요하지만, 한 유저의 로그는 순차적이라 가정.
             }
 
@@ -75,7 +75,7 @@ public class StudyStateHelper {
                 long bufferLeft = currentScoreBuffer % 600;
 
                 redisTemplate.opsForHash().increment(deltaKey, FIELD_SCORE_POINT, pointsToAdd);
-                redisTemplate.opsForHash().put(deltaKey, FIELD_SCORE_BUFFER, bufferLeft);
+                redisTemplate.opsForHash().put(deltaKey, FIELD_SCORE_BUFFER, String.valueOf(bufferLeft));
             }
             
             // 변경사항이 발생한 경우에만 Dirty Set에 추가 (DB 반영할 게 생겼을 수도 있으므로)
