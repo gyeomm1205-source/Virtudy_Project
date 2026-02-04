@@ -3,9 +3,9 @@
     <div class="flex items-center gap-[var(--spacing-m)]">
       <router-link 
         :to="logoLink" 
-        class="text-[var(--color-syrup)] text-[36px] font-['Ram'] font-medium leading-none relative z-10 cursor-pointer"
+        class="relative z-10 cursor-pointer"
       >
-        버터디
+        <LogoIcon class="h-[50px] w-auto" />
       </router-link>
       <router-link 
         to="/introduction" 
@@ -50,6 +50,7 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import LogoIcon from '@/assets/logo.svg?component';
 
 const authStore = useAuthStore();
 const router = useRouter();

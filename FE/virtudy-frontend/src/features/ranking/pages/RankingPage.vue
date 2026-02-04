@@ -3,8 +3,8 @@
     <GlobalNavBar />
 
     <div
-      class="absolute left-[21.5rem] top-[8.5rem] z-10"
-      :style="{ width: avatarSize, height: avatarSize }"
+      class="absolute left-[31rem] top-[23.75rem] z-10"
+      :style="{ width: '14rem', height: '16rem' }"
     >
       <CharacterAvatar
         v-if="hasAvatarConfig"
@@ -30,10 +30,13 @@
           </h1>
 
           <!-- 아바타와 순위 정보 -->
-          <div class="flex items-center translate-x-[1rem]">
+          <div class="flex items-center translate-x-[17rem]">
             <div class="flex flex-col items-start">
               <div class="flex items-end gap-[0.5rem] -mt-[5rem]">
-                <span class="text-[var(--color-choco)] text-[clamp(1.5rem,2.625rem,2.625rem)] font-['Ram'] font-medium leading-none">
+                <span
+                  class="text-[var(--color-choco)] text-[clamp(1.5rem,2.625rem,2.625rem)] font-['Ram'] font-medium leading-tight max-w-[22rem] whitespace-normal break-words"
+                  style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;"
+                >
                   {{ myRankInfo?.nickName || authStore.userInfo?.nickName || '방문자' }}
                 </span>
 
@@ -47,18 +50,16 @@
                 </span>
               </div>
 
-              <div class="text-[var(--color-butter)] font-['Xcu'] font-normal leading-none drop-shadow-md mt-[-0.5rem] translate-x-[14rem]"
-                :class="myRankInfo?.rank ? 'text-[clamp(3rem,8.125rem,8.125rem)]' : 'text-[clamp(2rem,3.5rem,3.5rem)] translate-y-[1rem]'">
+              <div class="text-[var(--color-butter)] font-['Xcu'] font-normal drop-shadow-md mt-[-0.5rem] translate-x-[14rem]">
                 <template v-if="myRankInfo?.rank">
-                  {{ myRankInfo.rank }}위
+                  <span class="leading-none text-[clamp(3rem,8.125rem,8.125rem)]">
+                    {{ myRankInfo.rank }}위
+                  </span>
                 </template>
 
                 <template v-else>
-                  <span v-if="rankType === 'private'" class="tracking-tighter">
-                    환영합니다!
-                  </span>
-                  <span v-else class="tracking-tighter">
-                    최애 스터디가 없습니다!
+                  <span class="tracking-tighter leading-none text-[clamp(2rem,3.5rem,3.5rem)] max-w-[18rem] truncate">
+                    {{ rankType === 'private' ? '환영합니다!' : '최애 스터디가 없습니다!' }}
                   </span>
                 </template>
               </div>
@@ -67,11 +68,11 @@
         </div>
 
       <!-- 탭과 검색바 -->
-        <div class="max-w-[61.375rem] w-full ml-26 mr-0 relative mb-[2rem] translate-x-[rem]">
+        <div class="max-w-[61.375rem] w-full ml-26 mr-0 relative mb-[2rem] translate-x-[0.5rem]">
 
         <div class="flex justify-between items-end mb-[-2px] relative z-10 px-[2rem]">
           <div class="flex items-center gap-[1rem]">
-            <div class="flex gap-0">
+            <div class="flex gap-0 ">
               <button @click="changeType('private')" :class="[
                 'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
                 rankType === 'private' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
@@ -94,7 +95,7 @@
                 d="M8 2C11.314 2 14 4.686 14 8C14 9.248 13.587 10.397 12.897 11.324L18.707 17.071C19.098 17.461 19.098 18.095 18.707 18.485C18.317 18.876 17.683 18.876 17.293 18.485L11.486 12.678C10.559 13.368 9.41 13.781 8.162 13.781C4.848 13.781 2.162 11.095 2.162 7.781C2.162 4.467 4.848 1.781 8.162 1.781Z"
                 fill="var(--color-choco)" />
             </svg>
-            <input v-model="searchKeyword" @keyup.enter="handleSearch" type="text" placeholder="Search"
+            <input v-model="searchKeyword" @input="handleSearch" @paste="handleSearch" @keyup.enter="handleSearch" type="text" placeholder="Search"
               class="flex-1 bg-transparent border-none outline-none text-[var(--color-syrup)] text-[1.125rem] font-['PfStardust30S'] placeholder-[var(--color-syrup)] opacity-70" />
           </div>
         </div>
@@ -218,8 +219,6 @@ import type { RankItem } from '../types/ranking.types';
 
 const authStore = useAuthStore();
 const router = useRouter();
-
-const avatarSize = '8rem';
 
 const displayAvatar = computed(() => myRankInfo.value?.avatar ?? authStore.userInfo?.avatar);
 const hasAvatarConfig = computed(() => {

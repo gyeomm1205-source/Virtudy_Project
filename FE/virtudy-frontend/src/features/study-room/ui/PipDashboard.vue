@@ -83,17 +83,18 @@ const getEmptyHeartStyle = () => ({
 // 팀원 하트 5개 슬롯 생성
 const teamHeartSlots = computed(() => {
   const maxSlots = 5;
-  const slots = [];
+  const slots: Array<{ filled: boolean; style: Record<string, string> }> = [];
   
   for (let i = 0; i < maxSlots; i++) {
-    if (i < props.teammates.length) {
-      // 팀원이 있는 슬롯: 해당 팀원의 점수 색상
+    const teammate = props.teammates[i];
+    if (teammate) {
+      // ????? ??? ???: ??? ????? ??? ???
       slots.push({
         filled: true,
-        style: getHeartStyle(props.teammates[i].score)
+        style: getHeartStyle(teammate.score)
       });
     } else {
-      // 팀원이 없는 슬롯: 회색 (비활성)
+      // ????? ??? ???: ??? (?????
       slots.push({
         filled: false,
         style: getEmptyHeartStyle()
@@ -211,6 +212,8 @@ const teamHeartSlots = computed(() => {
               :aiPhone="getAiPhone(aiStatus)"
               :aiAbsent="getAiAbsent(aiStatus)"
               :isBlinking="false"
+              offsetX="0%"
+              offsetY="9%"
               mouthState="closed"
             />
           </div>
@@ -292,25 +295,26 @@ const teamHeartSlots = computed(() => {
 
 /* 상단 아바타 영역 래퍼: 배경색이 늘어날 때 아바타만 둥둥 뜨지 않도록 처리 */
 .top-section-wrapper {
-  flex: 1; /* 남는 공간 차지 */
+  flex: 0 0 auto;
   width: 100%;
   display: flex;
   justify-content: center; /* 아바타 중앙 정렬 */
   background-color: #ffeaa7; /* 아바타 배경색이 좌우로 꽉 차게 */
+  padding-bottom: 6px;
 }
 
 /* === 상단 200x200 영역 === */
 .top-section {
   position: relative; /* 겹치기 위한 기준점 */
   width: 200px;
-  height: 200px;
+  height: 230px;
   flex-shrink: 0;
 }
 
 /* Layer 1: 아바타 */
 .avatar-layer {
   position: absolute;
-  top: 23px;
+  top: 0;
   left: 0;
   width: 100%;
   height: 100%;
@@ -352,7 +356,7 @@ const teamHeartSlots = computed(() => {
 /* === 하단 200x80 영역 === */
 .bottom-section {
   width: 100%;
-  min-height: 80px;
+  min-height: 60px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -360,13 +364,14 @@ const teamHeartSlots = computed(() => {
   background-color: #FFF4D9;
   border-top: 2px dashed #dcdcdc; /* 구분선 */
   padding-bottom: 10px;
+  padding: 6px 0;
 }
 
 .timer-text {
   font-size: 2.2rem;
   color: #FBC02D;
   text-shadow: 2px 2px 0px #5d4037;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   line-height: 1;
 }
 

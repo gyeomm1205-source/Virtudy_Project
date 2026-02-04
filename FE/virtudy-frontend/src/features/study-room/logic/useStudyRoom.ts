@@ -2,6 +2,7 @@
 
 import { computed, ref, onUnmounted } from 'vue';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
+import type { AvatarConfig } from '@/shared/types/common.types';
 
 type FocusEventType = 'FOCUS' | 'SLEEP' | 'PHONE' | 'AWAY';
 type RoomInfoUpdate = {
@@ -17,18 +18,27 @@ export function useStudyRoom() {
     const messages = ref<any[]>([]);
     const remoteTracks = ref<{ participantId: string; track: any }[]>([]);
     const focusEventType = ref<FocusEventType | null>(null);
-    // [추가] 상대방 AI 상태 저장용 (key: participantId, value: status)
+
+    // 상대방 AI 상태 저장용 (key: participantId, value: status)
     const remoteParticipantStates = ref<Record<string, FocusEventType>>({});
-    // [추가] 상대방 집중도 점수 저장용 (key: participantId, value: score)
+    // 상대방 집중도 점수 저장용 (key: participantId, value: score)
     const remoteParticipantScores = ref<Record<string, number>>({});
-    // [추가] 상대방 닉네임 저장용 (key: participantId, value: nickName)
+    // 상대방 닉네임 저장용 (key: participantId, value: nickName)
     const remoteParticipantNames = ref<Record<string, string>>({});
-    // [Add] remote participant join order
+    // 상대방 아바타 설정 저장용 (key: participantId, value: AvatarConfig)
+    const remoteParticipantAvatars = ref<Record<string, AvatarConfig>>({});
+
+    // remote participant join order
     const remoteParticipantJoinedAt = ref<Record<string, number>>({});
     const remoteParticipantOrder = ref<string[]>([]);
+
     const localNickName = ref<string | null>(null);
     const localUserId = ref<string | null>(null);
-    // [추가] 방 정보 업데이트 이벤트
+
+    // 내 아바타 정보를 저장해두었다가 요청 시 보냄
+    const localAvatarConfig = ref<AvatarConfig | null>(null);
+
+    // 방 정보 업데이트 이벤트
     const roomInfoUpdate = ref<RoomInfoUpdate | null>(null);
 
     // null이 아니고 FOCUS가 아니면 '딴짓 중(true)'으로 판단
@@ -62,7 +72,13 @@ export function useStudyRoom() {
      * @param token LiveKit 접속 토큰 (필수)
      */
 
-    const joinRoom = async (roomId: string, userId: string, token?: string, nickName?: string) => {
+    const joinRoom = async (
+        roomId: string, 
+        userId: string, 
+        token?: string, 
+        nickName?: string,
+        avatarConfig?: AvatarConfig
+    ) => {
         try {
             isConnected.value = false;
             error.value = null;
@@ -71,13 +87,13 @@ export function useStudyRoom() {
             remoteParticipantStates.value = {}; // 초기화
             remoteParticipantScores.value = {};
             remoteParticipantNames.value = {};
+            remoteParticipantAvatars.value = {};
             remoteParticipantJoinedAt.value = {};
             remoteParticipantOrder.value = [];
+
             localNickName.value = nickName || userId;
             localUserId.value = userId;
-
-            // 이전 리스너 제거 (중복 방지)
-            // roomManager.removeAllListeners();
+            localAvatarConfig.value = avatarConfig || null;
 
             // 메시지 수신 리스너 등록 (채팅, 시스템 메시지)
             roomManager.onMessage((payload, senderId) => {
@@ -106,22 +122,29 @@ export function useStudyRoom() {
 
                 // [추가] 상대방 닉네임 업데이트
                 if (senderId && payload && payload.topic === 'USER_INFO') {
-                    const nickName = payload.nickName || payload.data?.nickName;
-                    if (nickName) {
-                        remoteParticipantNames.value[senderId] = nickName;
-                    }
+                    // 닉네임 저장
+                    const rNick = payload.nickName || payload.data?.nickName;
+                    if (rNick) remoteParticipantNames.value[senderId] = rNick;
+                    
+                    // 아바타 저장
+                    const rAvatar = payload.avatar || payload.data?.avatar;
+                    if (rAvatar) remoteParticipantAvatars.value[senderId] = rAvatar;
+                    
                     return;
                 }
 
-                // [추가] 닉네임 요청 처리 (targetId가 나인 경우 응답)
+                // 정보 요청이 오면 내 정보(닉네임 + 아바타) 전송
                 if (payload && payload.topic === 'USER_INFO_REQUEST') {
-                    if (payload.targetId && payload.targetId === localUserId.value && localNickName.value) {
-                        roomManager.sendLiveKitData('USER_INFO', { nickName: localNickName.value });
+                    if (payload.targetId && payload.targetId === localUserId.value) {
+                        roomManager.sendLiveKitData('USER_INFO', { 
+                            nickName: localNickName.value,
+                            avatar: localAvatarConfig.value // 아바타 정보 포함해서 전송
+                        });
                     }
                     return;
                 }
 
-                // [추가] 방 정보 업데이트 이벤트 처리
+                // 방 정보 업데이트 이벤트 처리
                 if (payload?.type === 'ROOM_UPDATED' && payload?.data) {
                     roomInfoUpdate.value = payload.data as RoomInfoUpdate;
                     return;
@@ -171,29 +194,22 @@ export function useStudyRoom() {
                 );
             });
 
-            // 참가자 입장 리스너 등록 (닉네임 공유)
+            // 새 참가자가 들어오면 내 정보(닉네임 + 아바타)를 먼저 보냄
             roomManager.onParticipantConnected((_participant) => {
                 updateParticipantOrder(_participant);
-                if (localNickName.value) {
-                    roomManager.sendLiveKitData('USER_INFO', { nickName: localNickName.value });
-                }
+                roomManager.sendLiveKitData('USER_INFO', { 
+                    nickName: localNickName.value,
+                    avatar: localAvatarConfig.value 
+                });
             });
 
             // 참가자 퇴장 리스너 등록 (아바타/상태 정리)
             roomManager.onParticipantDisconnected((participant) => {
-                console.log(`👋 참가자 퇴장 처리: ${participant.identity}`);
-                remoteTracks.value = remoteTracks.value.filter(
-                    (p) => p.participantId !== participant.identity
-                );
-                if (remoteParticipantStates.value[participant.identity]) {
-                    delete remoteParticipantStates.value[participant.identity];
-                }
-                if (remoteParticipantScores.value[participant.identity] !== undefined) {
-                    delete remoteParticipantScores.value[participant.identity];
-                }
-                if (remoteParticipantNames.value[participant.identity]) {
-                    delete remoteParticipantNames.value[participant.identity];
-                }
+                remoteTracks.value = remoteTracks.value.filter((p) => p.participantId !== participant.identity);
+                delete remoteParticipantStates.value[participant.identity];
+                delete remoteParticipantScores.value[participant.identity];
+                delete remoteParticipantNames.value[participant.identity];
+                delete remoteParticipantAvatars.value[participant.identity]; // 아바타 정리
                 removeParticipantOrder(participant.identity);
             });
 
@@ -203,9 +219,11 @@ export function useStudyRoom() {
             isConnected.value = true;
             console.log('✅ useStudyRoom: 입장 완료 상태로 변경');
 
-            if (localNickName.value) {
-                roomManager.sendLiveKitData('USER_INFO', { nickName: localNickName.value });
-            }
+            // 입장 직후 내 정보(닉네임 + 아바타) 방송
+            roomManager.sendLiveKitData('USER_INFO', { 
+                nickName: localNickName.value,
+                avatar: localAvatarConfig.value 
+            });
 
             const room = roomManager.getRoom();
             if (room?.remoteParticipants) {
@@ -258,12 +276,13 @@ export function useStudyRoom() {
         messages,
         remoteTracks,
         remoteParticipantStates,
-        remoteParticipantScores, // [추가]
+        remoteParticipantScores, 
         remoteParticipantNames,
+        remoteParticipantAvatars,
         remoteParticipantOrder,
         focusEventType,
         isDistracted,
         setDebugState, // [추가] 디버그용 함수 반환
-        roomInfoUpdate, // [추가]
+        roomInfoUpdate, 
     };
 }

@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import { jwtDecode } from 'jwt-decode';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
 // [Merge] Combined Imports
 import { useFocusTimer } from '../logic/useFocusTimer';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
 import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
+import { useStudyStore } from '@/stores/studyStore';
 import StudyTimer from '@/shared/ui/StudyTimer.vue';
 import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
@@ -33,13 +36,38 @@ import DebugControls from '../ui/DebugControls.vue';
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const studyStore = useStudyStore();
+const { accessToken, currentRoomId } = storeToRefs(studyStore);
 
 // 2. URL에서 정보 추출
 const roomId = route.params.roomId as string;
-const token = route.query.token as string;
 const userId = (route.query.userId as string) || authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
 //[추가] 사용자 닉네임 표시용
 const displayName = computed(() => authStore.userInfo?.nickName || userId);
+
+const getValidStudyToken = (): string | null => {
+    if (!accessToken.value || !currentRoomId.value || currentRoomId.value !== roomId) {
+        studyStore.clearToken();
+        router.replace('/guest');
+        return null;
+    }
+
+    try {
+        const decoded = jwtDecode<{ exp?: number }>(accessToken.value);
+        if (decoded?.exp && Date.now() / 1000 >= decoded.exp) {
+            studyStore.clearToken();
+            router.replace('/guest');
+            return null;
+        }
+    } catch (error) {
+        console.warn('유효하지 않은 스터디 토큰입니다.', error);
+        studyStore.clearToken();
+        router.replace('/guest');
+        return null;
+    }
+
+    return accessToken.value;
+};
 
 // 3. 로직 훅
 const { 
@@ -51,8 +79,9 @@ const {
     messages, 
     remoteTracks,
     remoteParticipantStates,
-    remoteParticipantScores, // [추가]
+    remoteParticipantScores,
     remoteParticipantNames,
+    remoteParticipantAvatars,
     remoteParticipantOrder,
     isDistracted,
     roomInfoUpdate,
@@ -68,7 +97,7 @@ const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 const chatMessage = ref('');
 const localVideoRef = ref<HTMLVideoElement | null>(null);
 const chatListRef = ref<HTMLDivElement | null>(null);
-//[추가] 방 정보
+// 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
 const roomDetail = ref<RoomData | null>(null);
@@ -129,10 +158,12 @@ const togglePip = async () => {
 
     try {
         // 이미지 비율 고려하여 세로형 창 생성
+        const minPipWidth = 200;
+        const minPipHeight = 300;
         // @ts-ignore
         pipWindow = await window.documentPictureInPicture.requestWindow({
-            width: 200, 
-            height: 280,
+            width: minPipWidth, 
+            height: minPipHeight,
         });
 
         if (!pipWindow) return;
@@ -156,9 +187,18 @@ const togglePip = async () => {
 
         // DOM 이동
         if (pipDashboardRef.value) {
-            pipWindow.document.body.append(pipDashboardRef.value);
+            const pipRoot = pipDashboardRef.value;
+            // 기본 표시 보장 (스타일 복사 실패 시에도 화면이 안 비도록)
+            pipRoot.style.display = 'block';
+            pipRoot.style.width = '100%';
+            pipRoot.style.height = '100%';
+            pipRoot.style.background = '#FFF4D9';
+
+            pipWindow.document.body.append(pipRoot);
             // PIP 창 바디 스타일 (여백 제거)
             pipWindow.document.body.style.margin = '0';
+            pipWindow.document.body.style.padding = '0';
+            pipWindow.document.body.style.background = '#FFF4D9';
         }
 
         isPipActive.value = true;
@@ -238,7 +278,7 @@ const handleEditSuccess = async () => {
             roomOwnerFlag.value = false;
         }
 
-        // [추가] 방 정보 변경을 다른 참가자에게 전파
+        // 방 정보 변경을 다른 참가자에게 전파
         RoomManager.getInstance().sendControlMessage('ROOM_UPDATED', {
             roomId,
             title: roomTitle.value,
@@ -350,12 +390,15 @@ let teamAverageInterval: number | undefined;
 
 onMounted(() => {
     const init = async () => {
-        // [수정] 로컬 테스트 지원: token이 없어도 userId가 URL에 있거나 로컬 환경이면 진행
         if (!roomId) {
             alert('잘못된 접근입니다.');
             router.replace('/lobby');
             return;
         }
+
+        const validToken = getValidStudyToken();
+        if (!validToken) return;
+
         if (!authStore.userInfo) {
             await authStore.fetchUserInfo(); //입장시 유저 정보 로드
         }
@@ -375,7 +418,7 @@ onMounted(() => {
             roomDescription.value = '';
         }
         console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
-        await joinRoom(roomId, userId, token, displayName.value);
+        await joinRoom(roomId, userId, validToken, displayName.value, myAvatarConfig.value);
     };
     init();
 
@@ -387,7 +430,7 @@ onMounted(() => {
     teamAverageInterval = window.setInterval(updateTeamAverage, TEAM_AVG_INTERVAL_MS);
 });
 
-// [추가] 다른 참가자의 방 정보 업데이트 수신 처리
+// 다른 참가자의 방 정보 업데이트 수신 처리
 watch(roomInfoUpdate, (update) => {
     if (!update || update.roomId !== roomId) return;
     if (typeof update.title === 'string') {
@@ -452,6 +495,7 @@ const handleLeave = () => {
         leaveRoom({
             'study-time': String(focusMinutes),
         });
+        studyStore.clearToken();
         router.replace('/lobby'); // 로비로 이동
     }
 };
@@ -563,6 +607,7 @@ onUnmounted(() => {
             </g>
             </symbol>
         </svg>
+
         <!-- 섬광탄 효과 컴포넌트 -->
         <FlashbangEffect :visible="isStunned" />
 
@@ -734,14 +779,14 @@ onUnmounted(() => {
                         <div class="avatar-card local">
                             <video ref="localVideoRef" autoplay muted playsinline class="hidden-video"></video>
                             
-                            <div class="avatar-display">
-                                <CharacterAvatar 
+                        <div class="avatar-display">
+<CharacterAvatar 
                                     :config="myAvatarConfig"
                                     :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
                                     :aiPhone="getAiPhone(aiStore.focusStatus)"
                                     :aiAbsent="getAiAbsent(aiStore.focusStatus)"
                                 />
-                            </div>
+                        </div>
                             
                             <div class="user-info">
                                 <span class="user-name">{{ displayName }}</span>
@@ -766,6 +811,37 @@ onUnmounted(() => {
                             <div class="avatar-display">
                                 <CharacterAvatar 
                                     :config="myAvatarConfig"
+                                    :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
+                                    :aiPhone="getAiPhone(aiStore.focusStatus)"
+                                    :aiAbsent="getAiAbsent(aiStore.focusStatus)"
+                                />
+                            </div>
+
+                            <div class="user-info">
+                                <span class="user-name">{{ displayName }}</span>
+                                <svg
+                                    class="heart-svg"
+                                    :style="getHeartStyle(remoteParticipantScores[rt.participantId] ?? 50)"
+                                    aria-label="teammate-focus-heart"
+                                    viewBox="0 0 32 24"
+                                >
+                                    <use href="#heart-pixel-symbol" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div v-for="rt in remoteTracks" :key="rt.participantId" class="avatar-card remote">
+                            <video 
+                                :ref="(el) => { if(el) rt.track.attach(el as HTMLMediaElement) }"
+                                autoplay playsinline 
+                                class="hidden-video"
+                            ></video>
+                            
+                            <div class="avatar-display">
+                                <CharacterAvatar 
+                                    :config="remoteParticipantAvatars?.[rt.participantId] || {
+                                        hairFront: 'none', hairBack: 'none', outfit: 'none', hairColor: '', clothesColor: '', eyes: 'default', glasses: 'none'
+                                    }"
                                     :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
                                     :aiPhone="getAiPhone(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
                                     :aiAbsent="getAiAbsent(remoteParticipantStates[rt.participantId] || 'FOCUS')"
