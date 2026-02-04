@@ -34,7 +34,7 @@ export const avatarAPI = {
     // 메인 백엔드 주소 대신 AI_BASE_URL 사용
     // Content-Type은 axios가 FormData를 보고 알아서 설정
     const response = await api.post<AiAvatarResponse>(
-      `${AI_BASE_URL}/fastapi/avatar`, 
+      `${AI_BASE_URL}/avatar`, 
       formData, 
       {
         baseURL: '', // baseURL 비활성화 (api 자동으로 붙이지 않음)
