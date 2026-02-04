@@ -78,11 +78,9 @@
             <div class="w-[4rem] h-[4rem]">
               <CharacterAvatar
                 v-if="hasAvatarConfig"
-                :config="authStore.userInfo!.avatar!"
+                :config="displayAvatar!"
                 class="w-full h-full"
               />
-              <img v-else-if="authStore.userInfo?.avatarImageUrl" :src="authStore.userInfo.avatarImageUrl" alt="프로필"
-                class="w-full h-full object-cover" />
             </div>
           </div>
 
@@ -218,9 +216,10 @@ import type { RankItem } from '../types/ranking.types';
 const authStore = useAuthStore();
 const router = useRouter();
 
+const displayAvatar = computed(() => myRankInfo.value?.avatar ?? authStore.userInfo?.avatar);
 const hasAvatarConfig = computed(() => {
-  if (!authStore.userInfo?.avatar) return false;
-  return Object.values(authStore.userInfo.avatar).some((value) => Boolean(value));
+  if (!displayAvatar.value) return false;
+  return Object.values(displayAvatar.value).some((value) => Boolean(value));
 });
 
 const {
