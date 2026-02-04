@@ -16,7 +16,7 @@ class FeatureExtractor:
             max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5
         )
         try:
-            self.yolo = YOLO("yolov8n.pt")
+            self.yolo = YOLO("bestv7.pt")
             self.yolo_names = self.yolo.names
         except Exception as e:
             print(f"[WARN] YOLO Load Failed: {e}")
