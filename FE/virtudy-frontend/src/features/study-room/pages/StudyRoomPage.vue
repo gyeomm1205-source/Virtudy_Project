@@ -91,6 +91,13 @@ const {
     roomInfoUpdate,
 } = useStudyRoom();
 
+// 렌더링 에러 방지용: 유효한 트랙만 걸러내는 computed 생성
+const validRemoteTracks = computed(() => {
+    if (!remoteTracks.value) return [];
+    // rt가 존재하고, participantId가 확실히 있는 것만 통과
+    return remoteTracks.value.filter(rt => rt && rt.participantId);
+});
+
 // AI 핸들러 & 타이머 연결
 useAiHandler();
 const aiStore = useStudyRoomAiStore();
@@ -778,7 +785,7 @@ onUnmounted(() => {
                             </div>
                         </div>
 
-                        <div v-for="rt in remoteTracks" :key="rt.participantId" class="avatar-card remote">
+                        <div v-for="rt in validRemoteTracks" :key="rt.participantId" class="avatar-card remote">
                             <video 
                                 :ref="(el) => { if(el) rt.track.attach(el as HTMLMediaElement) }"
                                 autoplay playsinline 
