@@ -22,6 +22,14 @@ Base.metadata.create_all(bind=engine)
 # 2. FastAPI 앱 인스턴스 생성 (이게 꼭 있어야 합니다!)
 app = FastAPI()
 
+# Initialize Logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
 # 1. 허용할 오리진(도메인) 목록 정의
 origins = [
     "http://localhost",
@@ -37,6 +45,28 @@ app.add_middleware(
     allow_methods=["*"],         # 허용할 HTTP 메서드 (GET, POST, PUT, DELETE 등)
     allow_headers=["*"],         # 허용할 HTTP 헤더
 )
+
+# [DEBUG] Middleware to print headers
+class HeaderPrinterMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "websocket":
+            headers = dict(scope.get("headers", []))
+            print(f"\n[DEBUG] WebSocket Connection Attempt: {scope['path']}")
+            print("[DEBUG] Received Headers:")
+            for k, v in headers.items():
+                try:
+                    key = k.decode()
+                    value = v.decode()
+                    print(f"  {key}: {value}")
+                except:
+                    print(f"  {k}: {v}")
+            print("-" * 30)
+        await self.app(scope, receive, send)
+
+app.add_middleware(HeaderPrinterMiddleware)
 
 # 3. 라우터 등록
 # 이제 /makeAvatar 같은 API 주소를 사용할 수 있게 됩니다.
@@ -99,21 +129,37 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str)
     await websocket.accept()
     logger.info(f"WebSocket connected: Room {room_id}, Member {member_id}")
     
+    # Try to get queue, but don't give up if missing (bot might join later)
     queue = active_queues.get(room_id)
     if not queue:
-        logger.warning(f"No active AI bot found for room {room_id}. Queue Missing!")
+        logger.warning(f"No active AI bot found for room {room_id}. Waiting for bot to join...")
     else:
         logger.info(f"Queue found for room {room_id}. Listening for data...")
     
     try:
         while True:
-            if queue and not queue.empty():
-                data = queue.get()
-                # logger.info(f"Sending data to WS: {data}") # Too noisy, uncomment if needed
-                print(f"[DEBUG] Sending to FE: {data['value']} ({data['eventType']})") # Explicit print for user
-                await websocket.send_json(data)
+            # If queue is missing, try to find it again
+            if queue is None:
+                queue = active_queues.get(room_id)
+                if queue:
+                    logger.info(f"Bot joined! Queue found for room {room_id}.")
+                else:
+                    # Still no queue, wait a bit and retry
+                    await asyncio.sleep(1)
+                    continue
+
+            # Queue exists, check for data
+            if not queue.empty():
+                try:
+                    data = queue.get_nowait()
+                    # logger.info(f"Sending data to WS: {data}")
+                    print(f"[DEBUG] Sending to FE: {data['value']} ({data['eventType']})")
+                    await websocket.send_json(data)
+                except multiprocessing.queues.Empty:
+                    pass
             else:
                 await asyncio.sleep(0.01) # Faster polling
+
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected: Room {room_id}, Member {member_id}")
     except Exception as e:
