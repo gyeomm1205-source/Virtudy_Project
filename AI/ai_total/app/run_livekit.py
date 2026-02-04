@@ -38,14 +38,20 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
     scorer = FocusScorer()
     last_valid_event = "FOCUS" # [NEW] To hold state during UNKNOWN
 
-    frame_count = 0
+    frame_count = 0 
+    SKIP_FRAMES = 30  # 30프레임마다 1번만 분석 (부하 1/5로 감소)
     last_sent_time = 0
+
+    
     SEND_INTERVAL = 0.1 # Send data every 100ms
 
     async for frame in video_stream:
         start_time = time.time()
         frame_count += 1
         
+        if frame_count % SKIP_FRAMES != 0 : 
+            continue # 이번 프레임은 분석 안하고 버림 .
+
         # Convert LiveKit VideoFrame to CV2 image
         # frame is VideoFrameEvent, so we need frame.frame
         real_frame = frame.frame
@@ -208,7 +214,7 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                     publication.set_subscribed(True)
                     # 구독하면 자동으로 on_track_subscribed가 호출되므로 
                     # 여기서 ai_process_loop를 직접 실행할 필요는 없습니다.
-                    
+
         # ==============================================================================
         # [추가] 봇 인내심 기르기 (입장 후 30초 대기)
         # ==============================================================================
