@@ -19,6 +19,14 @@ Base.metadata.create_all(bind=engine)
 # 2. FastAPI 앱 인스턴스 생성 (이게 꼭 있어야 합니다!)
 app = FastAPI()
 
+# Initialize Logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
 # 1. 허용할 오리진(도메인) 목록 정의
 origins = [
     "http://localhost",
