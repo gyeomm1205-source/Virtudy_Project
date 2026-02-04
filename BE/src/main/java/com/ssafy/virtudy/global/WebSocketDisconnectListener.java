@@ -1,5 +1,6 @@
 package com.ssafy.virtudy.global;
 
+import com.ssafy.virtudy.global.config.StompHeaderChannelInterceptor;
 import com.ssafy.virtudy.study.dto.SignalMessage;
 import com.ssafy.virtudy.study.service.StudySessionService;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
 @Component
@@ -20,6 +20,7 @@ public class WebSocketDisconnectListener implements ApplicationListener<SessionD
 
     private final StudySessionService studySessionService;
     private final SimpMessageSendingOperations messagingTemplate;
+    private final StompHeaderChannelInterceptor stompHeaderChannelInterceptor;
 
     @Override
     public void onApplicationEvent(SessionDisconnectEvent event) {
@@ -32,6 +33,10 @@ public class WebSocketDisconnectListener implements ApplicationListener<SessionD
 
             if (memberId != null && roomId != null) {
                 log.info("User disconnected: memberId={}, roomId={}", memberId, roomId);
+                
+                // 메모리에서 사용자 제거
+                stompHeaderChannelInterceptor.removeUser(memberId);
+
                 // DB에 퇴장 시간 기록
                 studySessionService.exitRoom(memberId);
 
