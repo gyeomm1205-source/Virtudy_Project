@@ -162,7 +162,6 @@ const jobOptions = [
   { text: '대학생/대학원생', value: 'UNIVERSITY_STUDENT' },
   { text: '취업준비생', value: 'JOB_SEEKER' },
   { text: '직장인', value: 'OFFICE_WORKER' },
-  { text: '기타', value: 'ETC' },
 ];
 
 interface SurveyData {
