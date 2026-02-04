@@ -51,8 +51,9 @@ const {
     messages, 
     remoteTracks,
     remoteParticipantStates,
-    remoteParticipantScores, // [추가]
+    remoteParticipantScores,
     remoteParticipantNames,
+    remoteParticipantAvatars,
     remoteParticipantOrder,
     isDistracted,
     roomInfoUpdate,
@@ -68,7 +69,7 @@ const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 const chatMessage = ref('');
 const localVideoRef = ref<HTMLVideoElement | null>(null);
 const chatListRef = ref<HTMLDivElement | null>(null);
-//[추가] 방 정보
+// 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
 const roomDetail = ref<RoomData | null>(null);
@@ -238,7 +239,7 @@ const handleEditSuccess = async () => {
             roomOwnerFlag.value = false;
         }
 
-        // [추가] 방 정보 변경을 다른 참가자에게 전파
+        // 방 정보 변경을 다른 참가자에게 전파
         RoomManager.getInstance().sendControlMessage('ROOM_UPDATED', {
             roomId,
             title: roomTitle.value,
@@ -375,7 +376,7 @@ onMounted(() => {
             roomDescription.value = '';
         }
         console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
-        await joinRoom(roomId, userId, token, displayName.value);
+        await joinRoom(roomId, userId, token, displayName.value, myAvatarConfig.value);
     };
     init();
 
@@ -387,7 +388,7 @@ onMounted(() => {
     teamAverageInterval = window.setInterval(updateTeamAverage, TEAM_AVG_INTERVAL_MS);
 });
 
-// [추가] 다른 참가자의 방 정보 업데이트 수신 처리
+// 다른 참가자의 방 정보 업데이트 수신 처리
 watch(roomInfoUpdate, (update) => {
     if (!update || update.roomId !== roomId) return;
     if (typeof update.title === 'string') {
@@ -563,6 +564,7 @@ onUnmounted(() => {
             </g>
             </symbol>
         </svg>
+
         <!-- 섬광탄 효과 컴포넌트 -->
         <FlashbangEffect :visible="isStunned" />
 
@@ -734,14 +736,14 @@ onUnmounted(() => {
                         <div class="avatar-card local">
                             <video ref="localVideoRef" autoplay muted playsinline class="hidden-video"></video>
                             
-                            <div class="avatar-display">
-                                <CharacterAvatar 
+                        <div class="avatar-display">
+<CharacterAvatar 
                                     :config="myAvatarConfig"
                                     :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
                                     :aiPhone="getAiPhone(aiStore.focusStatus)"
                                     :aiAbsent="getAiAbsent(aiStore.focusStatus)"
                                 />
-                            </div>
+                        </div>
                             
                             <div class="user-info">
                                 <span class="user-name">{{ displayName }}</span>
@@ -766,6 +768,37 @@ onUnmounted(() => {
                             <div class="avatar-display">
                                 <CharacterAvatar 
                                     :config="myAvatarConfig"
+                                    :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
+                                    :aiPhone="getAiPhone(aiStore.focusStatus)"
+                                    :aiAbsent="getAiAbsent(aiStore.focusStatus)"
+                                />
+                            </div>
+
+                            <div class="user-info">
+                                <span class="user-name">{{ displayName }}</span>
+                                <svg
+                                    class="heart-svg"
+                                    :style="getHeartStyle(remoteParticipantScores[rt.participantId] ?? 50)"
+                                    aria-label="teammate-focus-heart"
+                                    viewBox="0 0 32 24"
+                                >
+                                    <use href="#heart-pixel-symbol" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div v-for="rt in remoteTracks" :key="rt.participantId" class="avatar-card remote">
+                            <video 
+                                :ref="(el) => { if(el) rt.track.attach(el as HTMLMediaElement) }"
+                                autoplay playsinline 
+                                class="hidden-video"
+                            ></video>
+                            
+                            <div class="avatar-display">
+                                <CharacterAvatar 
+                                    :config="remoteParticipantAvatars?.[rt.participantId] || {
+                                        hairFront: 'none', hairBack: 'none', outfit: 'none', hairColor: '', clothesColor: '', eyes: 'default', glasses: 'none'
+                                    }"
                                     :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
                                     :aiPhone="getAiPhone(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
                                     :aiAbsent="getAiAbsent(remoteParticipantStates[rt.participantId] || 'FOCUS')"
