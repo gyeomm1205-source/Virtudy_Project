@@ -21,6 +21,20 @@ const props = defineProps<{
   offsetY?: string;   // 예: '-40%'
 }>();
 
+// 색상 보정 로직 추가
+// 들어오는 색상이 #2B2B2B라면 무조건 #7a7069로 변경, 아니면 원래 색 사용
+// 대소문자 무시, 공백 제거 처리 포함
+const displayHairColor = computed(() => {
+  const origin = props.config.hairColor;
+  if (!origin) return origin;
+  
+  // 공백제거 및 대문자 변환 후 비교
+  if (origin.trim().toUpperCase() === '#2B2B2B') {
+    return '#7a7069';
+  }
+  return origin;
+});
+
 // ----------------------------------------------------------------------
 // 내부 애니메이션 상태 (Auto Animation State)
 // ----------------------------------------------------------------------
@@ -176,7 +190,7 @@ const SKIN_COLOR = '#ffe0bd';
     
     <AvatarPart 
       class="z-1" category="hair_back" 
-      :option="safeHairBack" :color="config.hairColor" 
+      :option="safeHairBack" :color="displayHairColor" 
     />
     <AvatarPart 
       class="z-2" category="outfit" 
@@ -200,7 +214,7 @@ const SKIN_COLOR = '#ffe0bd';
     />
     <AvatarPart 
       class="z-7" category="hair_front" 
-      :option="safeHairFront" :color="config.hairColor" 
+      :option="safeHairFront" :color="displayHairColor" 
     />
 
     <AvatarPart 
