@@ -5,6 +5,8 @@ import com.ssafy.virtudy.study.dto.StudyLogRequest;
 import com.ssafy.virtudy.study.repository.StudySessionRepository;
 import com.ssafy.virtudy.study.service.StudyLogService;
 import com.ssafy.virtudy.study.service.StudyStateHelper;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -33,6 +35,7 @@ public class StudyLogConsumer {
      * application.yaml에 spring.kafka.listener.type: batch 설정 필요
      */
     @KafkaListener(topics = "study-log-topic", groupId = "virtudy-group")
+    @Transactional
     public void consume(List<StudyLogRequest> logs) {
         log.info("Kafka Batch: {} 건 수신", logs.size());
 

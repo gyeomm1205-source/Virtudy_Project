@@ -22,11 +22,22 @@ class StateFuser:
             confidence = sig.phone.phone_in_use_score
 
         # 2) DROWSY (Priority violation)
-        # If it's just a laptop (Phantom) and eyes are closed, we prioritize DROWSY again.
+        # If strong phone evidence + head down, prefer PHONE over SLEEP.
         elif sig.drowsy.drowsy_score >= Config.DROWSY_TRIGGER_SCORE:
-            candidate = FocusState.DROWSY
-            reason = "Eyes closed (No true phone present)"
-            confidence = sig.drowsy.drowsy_score
+            phone_override = (
+                sig.phone.is_cell_phone
+                and sig.phone.phone_conf >= Config.PHONE_CONFIRMED_TH
+                and sig.drowsy.head_pitch is not None
+                and sig.drowsy.head_pitch > Config.PITCH_PHONE_USE_TH
+            )
+            if phone_override:
+                candidate = FocusState.PHONE
+                reason = "Phone present + head down (override drowsy)"
+                confidence = max(sig.phone.phone_conf, sig.drowsy.drowsy_score)
+            else:
+                candidate = FocusState.DROWSY
+                reason = "Eyes closed (No true phone present)"
+                confidence = sig.drowsy.drowsy_score
             
         # 3) ABSENT
         elif sig.absent.absent:

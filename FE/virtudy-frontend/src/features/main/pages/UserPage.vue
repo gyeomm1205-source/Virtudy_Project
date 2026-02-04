@@ -16,6 +16,7 @@
             :focus-depth="userInfo.dailyFocusDepth"
             @click-profile="handleProfileClick"
             :avatar-image-url="userInfo.avatarImageUrl"
+            :avatar="userInfo.avatar"
           />
           
           <StudyMenu 
@@ -127,7 +128,7 @@ const handleRandomMatch = async () => {
     const elapsed = Date.now() - startedAt;
     await delay(Math.max(0, 3000 - elapsed));
     if (controller.signal.aborted) return;
-    router.push(`/study/${data.userId}?token=${data.liveKitToken}`);
+    router.push(`/study/${data.roomId}?token=${data.liveKitToken}`);
   } catch (error) {
     if (controller.signal.aborted || isCanceledError(error)) {
       return;
@@ -177,10 +178,13 @@ const fetchUserData = async () => {
   
   try {
     const data = await getMyProfile();
+    const hasAvatarConfig = data.avatar && Object.values(data.avatar).some((value) => Boolean(value));
+    const mergedAvatar = hasAvatarConfig ? data.avatar : authStore.userInfo?.avatar;
     // [중요] 받아온 데이터로 userInfo 덮어쓰기
     // favoriteRoomTitle이 null이면 빈 문자열로 처리
     userInfo.value = {
       ...data,
+      avatar: mergedAvatar,
       favoriteRoomTitle: data.favoriteRoomTitle || "" 
     };
     
@@ -189,7 +193,7 @@ const fetchUserData = async () => {
        authStore.setUserInfo({
          ...authStore.userInfo,
          nickName: data.nickName,
-         avatar: data.avatar,
+         avatar: mergedAvatar,
          avatarImageUrl: data.avatarImageUrl ?? authStore.userInfo.avatarImageUrl,
        });
     }
