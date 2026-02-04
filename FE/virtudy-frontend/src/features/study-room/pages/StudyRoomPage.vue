@@ -411,9 +411,14 @@ onMounted(async () => {
 
     // 아바타 미생성 시 입장 차단
     if (!authStore.userInfo?.avatar || !authStore.userInfo.avatar.hairFront) {
-        alert("아바타를 먼저 만들어주세요!");
-        router.push('/avatar');
-        return;
+        // confirm 창을 띄워 확인을 누르면 이동, 취소를 누르면 로비로 보냄
+        const shouldCreate = confirm("스터디룸에 입장하려면 아바타가 필요해요! 🎨\n지금 아바타를 만들러 가시겠어요?");
+        if (shouldCreate) {
+            router.push('/avatar/create'); // '확인' 클릭 시 아바타 생성 페이지로 이동
+        } else {
+            router.replace('/lobby'); // '취소' 클릭 시 로비로 이동
+        }
+        return; // 중요: 아래 로직(방 입장)이 실행되지 않도록 여기서 함수 종료
     }
 
     try {
