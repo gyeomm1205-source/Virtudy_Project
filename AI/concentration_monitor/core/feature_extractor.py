@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import mediapipe.python.solutions
+import time
 from ultralytics import YOLO
 from core.config import Config
 
@@ -20,9 +21,11 @@ class FeatureExtractor:
         self.last_face_updated = False
         self.last_face_bbox = None
         self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(
-            max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5
-        )
+        self.hands = None
+        if Config.ENABLE_HANDS:
+            self.hands = self.mp_hands.Hands(
+                max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5
+            )
         self.hands_frame_index = 0
         self.last_hand_centers = []
         self.hand_cache_age = 0
@@ -39,7 +42,9 @@ class FeatureExtractor:
         self.last_is_cell_phone = False
         self.last_detected_classes = []
         self.phone_cache_age = 0
-            
+        self.last_yolo_time = 0.0
+        self.last_phone_detect_time = None
+
         # Round 6: Static Filter Variables
         self.prev_face_center = None
         self.static_frames = 0
@@ -101,8 +106,12 @@ class FeatureExtractor:
         hand_centers = list(self.last_hand_centers)
         if self.hands:
             self.hands_frame_index += 1
-            force_hands = self.last_phone_conf >= Config.PHONE_CONFIRMED_TH
-            run_hands = force_hands or (self.hands_frame_index % Config.HAND_EVERY_N_FRAMES == 0)
+            now = time.time()
+            force_hands = self.last_phone_detect_time is not None and (now - self.last_phone_detect_time) <= Config.HANDS_BURST_SEC
+            if Config.HANDS_ONLY_ON_PHONE:
+                run_hands = force_hands and (self.hands_frame_index % Config.HAND_EVERY_N_FRAMES == 0)
+            else:
+                run_hands = force_hands or (self.hands_frame_index % Config.HAND_EVERY_N_FRAMES == 0)
             if run_hands:
                 hand_res = self.hands.process(rgb)
                 hand_centers = []
@@ -113,16 +122,45 @@ class FeatureExtractor:
                 self.last_hand_centers = hand_centers
                 self.hand_cache_age = 0
             else:
-                self.hand_cache_age += 1
-                if self.hand_cache_age > Config.HAND_CACHE_MAX_AGE:
+                if not force_hands:
                     self.last_hand_centers = []
                     hand_centers = []
+                    self.hand_cache_age = 0
+                else:
+                    self.hand_cache_age += 1
+                    if self.hand_cache_age > Config.HAND_CACHE_MAX_AGE:
+                        self.last_hand_centers = []
+                        hand_centers = []
+        else:
+            self.last_hand_centers = []
+            hand_centers = []
 
         phone_conf = self.last_phone_conf
         phone_box = self.last_phone_box
         is_cell_phone = self.last_is_cell_phone
         detected_classes = list(self.last_detected_classes)
-        if self.yolo and (self.frame_index % Config.YOLO_EVERY_N_FRAMES == 0):
+        prev_phone_conf = self.last_phone_conf
+        prev_phone_box = self.last_phone_box
+        prev_is_cell_phone = self.last_is_cell_phone
+        prev_phone_time = self.last_phone_detect_time
+        now = time.time()
+        use_interval = Config.YOLO_INTERVAL_SEC is not None and Config.YOLO_INTERVAL_SEC > 0
+        run_yolo = False
+        if self.yolo:
+            if use_interval:
+                run_yolo = (now - self.last_yolo_time) >= Config.YOLO_INTERVAL_SEC
+            else:
+                run_yolo = (self.frame_index % Config.YOLO_EVERY_N_FRAMES == 0)
+        if run_yolo:
+            self.last_yolo_time = now
+            # On YOLO frames, reset and use only current detections (no stale boxes).
+            phone_conf = 0.0
+            phone_box = None
+            is_cell_phone = False
+            detected_classes = []
+            detected = False
+            distractor_conf = 0.0
+            distractor_box = None
             yolo_frame = frame
             scale_x = scale_y = 1.0
             if Config.YOLO_IMG_SIZE and (w > Config.YOLO_IMG_SIZE or h > Config.YOLO_IMG_SIZE):
@@ -131,42 +169,90 @@ class FeatureExtractor:
                 yolo_frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
                 scale_x = w / new_w
                 scale_y = h / new_h
-            results = self.yolo(yolo_frame, verbose=False, classes=[67, 63, 65, 66], conf=0.03)
-            detected_classes = []
+            yolo_classes = [67] + list(Config.PHONE_DISTRACTOR_CLASSES)
+            results = self.yolo(yolo_frame, verbose=False, classes=yolo_classes, conf=0.03)
             for r in results:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
                     conf = float(box.conf[0])
                     cls_name = self.yolo_names.get(cls_id, 'unknown')
                     detected_classes.append(cls_name)
-                    
-                    if cls_id in [67, 63, 65, 66]: # Cell phone, laptop, remote, keyboard
+                    if cls_id in Config.PHONE_DISTRACTOR_CLASSES:
+                        if conf > distractor_conf:
+                            d_xyxy = box.xyxy[0].tolist()
+                            if scale_x != 1.0 or scale_y != 1.0:
+                                d_xyxy = [d_xyxy[0] * scale_x, d_xyxy[1] * scale_y, d_xyxy[2] * scale_x, d_xyxy[3] * scale_y]
+                            distractor_conf = conf
+                            distractor_box = list(map(int, d_xyxy))
+                    if cls_id == 67: # Cell phone only
                         if conf > phone_conf:
                             phone_conf = conf
                             xyxy = box.xyxy[0].tolist()
                             if scale_x != 1.0 or scale_y != 1.0:
                                 xyxy = [xyxy[0] * scale_x, xyxy[1] * scale_y, xyxy[2] * scale_x, xyxy[3] * scale_y]
                             phone_box = list(map(int, xyxy))
-                            is_cell_phone = (cls_id == 67)
-            # If the best match isn't a real cell phone, drop the box to avoid false "near face"
-            if phone_box is not None and (not is_cell_phone or phone_conf < Config.PHONE_CANDIDATE_TH):
+                            is_cell_phone = True
+            distractor_overlap = False
+            if phone_box is not None and distractor_box is not None:
+                ix1 = max(phone_box[0], distractor_box[0])
+                iy1 = max(phone_box[1], distractor_box[1])
+                ix2 = min(phone_box[2], distractor_box[2])
+                iy2 = min(phone_box[3], distractor_box[3])
+                iw = max(0, ix2 - ix1)
+                ih = max(0, iy2 - iy1)
+                inter = iw * ih
+                if inter > 0:
+                    p_area = max(1, (phone_box[2] - phone_box[0]) * (phone_box[3] - phone_box[1]))
+                    d_area = max(1, (distractor_box[2] - distractor_box[0]) * (distractor_box[3] - distractor_box[1]))
+                    iou = inter / float(p_area + d_area - inter)
+                    if iou >= Config.PHONE_DISTRACTOR_IOU_TH:
+                        distractor_overlap = True
+
+            distractor_hit = (
+                distractor_overlap
+                and (distractor_conf >= Config.PHONE_DISTRACTOR_CONF_TH)
+                and (phone_conf < (distractor_conf + Config.PHONE_DISTRACTOR_MARGIN))
+            )
+            if distractor_hit:
+                phone_conf = 0.0
                 phone_box = None
+                is_cell_phone = False
+            if phone_box is not None and phone_conf < Config.PHONE_CANDIDATE_TH:
+                phone_box = None
+                is_cell_phone = False
+            if phone_box is not None and phone_conf >= Config.PHONE_CANDIDATE_TH:
+                detected = True
+                self.last_phone_detect_time = now
+            if (not detected) and (not distractor_hit) and prev_phone_time is not None and (now - prev_phone_time) <= Config.PHONE_CACHE_TTL_SEC:
+                phone_conf = prev_phone_conf
+                phone_box = prev_phone_box
+                is_cell_phone = prev_is_cell_phone
             self.last_phone_conf = phone_conf
             self.last_phone_box = phone_box
             self.last_is_cell_phone = is_cell_phone
             self.last_detected_classes = detected_classes
             self.phone_cache_age = 0
         else:
-            self.phone_cache_age += 1
-            if self.phone_cache_age > Config.PHONE_CACHE_MAX_AGE:
+            # Clear cached phone box if it is too old in time.
+            if self.last_phone_detect_time is not None and (now - self.last_phone_detect_time) > Config.PHONE_CACHE_TTL_SEC:
                 self.last_phone_conf = 0.0
                 self.last_phone_box = None
                 self.last_is_cell_phone = False
                 self.last_detected_classes = []
-                phone_conf = 0.0
-                phone_box = None
-                is_cell_phone = False
-                detected_classes = []
+            if use_interval:
+                # When using time-based YOLO, rely on TTL only to avoid rapid drops.
+                self.phone_cache_age = 0
+            else:
+                self.phone_cache_age += 1
+                if self.phone_cache_age > Config.PHONE_CACHE_MAX_AGE:
+                    self.last_phone_conf = 0.0
+                    self.last_phone_box = None
+                    self.last_is_cell_phone = False
+                    self.last_detected_classes = []
+                    phone_conf = 0.0
+                    phone_box = None
+                    is_cell_phone = False
+                    detected_classes = []
         
         # [Fix] Smart Hybrid Liveness Filter (Round 7)
         # Combines Motion (Speed) + Blink (Safety Switch)

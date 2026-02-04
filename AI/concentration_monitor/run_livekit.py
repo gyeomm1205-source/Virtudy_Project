@@ -70,6 +70,14 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
         # Flip for processing 
         img = cv2.flip(img, 1)
         h, w, _ = img.shape
+        proc_img = img
+        proc_scale_x = proc_scale_y = 1.0
+        if Config.PROCESSING_MAX_SIZE and max(w, h) > Config.PROCESSING_MAX_SIZE:
+            scale = Config.PROCESSING_MAX_SIZE / max(w, h)
+            new_w, new_h = int(w * scale), int(h * scale)
+            proc_img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            proc_scale_x = w / new_w
+            proc_scale_y = h / new_h
         
         # [DEBUG] Check resolution for the first 50 frames (to see if it scales up)
         if frame_count <= 50:
@@ -86,7 +94,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
                 continue
 
         # 1. Feature Extraction
-        feats = extractor.process(img)
+        feats = extractor.process(proc_img)
 
         # 2. Detectors
         sig_abs = abs_det.process(feats["face_detected"])
@@ -203,6 +211,42 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, room_id
             cv2.putText(display_frame, f"STATE: {last_valid_event}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             cv2.putText(display_frame, f"SCORE: {int(snap.score)}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 0), 2)
             
+            # Draw detection overlays
+            dbg = feats.get("debug", {})
+            phone_box = dbg.get("phone_box")
+            hand_centers = dbg.get("hand_centers", [])
+            face_center = dbg.get("face_center")
+            if phone_box:
+                x1, y1, x2, y2 = phone_box
+                x1, y1 = int(x1 * proc_scale_x), int(y1 * proc_scale_y)
+                x2, y2 = int(x2 * proc_scale_x), int(y2 * proc_scale_y)
+                cv2.rectangle(display_frame, (x1, y1), (x2, y2), (0, 165, 255), 2)
+                cv2.putText(display_frame, "phone", (x1, max(15, y1 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 2)
+            for hx, hy in hand_centers:
+                cx, cy = int(hx * proc_scale_x), int(hy * proc_scale_y)
+                cv2.circle(display_frame, (cx, cy), 6, (255, 0, 0), -1)
+            if face_center:
+                fx, fy = int(face_center[0] * proc_scale_x), int(face_center[1] * proc_scale_y)
+                cv2.circle(display_frame, (fx, fy), 6, (0, 255, 0), -1)
+
+            # Show key phone signals
+            phone_conf = feats.get("phone_conf", 0.0)
+            phone_near = feats.get("phone_near_face", False)
+            hand_int = feats.get("hand_interaction", False)
+            cv2.putText(
+                display_frame,
+                f"Phone: {phone_conf:.2f} Near:{phone_near} Hand:{hand_int}",
+                (10, 120),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (255, 255, 255),
+                2,
+            )
+            if proc_scale_x != 1.0 or proc_scale_y != 1.0:
+                proc_w = int(w / proc_scale_x)
+                proc_h = int(h / proc_scale_y)
+                cv2.putText(display_frame, f"PROC: {proc_w}x{proc_h}", (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
             # Show FPS
             process_time = time.time() - start_time
             fps = 1.0 / process_time if process_time > 0 else 0
