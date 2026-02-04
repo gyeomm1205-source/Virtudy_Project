@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import { jwtDecode } from 'jwt-decode';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
 // [Merge] Combined Imports
 import { useFocusTimer } from '../logic/useFocusTimer';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
 import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
+import { useStudyStore } from '@/stores/studyStore';
 import StudyTimer from '@/shared/ui/StudyTimer.vue';
 import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
@@ -33,13 +36,38 @@ import DebugControls from '../ui/DebugControls.vue';
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const studyStore = useStudyStore();
+const { accessToken, currentRoomId } = storeToRefs(studyStore);
 
 // 2. URL에서 정보 추출
 const roomId = route.params.roomId as string;
-const token = route.query.token as string;
 const userId = (route.query.userId as string) || authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
 //[추가] 사용자 닉네임 표시용
 const displayName = computed(() => authStore.userInfo?.nickName || userId);
+
+const getValidStudyToken = (): string | null => {
+    if (!accessToken.value || !currentRoomId.value || currentRoomId.value !== roomId) {
+        studyStore.clearToken();
+        router.replace('/guest');
+        return null;
+    }
+
+    try {
+        const decoded = jwtDecode<{ exp?: number }>(accessToken.value);
+        if (decoded?.exp && Date.now() / 1000 >= decoded.exp) {
+            studyStore.clearToken();
+            router.replace('/guest');
+            return null;
+        }
+    } catch (error) {
+        console.warn('유효하지 않은 스터디 토큰입니다.', error);
+        studyStore.clearToken();
+        router.replace('/guest');
+        return null;
+    }
+
+    return accessToken.value;
+};
 
 // 3. 로직 훅
 const { 
@@ -351,12 +379,15 @@ let teamAverageInterval: number | undefined;
 
 onMounted(() => {
     const init = async () => {
-        // [수정] 로컬 테스트 지원: token이 없어도 userId가 URL에 있거나 로컬 환경이면 진행
         if (!roomId) {
             alert('잘못된 접근입니다.');
             router.replace('/lobby');
             return;
         }
+
+        const validToken = getValidStudyToken();
+        if (!validToken) return;
+
         if (!authStore.userInfo) {
             await authStore.fetchUserInfo(); //입장시 유저 정보 로드
         }
@@ -376,7 +407,7 @@ onMounted(() => {
             roomDescription.value = '';
         }
         console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
-        await joinRoom(roomId, userId, token, displayName.value, myAvatarConfig.value);
+        await joinRoom(roomId, userId, validToken, displayName.value, myAvatarConfig.value);
     };
     init();
 
@@ -453,6 +484,7 @@ const handleLeave = () => {
         leaveRoom({
             'study-time': String(focusMinutes),
         });
+        studyStore.clearToken();
         router.replace('/lobby'); // 로비로 이동
     }
 };
