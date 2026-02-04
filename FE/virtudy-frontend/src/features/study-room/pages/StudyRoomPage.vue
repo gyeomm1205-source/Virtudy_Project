@@ -662,7 +662,7 @@ onUnmounted(() => {
                     </div>
 
                     <div class="room-controls-overlay">
-                        <span class="member-count">{{ remoteTracks.length + 1 }}/6명</span>
+                        <span class="member-count">{{ validRemoteTracks.length + 1 }}/6명</span>
 
                         <button
                             v-if="isRoomOwner"
@@ -776,7 +776,7 @@ onUnmounted(() => {
                                 <span class="user-name">{{ displayName }}</span>
                                 <svg
                                     class="heart-svg"
-                                    :style="getHeartStyle(remoteParticipantScores[rt.participantId] ?? 50)"
+                                    :style="getHeartStyle(aiStore.concentrationScore)"
                                     aria-label="teammate-focus-heart"
                                     viewBox="0 0 32 24"
                                 >
@@ -787,19 +787,19 @@ onUnmounted(() => {
 
                         <div v-for="rt in validRemoteTracks" :key="rt.participantId" class="avatar-card remote">
                             <video 
-                                :ref="(el) => { if(el) rt.track.attach(el as HTMLMediaElement) }"
+                                :ref="(el) => { if(el && rt?.track) rt.track.attach(el as HTMLMediaElement) }"
                                 autoplay playsinline 
                                 class="hidden-video"
                             ></video>
                             
                             <div class="avatar-display">
                                 <CharacterAvatar 
-                                    :config="remoteParticipantAvatars?.[rt.participantId] || {
+                                    :config="remoteParticipantAvatars?.[rt?.participantId] || {
                                         hairFront: 'none', hairBack: 'none', outfit: 'none', hairColor: '', clothesColor: '', eyes: 'default', glasses: 'none'
                                     }"
-                                    :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
-                                    :aiPhone="getAiPhone(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
-                                    :aiAbsent="getAiAbsent(remoteParticipantStates[rt.participantId] || 'FOCUS')"
+                                    :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt?.participantId] || 'FOCUS')" 
+                                    :aiPhone="getAiPhone(remoteParticipantStates[rt?.participantId] || 'FOCUS')" 
+                                    :aiAbsent="getAiAbsent(remoteParticipantStates[rt?.participantId] || 'FOCUS')"
                                 />
                             </div>
                             <div class="user-info">
