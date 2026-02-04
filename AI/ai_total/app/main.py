@@ -26,6 +26,14 @@ origins = [
     "https://i14a703.p.ssafy.io",
 ]
 
+# Initialize Logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
 # 2. 미들웨어 추가
 app.add_middleware(
     CORSMiddleware,
