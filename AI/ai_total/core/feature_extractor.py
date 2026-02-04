@@ -18,6 +18,8 @@ class FeatureExtractor:
         try:
             self.yolo = YOLO("bestv7.pt")
             self.yolo_names = self.yolo.names
+            print(f"내 모델 클래스 목록: {self.yolo.names}")
+            # 출력 예시: {0: 'phone'} -> 이러면 0번이 맞음!
         except Exception as e:
             print(f"[WARN] YOLO Load Failed: {e}")
             self.yolo = None
@@ -72,7 +74,7 @@ class FeatureExtractor:
         phone_conf, phone_box = 0.0, None
         if self.yolo:
             # [Fix] Revert to Phone Only (Round 6)
-            results = self.yolo(frame, verbose=False, classes=[67], conf=0.05)
+            results = self.yolo(frame, verbose=False, classes=[0], conf=0.4)
             for r in results:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
@@ -80,7 +82,7 @@ class FeatureExtractor:
                     # [DEBUG_INTERNAL] Print what YOLO sees locally
                     # print(f"[DEBUG_INTERNAL] YOLO saw class {cls_id} with conf {conf:.3f}")
                     
-                    if cls_id == 67: # Cell phone
+                    if cls_id == 0: # Cell phone
                         if conf > phone_conf:
                             phone_conf = conf
                             phone_box = list(map(int, box.xyxy[0]))
