@@ -148,6 +148,8 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
         payload_dict["participantId"] = target_id
     else:
         # 만약 진짜 없으면 "UNKNOWN"이라도 넣어서 프론
+        # ID가 없으면 "UNKNOWN"이라도 보내서 프론트엔드 에러 방지
+        print(f"[WARN] Sending data without ID! Category: {category}", flush=True)
         payload_dict["participantId"] = "UNKNOWN"
 
     payload = json.dumps(payload_dict)
@@ -160,11 +162,8 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
             # 프론트엔드 에러 해결의 핵심: participantId 추가
             queue_payload = {"eventType": category, "value": value}
             
-            if target_id is not None:
-                queue_payload["participantId"] = target_id
-            else:
-                queue_payload["participantId"] = "UNKNOWN"
-            
+            queue_payload["participantId"] = payload_dict["participantId"]
+
             queue.put(queue_payload)
             # print(f"[DEBUG] Queue Put: {category} -> {value} (User: {target_id})") 
         except Exception as e:
