@@ -5,6 +5,7 @@ import { getMyProfile } from '@/features/mypage/api/mypageApi';
 import type { RoomData, CreateRoomReq, UpdateRoomReq, ApiErrorResponse } from '../types/lobby.types';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
+import { useStudyStore } from '@/stores/studyStore';
 
 // 사용자 정보 스토어
 
@@ -12,6 +13,7 @@ export function useLobby() {
   const router = useRouter();
 
   const authStore = useAuthStore();
+  const studyStore = useStudyStore();
   const { userId } = storeToRefs(authStore);
 
   // 상태 (State)
@@ -111,11 +113,13 @@ export function useLobby() {
       // 테스트를 위해 콘솔에 토큰 출력
       console.log('✅ 입장 성공! 토큰:', sessionData.liveKitToken);
 
-      // 토큰을 가지고 스터디 룸 페이지로 이동
+      // 토큰을 sessionStorage에 저장 (탭 내 새로고침 대응)
+      studyStore.setToken(sessionData.liveKitToken, roomId);
+
+      // 토큰 없이 스터디 룸 페이지로 이동
       router.push({ 
         name: 'StudyRoom', 
-        params: { roomId }, 
-        query: { token: sessionData.liveKitToken } 
+        params: { roomId }
       });
 
     } catch (e: any) {
