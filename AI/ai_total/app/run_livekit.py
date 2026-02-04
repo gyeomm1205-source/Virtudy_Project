@@ -198,6 +198,25 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                      publication.set_video_quality(rtc.VideoQuality.HIGH)
                      video_stream = rtc.VideoStream(publication.track)
                      asyncio.create_task(ai_process_loop(room, video_stream, queue))
+
+        # ==============================================================================
+        # [추가] 봇 인내심 기르기 (입장 후 30초 대기)
+        # ==============================================================================
+        # 처음 확인했을 때 아무도 없다면, 30초 동안은 사용자가 들어올 때까지 기다립니다.
+        if len(room.remote_participants) == 0:
+            print("[WAIT] No participants found. Waiting 30s for user to join...", flush=True)
+            for i in range(30):
+                if len(room.remote_participants) > 0:
+                    print(f"[INFO] User detected! Starting analysis. (Waited {i}s)", flush=True)
+                    break
+                await asyncio.sleep(1)
+            
+            # 30초를 기다렸는데도 여전히 아무도 없으면 그때 종료합니다.
+            if len(room.remote_participants) == 0:
+                print("[INFO] Room empty for 30 seconds. Disconnecting.", flush=True)
+                await room.disconnect()
+                return
+        # ==============================================================================            
         
         # Keep alive & Monitor
         empty_room_start = None
