@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from .routers import avatar
 from .database import Base, engine
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, APIRouter
 from pydantic import BaseModel
 import asyncio
 import multiprocessing
@@ -11,6 +11,9 @@ from run_livekit import run_bot
 import json
 
 from fastapi.middleware.cors import CORSMiddleware
+
+
+main_router = APIRouter()
 
 # 1. 데이터베이스 테이블 생성
 # (서버 시작 시 models.py에 정의된 테이블이 없으면 자동으로 만들어줍니다)
@@ -38,9 +41,11 @@ app.add_middleware(
 # 3. 라우터 등록
 # 이제 /makeAvatar 같은 API 주소를 사용할 수 있게 됩니다.
 app.include_router(avatar.router, prefix="/fastapi")
+
+app.include_router(main_router, prefix="/fastapi")
  
 # 4. (선택사항) 서버가 잘 켜졌는지 확인하는 테스트용 루트 경로
-@app.get("/")
+@main_router.get("/")
 async def root():
     return {"message": "Avatar AI Server is running!"}
 
@@ -68,7 +73,7 @@ def bot_process(url: str, token: str, queue: multiprocessing.Queue):
         print(f"[ERROR] Bot Process Crashed: {e}", flush=True)
         logger.error(f"Bot execution failed: {e}")
 
-@app.post("/bot/join")
+@main_router.post("/bot/join")
 async def join_room(request: JoinRequest):
     """
     Triggers a new AI bot instance to join a LiveKit room.
@@ -86,7 +91,7 @@ async def join_room(request: JoinRequest):
     
     return {"status": "started", "pid": p.pid, "message": f"Bot joining room {request.room_id}"}
 
-@app.websocket("/ws/analysis/{room_id}/{member_id}")
+@main_router.websocket("/ws/analysis/{room_id}/{member_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str):
     """
     Handles WebSocket connections from the frontend.
@@ -114,6 +119,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str)
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
 
-@app.get("/health")
+@main_router.get("/health")
 async def health_check():
     return {"status": "ok"}
