@@ -14,6 +14,7 @@ const router = useRouter();
 
 // 생성된 아바타 데이터 임시 저장
 const generatedAvatar = ref<any>(null);
+const isCapturing = ref(false);
 
 // 1. 마운트 시 카메라 켜기
 onMounted(() => {
@@ -22,6 +23,14 @@ onMounted(() => {
 
 // 2. 촬영 및 생성 요청 핸들러
 const handleCapture = async () => {
+  isCapturing.value = true;
+  window.setTimeout(() => {
+    isCapturing.value = false;
+  }, 220);
+
+  // 짧게 촬영 애니메이션을 보여준 뒤 캡처 진행
+  await new Promise((resolve) => window.setTimeout(resolve, 180));
+
   const file = await captureImage();
   if (!file) return;
 
@@ -90,16 +99,17 @@ const handleConfirm = () => {
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="page-container bg-[var(--color-cream2)]">
     
-    <div v-if="step === 'camera'" class="camera-view">
+    <div v-if="step === 'camera'" class="camera-view bg-[var(--color-cream)]">
       <h2 class="title">나만의 아바타 만들기</h2>
-      <div class="video-wrapper">
+      <p class="guide-text">정면을 바라보고 촬영 버튼을 눌러주세요!</p>
+      <div class="video-wrapper" :class="{ 'is-capturing': isCapturing }">
+        <div class="flash-overlay" :class="{ 'is-capturing': isCapturing }"></div>
         <video ref="videoRef" autoplay playsinline muted></video>
       </div>
-      <p class="guide-text">정면을 바라보고 버튼을 눌러주세요!</p>
-      <button class="capture-btn" @click="handleCapture">
-        📸 찰칵!
+      <button class="capture-btn butter-btn" @click="handleCapture">
+        <span class="butter-btn-text">촬영</span>
       </button>
     </div>
 
@@ -109,7 +119,7 @@ const handleConfirm = () => {
     </div>
 
     <div v-else-if="step === 'result'" class="result-view">
-      <h2 class="title">짜잔! 완성되었어요 🎉</h2>
+      <h2 class="title">🎉짜잔🎉<br>완성되었어요!</h2>
       
       <div class="avatar-preview">
         <div
@@ -144,25 +154,70 @@ const handleConfirm = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  background-color: var(--color-bg); /* 테마 컬러 */
+  min-height: 100svh;
+  height: auto;
+  padding: 96px 20px 40px;
+  box-sizing: border-box;
+  background-color: transparent; /* 테마 컬러 */
   text-align: center;
 }
+
+.camera-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 520px;
+  gap: 12px;
+  padding: 20px 16px 28px;
+  box-sizing: border-box;
+  border-radius: 16px;
+}
+
+.title {
+  font-size: 50px;
+  line-height: 1.2;
+  margin-top: 16px;
+  font-weight: 700;
+  animation: title-wiggle 900ms ease-in-out infinite;
+}
+
+.guide-text {
+  font-size: 30px;
+  line-height: 1.4;
+  margin-top: -7px;
+}
+
+.loading-view h3 {
+  font-size: clamp(27px, 4vw, 35px);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.loading-view p {
+  font-size: clamp(16px, 3.2vw, 20px);
+}
+
 
 .result-view {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  width: 100%;
+  max-width: 520px;
 }
 
 .avatar-preview {
-  width: 260px;
-  height: 260px;
+  width: min(260px, 70vw);
+  height: min(260px, 70vw);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid var(--color-choco);
 }
 
 .avatar-preview-inner {
@@ -177,8 +232,11 @@ const handleConfirm = () => {
 
 .btn-group {
   display: flex;
-  gap: 12px;
+  gap: 27px;
   z-index: 1;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 10px;
 }
 
 .retry-btn,
@@ -189,17 +247,66 @@ const handleConfirm = () => {
   background: var(--color-butter);
   color: var(--color-choco);
   font-family: 'PfStardust30S', sans-serif;
+  font-size: 20px;
   cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+  box-shadow: 2px 2px 0px 0px var(--color-choco);
+}
+
+.retry-btn:hover,
+.confirm-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0px 0px var(--color-choco);
+}
+
+.retry-btn:active,
+.confirm-btn:active {
+  transform: translateY(0);
+  box-shadow: 1px 1px 0px 0px var(--color-choco);
+  opacity: 0.9;
+}
+
+.capture-btn {
+  margin: 5px auto 0;
+  padding: 16px 32px;
+}
+
+.capture-btn .butter-btn-text {
+  font-size: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  height: 1em;
+  vertical-align: middle;
+  transform: translateY(-2px);
+  font-weight: 700;
 }
 
 .video-wrapper {
-  width: 320px;
-  height: 320px;
-  border-radius: 50%; /* 원형 카메라 */
+  width: min(320px, 80vw);
+  height: min(320px, 80vw);
+  border-radius: 50%;
   overflow: hidden;
   border: 5px solid var(--color-primary);
-  margin: 20px 0;
+  margin: 15px 0;
   background: black;
+  position: relative;
+  transition: transform 120ms ease;
+}
+
+.flash-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: screen;
+}
+
+.flash-overlay.is-capturing {
+  animation: flash 160ms ease-out;
 }
 
 video {
@@ -207,14 +314,16 @@ video {
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1); /* 거울 모드 */
+  position: relative;
+  z-index: 1;
 }
 
 /* 로딩 스피너 애니메이션 */
 .spinner {
-  width: 50px;
-  height: 50px;
+  width: 80px;
+  height: 80px;
   border: 5px solid #f3f3f3;
-  border-top: 5px solid var(--color-primary);
+  border-top: 5px solid var(--color-syrup);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
@@ -224,6 +333,22 @@ video {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+@keyframes flash {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  60% { opacity: 0.6; }
+  100% { opacity: 0; }
+}
+
+@keyframes title-wiggle {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+  75% { transform: rotate(-1deg); }
+  100% { transform: rotate(0deg); }
+}
+
 
 /* 버튼 스타일 생략... */
 </style>
