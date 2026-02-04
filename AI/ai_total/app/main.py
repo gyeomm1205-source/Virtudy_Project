@@ -124,21 +124,37 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str)
     await websocket.accept()
     logger.info(f"WebSocket connected: Room {room_id}, Member {member_id}")
     
+    # Try to get queue, but don't give up if missing (bot might join later)
     queue = active_queues.get(room_id)
     if not queue:
-        logger.warning(f"No active AI bot found for room {room_id}. Queue Missing!")
+        logger.warning(f"No active AI bot found for room {room_id}. Waiting for bot to join...")
     else:
         logger.info(f"Queue found for room {room_id}. Listening for data...")
     
     try:
         while True:
-            if queue and not queue.empty():
-                data = queue.get()
-                # logger.info(f"Sending data to WS: {data}") # Too noisy, uncomment if needed
-                print(f"[DEBUG] Sending to FE: {data['value']} ({data['eventType']})") # Explicit print for user
-                await websocket.send_json(data)
+            # If queue is missing, try to find it again
+            if queue is None:
+                queue = active_queues.get(room_id)
+                if queue:
+                    logger.info(f"Bot joined! Queue found for room {room_id}.")
+                else:
+                    # Still no queue, wait a bit and retry
+                    await asyncio.sleep(1)
+                    continue
+
+            # Queue exists, check for data
+            if not queue.empty():
+                try:
+                    data = queue.get_nowait()
+                    # logger.info(f"Sending data to WS: {data}")
+                    print(f"[DEBUG] Sending to FE: {data['value']} ({data['eventType']})")
+                    await websocket.send_json(data)
+                except multiprocessing.queues.Empty:
+                    pass
             else:
                 await asyncio.sleep(0.01) # Faster polling
+
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected: Room {room_id}, Member {member_id}")
     except Exception as e:
