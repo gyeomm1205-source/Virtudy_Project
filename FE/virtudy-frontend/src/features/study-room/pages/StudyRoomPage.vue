@@ -52,6 +52,12 @@ const userId = (route.query.userId as string) || authStore.userId || `guest-${Ma
 // 사용자 닉네임 표시용
 const displayName = computed(() => authStore.userInfo?.nickName || userId);
 
+const isChatOpen = ref(true); // 채팅창 열림 / 닫힘 상태
+
+const toggleChat = () => {
+    isChatOpen.value = !isChatOpen.value;
+};
+
 const getValidStudyToken = (): string | null => {
     if (!accessToken.value || !currentRoomId.value || currentRoomId.value !== roomId) {
         studyStore.clearToken();
@@ -337,18 +343,25 @@ const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
 const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
 const getAiAbsent = (status: string) => (status === 'AWAY' ? 1 : 0);
 
-const shadeColor = (hex: string, percent: number) => {
+// 유틸리티: R값 보존을 위한 가중치 적용 음영 함수
+const shiftToVividRed = (hex: string, intensity: number) => {
     const normalized = hex.replace('#', '');
     if (normalized.length !== 6) return hex;
+
     const num = parseInt(normalized, 16);
     const r = (num >> 16) & 255;
     const g = (num >> 8) & 255;
     const b = num & 255;
-    const t = percent < 0 ? 0 : 255;
-    const p = Math.abs(percent);
-    const rr = Math.round((t - r) * p) + r;
-    const gg = Math.round((t - g) * p) + g;
-    const bb = Math.round((t - b) * p) + b;
+
+    // RGB 색 공간에서 Red 채널의 감소폭을 줄이고(0.5배), 
+    // Green/Blue 채널의 감소폭을 키워(1.3배) 붉은 기와 채도를 동시에 확보함
+    const rFactor = 1 - (intensity * 0.8); 
+    const gbFactor = 1 - (intensity * 1.0);
+
+    const rr = Math.max(0, Math.round(r * rFactor));
+    const gg = Math.max(0, Math.round(g * gbFactor));
+    const bb = Math.max(0, Math.round(b * gbFactor));
+
     const toHex = (c: number) => c.toString(16).padStart(2, '0');
     return `#${toHex(rr)}${toHex(gg)}${toHex(bb)}`;
 };
@@ -357,8 +370,11 @@ const getHeartStyle = (score: number) => {
     const base = getScoreColor(score);
     return {
         '--heart-base': base,
-        '--heart-line': shadeColor(base, -0.35),
-        '--heart-shadow': shadeColor(base, -0.2),
+        // 기존 shadeColor 대신 vivid 로직 적용
+        // line: 강한 붉은 음영 (intensity 0.4)
+        '--heart-line': shiftToVividRed(base, 0.4), 
+        // shadow: 중간 붉은 음영 (intensity 0.25)
+        '--heart-shadow': shiftToVividRed(base, 0.25), 
     };
 };
 
@@ -822,12 +838,30 @@ onUnmounted(() => {
                     </div>
                 </main>
 
-                <StudyRoomChat
-                    :messages="messages"
-                    :userId="userId"
-                    :userNames="remoteParticipantNames"
-                    :onSendMessage="sendChat"
-                />
+                <button 
+                    @click="toggleChat" 
+                    class="btn-side-toggle"
+                    :class="{ 'open': isChatOpen }"
+                    :title="isChatOpen ? '채팅 닫기' : '채팅 열기'"
+                >
+                    <svg v-if="isChatOpen" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#805143" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                    
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#805143" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+
+                <div class="chat-container-wrapper" :class="{ 'open': isChatOpen }">
+                    <StudyRoomChat
+                        :messages="messages"
+                        :userId="userId"
+                        :userNames="remoteParticipantNames"
+                        :onSendMessage="sendChat"
+                        @close="isChatOpen = false"
+                    />
+                </div>
 
             </div>
         </div>
@@ -1104,7 +1138,7 @@ onUnmounted(() => {
 .timer-floating-widget { 
     position: absolute; 
     top: 20%; 
-    right: 40px; 
+    right: 50px; 
     width: 323px;
     height: auto;
     z-index: 10; 
@@ -1345,29 +1379,60 @@ onUnmounted(() => {
 
 .hidden-video { display: none; }
 
-/* .btn-chat-open {
+.btn-side-toggle {
+    /* 1. 위치 잡기 (화면 기준 절대 위치) */
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 50; /* 채팅창보다 위에, 메인보다 위에 */
+    /* 2. 애니메이션 (부드럽게 이동) */
+    transition: right 0.3s ease; 
+    right: 0;
     display: flex;
     width: 1.5rem;
     height: 5rem;
     justify-content: center;
     align-items: center;
-    border-radius: 0.875rem 0 0 0.875rem;
+    border-radius: 0.875rem 0 0 0.875rem; 
+    
     border: 1px solid var(--text-stroke-choco, #805143);
-    background: var(--primary-butter, #FFD966);
-    box-shadow: 4px 4px 0 0 #805143;
+    background: var(--color-butter2, #ffeaac);
+    
+    box-shadow: 4px 4px 0 0 #805143; 
+    
     color: var(--text-stroke-choco, #805143);
-    font-family: 'PfStardust30S', sans-serif;
-    font-size: 0.875rem;
-    line-height: 1;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
     cursor: pointer;
-    transition: opacity 0.2s;
 }
 
-.btn-chat-open:hover {
-    opacity: 0.85;
-} */
+/* 열린 상태: 채팅창 너비(20rem = 320px) 만큼 왼쪽으로 이동 */
+.btn-side-toggle.open {
+    right: 20rem;
+}
+
+.btn-side-toggle:hover {
+    filter: brightness(1.05);
+}
+
+/* 채팅창 래퍼: 너비 애니메이션 적용 */
+.chat-container-wrapper {
+    width: 0;
+    overflow: hidden;
+    transition: width 0.3s ease; 
+    flex-shrink: 0; 
+}
+
+.chat-container-wrapper.open {
+    width: 20rem; /* 320px */
+}
+
+/* 부모 컨테이너가 relative여야 absolute 자식이 기준을 잡음 */
+.content-wrapper {
+    position: relative; 
+    display: flex; 
+    flex: 1; 
+    height: 100vh; 
+    overflow: hidden; 
+}
 
 /* 채팅 스크롤바 숨김 */
 .chat-list {
