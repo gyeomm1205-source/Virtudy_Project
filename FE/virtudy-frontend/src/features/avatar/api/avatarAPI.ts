@@ -45,12 +45,16 @@ export const avatarAPI = {
 
     const rawData = response.data;
 
+    // 특정 색상 코드(#2B2B2B)가 들어오면 #7a7069로 변환하여 매핑
+    const targetColor = '#2B2B2B';
+    const replaceColor = '#7a7069';
+
     // 매핑
     // (AI 서버의 snake_case + clothes key 값을 FE의 camelCase + clothes를 outfit으로)
     const mappedData: AvatarConfig = {
       hairFront: rawData.hair_front,
       hairBack: rawData.hair_back,
-      hairColor: rawData.hair_color,
+      hairColor: rawData.hair_color === targetColor ? replaceColor : rawData.hair_color,
       eyes: rawData.eyes,
       glasses: rawData.glasses,
       outfit: rawData.clothes, 

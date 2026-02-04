@@ -110,7 +110,7 @@ const removePrefix = (value: string, prefix: string) => {
 // 백엔드 값 매핑
 const safeHairFront = computed(() => {
   const val = props.config.hairFront;
-  if (val === 'hair_front_none') return 'none';
+  if (val === 'hair_front_none') return 'basic';
   if (val === 'bang') return 'bangs';
   return removePrefix(val, 'hair_front_');
 });
@@ -184,7 +184,7 @@ const SKIN_COLOR = '#ffe0bd';
     />
     <AvatarPart 
       class="z-3" category="face_shape" 
-      :option="FIXED_FACE" :color="SKIN_COLOR" 
+      :option="FIXED_FACE" 
     />
     <AvatarPart 
       class="z-4" category="mouth" 
