@@ -20,7 +20,7 @@
       </div>
       
       <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px]">
-        <div class="absolute left-[54px] top-[83px] w-[146px] h-[146px] rounded-full overflow-hidden border-4 border-[var(--color-choco)]">
+        <div class="absolute left-[100px] top-[140px] w-[200px] h-[200px]">
           <CharacterAvatar
             v-if="hasAvatarConfig"
             :config="authStore.userInfo!.avatar!"
@@ -32,9 +32,6 @@
             alt="프로필"
             class="w-full h-full object-cover"
           />
-          <div v-else class="w-full h-full flex items-center justify-center text-[var(--color-choco)] font-bold text-xl">
-            ME
-          </div>
         </div>
         
         <div class="absolute top-[260px] w-full flex flex-col gap-[10px]">

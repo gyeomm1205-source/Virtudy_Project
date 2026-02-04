@@ -264,15 +264,17 @@ const checkRoomOwner = async () => {
 // 🧪 [테스트/아바타] 설정
 // =================================================================
 
-// 1) 내 아바타 설정 (백엔드 Mock Data)
-const myAvatarConfig = ref<AvatarConfig>({
-    hairFront: 'bang',                  
-    hairBack: 'hair_back_long_straight',
-    hairColor: '#3B3024',               
-    eyes: 'eyes_cat',                   
-    glasses: 'accessory_glasses',       
-    outfit: 'outfit_knit',              
-    clothesColor: '#FFD700'             
+// 1) 내 아바타 설정 (실사용: 스토어에서 가져오기)
+const myAvatarConfig = computed<AvatarConfig>(() => {
+    return authStore.userInfo?.avatar ?? {
+        hairFront: '',
+        hairBack: '',
+        hairColor: '',
+        eyes: '',
+        glasses: '',
+        outfit: '',
+        clothesColor: ''
+    };
 });
 
 // 2) AI 상태 매핑 Helpers
@@ -1175,9 +1177,10 @@ onUnmounted(() => {
 /*아바타 이미지: 바 위로 올려서 배치 */
 .avatar-display {
     position: absolute;
-    bottom: 100px; 
-    width: 180px;
-    height: 145px;
+    bottom: -40px; 
+    width: 200px;
+    height: 200px;
+    left: 7px
 }
 
 /* 텍스트 */
