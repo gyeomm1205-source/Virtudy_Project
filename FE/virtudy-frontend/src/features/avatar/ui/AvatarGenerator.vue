@@ -12,17 +12,59 @@ const { videoRef, startCamera, stopCamera, captureImage } = useWebcam();
 const authStore = useAuthStore();
 const router = useRouter();
 
+
 // 생성된 아바타 데이터 임시 저장
 const generatedAvatar = ref<any>(null);
 const isCapturing = ref(false);
 
+
+// 아바타 생성 횟수 제한 관련 (하루 3번, 날짜별 카운트)
+const AVATAR_CREATE_LIMIT = 3;
+const AVATAR_CREATE_KEY = 'avatarCreateCountByDate';
+const avatarCreateCount = ref<number>(0);
+const remainingChances = ref<number>(AVATAR_CREATE_LIMIT);
+
+function getTodayKey() {
+  const today = new Date();
+  return today.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+const loadAvatarCreateCount = () => {
+  const data = JSON.parse(localStorage.getItem(AVATAR_CREATE_KEY) || '{}');
+  const todayKey = getTodayKey();
+  avatarCreateCount.value = data[todayKey] || 0;
+  remainingChances.value = AVATAR_CREATE_LIMIT - avatarCreateCount.value;
+};
+
+const incrementAvatarCreateCount = () => {
+  const data = JSON.parse(localStorage.getItem(AVATAR_CREATE_KEY) || '{}');
+  const todayKey = getTodayKey();
+  data[todayKey] = (data[todayKey] || 0) + 1;
+  localStorage.setItem(AVATAR_CREATE_KEY, JSON.stringify(data));
+  avatarCreateCount.value = data[todayKey];
+  remainingChances.value = AVATAR_CREATE_LIMIT - avatarCreateCount.value;
+};
+
+const getChanceMessage = () => {
+  if (remainingChances.value > 1) return `아바타 생성 기회가 ${remainingChances.value}번 남았습니다.`;
+  if (remainingChances.value === 1) return '아바타 생성 마지막 기회입니다!';
+  return '아바타 생성 기회를 모두 사용하셨습니다.';
+};
+
 // 1. 마운트 시 카메라 켜기
 onMounted(() => {
-  startCamera();
+  loadAvatarCreateCount();
+  if (remainingChances.value > 0) {
+    startCamera();
+  }
 });
 
 // 2. 촬영 및 생성 요청 핸들러
 const handleCapture = async () => {
+  if (remainingChances.value <= 0) {
+    alert(getChanceMessage());
+    return;
+  }
   isCapturing.value = true;
   window.setTimeout(() => {
     isCapturing.value = false;
@@ -41,14 +83,12 @@ const handleCapture = async () => {
   try {
     // 스토어에 유저 정보가 없다면 다시 불러온다
     if (!authStore.userInfo) {
-
       // 로그인이 안 되었다면 걸러낸다
       if (!authStore.accessToken) {
         alert("로그인 정보가 만료되었습니다. 다시 로그인해주세요.");
         router.push('/guest'); // 로그인 페이지로 쫓아내기
         return;
       }
-
       await authStore.fetchUserInfo();
     }
 
@@ -57,9 +97,7 @@ const handleCapture = async () => {
     }
 
     // 토큰이 있는지 먼저 확인
-
     const nickname = authStore.userInfo.nickName;
-
     if (!nickname) {
       throw new Error("닉네임 정보가 없습니다.");
     }
@@ -69,17 +107,16 @@ const handleCapture = async () => {
 
     // 결과 저장 및 화면 전환
     generatedAvatar.value = newConfig;
-    
     step.value = 'result';
+    incrementAvatarCreateCount();
+    // ...existing code...
 
   } catch (error) {
     console.error('아바타 생성 실패:', error);
-
-    // 디버깅용
     if (error instanceof Error && error.message.includes("유저 정보")) {
-        alert("내 정보를 불러오는데 실패했습니다. 새로고침 후 다시 시도해주세요. 😥");
+      alert("내 정보를 불러오는데 실패했습니다. 새로고침 후 다시 시도해주세요. 😥");
     } else {
-        alert("아바타 생성 중 오류가 발생했습니다.");
+      alert("아바타 생성 중 오류가 발생했습니다.");
     }
   }
 };
@@ -87,7 +124,10 @@ const handleCapture = async () => {
 const handleRetry = () => {
   generatedAvatar.value = null;
   step.value = 'camera';
-  startCamera();
+  loadAvatarCreateCount();
+  if (remainingChances.value > 0) {
+    startCamera();
+  }
 };
 
 const handleConfirm = () => {
@@ -100,15 +140,17 @@ const handleConfirm = () => {
 
 <template>
   <div class="page-container bg-[var(--color-cream2)]">
-    
     <div v-if="step === 'camera'" class="camera-view bg-[var(--color-cream)]">
       <h2 class="title">나만의 아바타 만들기</h2>
       <p class="guide-text">정면을 바라보고 촬영 버튼을 눌러주세요!</p>
+      <p v-if="remainingChances < AVATAR_CREATE_LIMIT" class="guide-text" style="color: #b85c00; font-size: 20px; margin-bottom: 0;">
+        {{ getChanceMessage() }}
+      </p>
       <div class="video-wrapper" :class="{ 'is-capturing': isCapturing }">
         <div class="flash-overlay" :class="{ 'is-capturing': isCapturing }"></div>
-        <video ref="videoRef" autoplay playsinline muted></video>
+        <video ref="videoRef" autoplay playsinline muted v-show="remainingChances > 0"></video>
       </div>
-      <button class="capture-btn butter-btn" @click="handleCapture">
+      <button class="capture-btn butter-btn" @click="handleCapture" :disabled="remainingChances <= 0">
         <span class="butter-btn-text">촬영</span>
       </button>
     </div>
@@ -120,7 +162,9 @@ const handleConfirm = () => {
 
     <div v-else-if="step === 'result'" class="result-view">
       <h2 class="title">🎉짜잔🎉<br>완성되었어요!</h2>
-      
+      <p class="guide-text" style="color: #b85c00; font-size: 20px; margin-bottom: 0;">
+        {{ getChanceMessage() }}
+      </p>
       <div class="avatar-preview">
         <div
           class="avatar-preview-inner"
@@ -135,7 +179,7 @@ const handleConfirm = () => {
       </div>
 
       <div class="btn-group">
-        <button class="retry-btn" @click="handleRetry">
+        <button class="retry-btn" @click="handleRetry" :disabled="remainingChances <= 0">
           다시 찍기
         </button>
         <button class="confirm-btn" @click="handleConfirm">
@@ -143,7 +187,6 @@ const handleConfirm = () => {
         </button>
       </div>
     </div>
-
   </div>
 </template>
 

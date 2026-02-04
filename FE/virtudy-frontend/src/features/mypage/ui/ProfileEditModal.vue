@@ -157,7 +157,15 @@ const hasAvatarConfig = computed(() => {
   return Object.values(props.avatar).some((value) => Boolean(value));
 });
 
+const AVATAR_CREATE_LIMIT = 3;
+const AVATAR_CREATE_KEY = 'avatarCreateCount';
 const goToAvatar = () => {
+  const count = parseInt(localStorage.getItem(AVATAR_CREATE_KEY) || '0', 10);
+  const remain = AVATAR_CREATE_LIMIT - (isNaN(count) ? 0 : count);
+  if (remain <= 0) {
+    alert('아바타 생성 기회를 모두 사용하셨습니다.');
+    return;
+  }
   router.push('/avatar/create');
 };
 </script>

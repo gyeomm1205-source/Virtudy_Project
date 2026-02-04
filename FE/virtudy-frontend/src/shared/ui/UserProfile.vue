@@ -1,7 +1,12 @@
 <template>
   <div class="user-profile-card shadow-[4px_4px_0px_0px_var(--color-choco)]">
     <div class="profile-main">
-      <div class="profile-image-wrapper" @click="emit('clickProfile')">
+      <div class="profile-image-wrapper" @click="handleProfileClick">
+        <template v-if="avatarCreateLimitReached">
+          <div style="color: red; font-weight: bold; text-align: center; margin-bottom: 8px;">
+            아바타 생성 기회를 모두 사용하셨습니다.
+          </div>
+        </template>
         <div class="relative w-[9rem] h-[7.5rem] mb-[0.5rem]">
           <div class="w-[10.5rem] h-[13rem]">
             <CharacterAvatar 
@@ -66,10 +71,40 @@ import MiniReport from '@/shared/ui/MiniReport.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
 
+
 // 클릭 이벤트
 const emit = defineEmits<{
   (e: 'clickProfile'): void
 }>();
+
+
+// 하루 3번 제한 (날짜별 카운트)
+import { ref } from 'vue';
+const AVATAR_CREATE_LIMIT = 3;
+const AVATAR_CREATE_KEY = 'avatarCreateCountByDate';
+const avatarCreateLimitReached = ref(false);
+
+function getTodayKey() {
+  const today = new Date();
+  return today.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+function getAvatarCreateCount() {
+  const data = JSON.parse(localStorage.getItem(AVATAR_CREATE_KEY) || '{}');
+  const todayKey = getTodayKey();
+  return data[todayKey] || 0;
+}
+
+function handleProfileClick() {
+  const count = getAvatarCreateCount();
+  const remain = AVATAR_CREATE_LIMIT - count;
+  if (remain <= 0) {
+    avatarCreateLimitReached.value = true;
+    return;
+  }
+  avatarCreateLimitReached.value = false;
+  emit('clickProfile');
+}
 
 interface UserProfileProps {
   nickName?: string;
