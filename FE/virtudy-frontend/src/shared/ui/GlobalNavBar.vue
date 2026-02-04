@@ -9,7 +9,7 @@
       </router-link>
       <router-link 
         to="/introduction" 
-        class="text-[var(--color-choco)] text-[24px] font-['PF_Stardust_S'] font-normal leading-none hover:opacity-80 transition-opacity relative z-10 cursor-pointer"
+        class="text-[var(--color-choco)] text-[24px] font-['PfStardust30S'] font-normal leading-none hover:opacity-80 transition-opacity relative z-10 cursor-pointer"
       >
         버터디 소개
       </router-link>
@@ -17,28 +17,28 @@
     <div class="flex items-center gap-[var(--spacing-m)]">
       <router-link 
         to="/ranking" 
-        class="text-[var(--color-choco)] text-[24px] font-['PF_Stardust_S'] font-normal leading-none hover:opacity-80 transition-opacity relative z-10 cursor-pointer"
+        class="text-[var(--color-choco)] text-[24px] font-['PfStardust30S'] font-normal leading-none hover:opacity-80 transition-opacity relative z-10 cursor-pointer"
       >
         랭킹
       </router-link>
       <router-link 
         v-if="isLoggedIn" 
         to="/mypage" 
-        class="text-[var(--color-choco)] text-[24px] font-['PF_Stardust_S'] font-normal leading-none hover:opacity-80 transition-opacity relative z-10 cursor-pointer"
+        class="text-[var(--color-choco)] text-[24px] font-['PfStardust30S'] font-normal leading-none hover:opacity-80 transition-opacity relative z-10 cursor-pointer"
       >
         마이페이지
       </router-link>
       <button 
         v-if="!isLoggedIn" 
         @click="kakaoLogin" 
-        class="text-[var(--color-choco)] text-[24px] font-['PF_Stardust_S'] font-normal leading-none hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer relative z-10"
+        class="text-[var(--color-choco)] text-[24px] font-['PfStardust30S'] font-normal leading-none hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer relative z-10"
       >
         로그인
       </button>
       <button 
         v-else 
         @click="logout" 
-        class="text-[var(--color-choco)] text-[24px] font-['PF_Stardust_S'] font-normal leading-none hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer relative z-10"
+        class="text-[var(--color-choco)] text-[24px] font-['PfStardust30S'] font-normal leading-none hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer relative z-10"
       >
         로그아웃
       </button>
