@@ -203,9 +203,10 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
         empty_room_start = None
         
         while True:
-            await asyncio.sleep(1)
-            count = len(room.remote_participants)
+            await asyncio.sleep(1) # 1초 대기
             
+            # 1. 방에 사람 있는지 확인
+            count = len(room.remote_participants)
             if count == 0:
                 if empty_room_start is None:
                     empty_room_start = time.time()
@@ -215,8 +216,20 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
             else:
                 empty_room_start = None
 
+            # 2. [추가된 기능] 루프 돌 때마다 비디오 트랙 다시 확인 (안전장치)
+            for identity, participant in room.remote_participants.items():
+                for track_sid, publication in participant.track_publications.items():
+                    # 비디오 트랙이고, 아직 구독 안 했으면 -> 구독 시도
+                    if publication.kind == rtc.TrackKind.KIND_VIDEO and not publication.subscribed:
+                         print(f"[INFO] Found unsubscribed video track in loop for {identity}. Subscribing...", flush=True)
+                         publication.set_subscribed(True)
+                    
+                    # 이미 구독됐는데 AI가 안 돌고 있는 경우는?
+                    # (여기서 처리하기보단 on_track_subscribed가 해결해줍니다)
+
             # Periodic check for debug
             if count > 0:
+                 # 로그가 너무 많이 쌓이면 보기 힘드므로 5초에 한 번만 출력하거나 그대로 둠
                  print(f"[DEBUG] Room Status: {count} participants connected.", flush=True)
     except Exception as e:
         print(f"[ERROR] Connection failed: {e}")
