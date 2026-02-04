@@ -74,10 +74,10 @@ export class RoomManager {
             
             // [추가] 1-5. 봇(AI) 소환 요청 (POST)
             // 방에 입장했으니, 이제 분석 봇을 투입시킵니다.
-            // await this.requestBotJoin(finalToken);
+            await this.requestBotJoin(finalToken);
 
-            // console.log(`[RoomManager] 방 ${roomId} 입장 완료`);
-            // console.log(`[RoomManager] 방 ${roomId} 입장 및 AI 봇 호출 완료`);
+            console.log(`[RoomManager] 방 ${roomId} 입장 완료`);
+            console.log(`[RoomManager] 방 ${roomId} 입장 및 AI 봇 호출 완료`);
         } catch (error) {
             console.error('[RoomManager] 방 입장 실패:', error);
             this.leaveRoom(); // 실패 시 정리
