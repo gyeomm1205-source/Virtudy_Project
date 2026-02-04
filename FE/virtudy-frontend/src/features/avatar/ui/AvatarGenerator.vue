@@ -56,14 +56,10 @@ const handleCapture = async () => {
     }
 
     // 아바타 생성 API 호출
-    const newConfig = await avatarAPI.generateAvatar(file, "하나");
+    const newConfig = await avatarAPI.generateAvatar(file, nickname);
 
     // 결과 저장 및 화면 전환
     generatedAvatar.value = newConfig;
-    
-    // 내 스토어(전역 상태) 업데이트
-    // 이미 백엔드 DB는 업데이트 되었으므로 프론트만 맞추면 됨
-    authStore.setAvatarConfig(newConfig); 
     
     step.value = 'result';
 
@@ -79,7 +75,16 @@ const handleCapture = async () => {
   }
 };
 
+const handleRetry = () => {
+  generatedAvatar.value = null;
+  step.value = 'camera';
+  startCamera();
+};
+
 const handleConfirm = () => {
+  if (generatedAvatar.value) {
+    authStore.setAvatarConfig(generatedAvatar.value);
+  }
   router.push('/lobby'); // 로비나 마이페이지로 이동
 };
 </script>
@@ -107,19 +112,24 @@ const handleConfirm = () => {
       <h2 class="title">짜잔! 완성되었어요 🎉</h2>
       
       <div class="avatar-preview">
-        <CharacterAvatar 
-          v-if="generatedAvatar"
-          :config="generatedAvatar"
-          :aiDrowsy="0" :aiPhone="0" :aiAbsent="0"
-        />
+        <div
+          class="avatar-preview-inner"
+          :style="{ transform: 'translate(62px, 105px)' }"
+        >
+          <CharacterAvatar 
+            v-if="generatedAvatar"
+            :config="generatedAvatar"
+            :aiDrowsy="0" :aiPhone="0" :aiAbsent="0"
+          />
+        </div>
       </div>
 
       <div class="btn-group">
-        <button class="retry-btn" @click="() => { step='camera'; startCamera(); }">
+        <button class="retry-btn" @click="handleRetry">
           다시 찍기
         </button>
         <button class="confirm-btn" @click="handleConfirm">
-          이걸로 결정!
+          저장하기
         </button>
       </div>
     </div>
@@ -137,6 +147,49 @@ const handleConfirm = () => {
   height: 100vh;
   background-color: var(--color-bg); /* 테마 컬러 */
   text-align: center;
+}
+
+.result-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar-preview {
+  width: 260px;
+  height: 260px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-preview-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 120ms ease;
+}
+
+
+.btn-group {
+  display: flex;
+  gap: 12px;
+  z-index: 1;
+}
+
+.retry-btn,
+.confirm-btn {
+  padding: 10px 18px;
+  border: 2px solid var(--color-choco);
+  border-radius: 8px;
+  background: var(--color-butter);
+  color: var(--color-choco);
+  font-family: 'PfStardust30S', sans-serif;
+  cursor: pointer;
 }
 
 .video-wrapper {

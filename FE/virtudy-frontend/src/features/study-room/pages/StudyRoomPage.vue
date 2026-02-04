@@ -19,6 +19,15 @@ import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 import { getScoreColor } from '../logic/scoreUtils'; 
 import PipDashboard from '../ui/PipDashboard.vue';
+import bgPhoto1 from '@/assets/room/bg_photo_1.png';
+import bgPhoto2 from '@/assets/room/bg_photo_2.png';
+import bgPhoto3 from '@/assets/room/bg_photo_3.png';
+// 섬광탄 관련 Imports
+import { useFlashbang } from '../logic/useFlashbang';
+import FlashbangEffect from '../ui/FlashbangEffect.vue';
+import WakeUpModal from '../ui/WakeUpModal.vue';
+// 디버그 패널 임포트 (배포 시 제거 권장)
+import DebugControls from '../ui/DebugControls.vue';
 
 // 1. 라우터 및 스토어 설정
 const route = useRoute();
@@ -43,7 +52,10 @@ const {
     remoteTracks,
     remoteParticipantStates,
     remoteParticipantScores, // [추가]
+    remoteParticipantNames,
+    remoteParticipantOrder,
     isDistracted,
+    roomInfoUpdate,
 } = useStudyRoom();
 
 // 3.1 AI 핸들러 & 타이머 연결 ([Merge] Both)
@@ -55,6 +67,7 @@ const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 // 4. 상태 변수
 const chatMessage = ref('');
 const localVideoRef = ref<HTMLVideoElement | null>(null);
+const chatListRef = ref<HTMLDivElement | null>(null);
 //[추가] 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
@@ -62,6 +75,23 @@ const roomDetail = ref<RoomData | null>(null);
 const showEditModal = ref(false);
 const roomOwnerFlag = ref(false);
 const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.value);
+
+// 채팅창 열림/닫힘 상태
+const isChatOpen = ref(true);
+
+
+// 섬광탄 훅 초기화 
+const { 
+    isStunned, 
+    showSentFeedback, 
+    isModalOpen, 
+    drowsyParticipants, 
+    isWakeUpAvailable, 
+    openModal, 
+    closeModal, 
+    sendFlashbang,
+    triggerStunEffect, // 테스트용 공개 메서드 (배포 시에는 제거 권장)
+} = useFlashbang(remoteParticipantScores, remoteParticipantNames);
 
 // -------------------------------------------------------------
 // 🪟 Document PIP 관련 로직
@@ -80,9 +110,9 @@ const isHoveringSettingsButton = ref(false);
 // [PIP용 데이터] 팀원 정보 가공 (ID와 상태 점수를 넘김)
 // 실제 팀원 점수 데이터가 있다면 이곳에 매핑 (현재는 Mock 65점)
 const teammatesData = computed(() => {
-    return remoteTracks.value.map(rt => ({
-        id: rt.participantId,
-        score: 65 // 예시: 팀원은 보통(노랑) 상태로 가정
+    return remoteParticipantOrder.value.map((participantId) => ({
+        id: participantId,
+        score: remoteParticipantScores.value[participantId] ?? 50
     }));
 });
 
@@ -207,6 +237,13 @@ const handleEditSuccess = async () => {
         } else {
             roomOwnerFlag.value = false;
         }
+
+        // [추가] 방 정보 변경을 다른 참가자에게 전파
+        RoomManager.getInstance().sendControlMessage('ROOM_UPDATED', {
+            roomId,
+            title: roomTitle.value,
+            description: roomDescription.value,
+        });
     } catch (err) {
         console.error('방 정보 갱신 실패:', err);
     }
@@ -228,15 +265,17 @@ const checkRoomOwner = async () => {
 // 🧪 [테스트/아바타] 설정
 // =================================================================
 
-// 1) 내 아바타 설정 (백엔드 Mock Data)
-const myAvatarConfig = ref<AvatarConfig>({
-    hairFront: 'bang',                  
-    hairBack: 'hair_back_long_straight',
-    hairColor: '#3B3024',               
-    eyes: 'eyes_cat',                   
-    glasses: 'accessory_glasses',       
-    outfit: 'outfit_knit',              
-    clothesColor: '#FFD700'             
+// 1) 내 아바타 설정 (실사용: 스토어에서 가져오기)
+const myAvatarConfig = computed<AvatarConfig>(() => {
+    return authStore.userInfo?.avatar ?? {
+        hairFront: '',
+        hairBack: '',
+        hairColor: '',
+        eyes: '',
+        glasses: '',
+        outfit: '',
+        clothesColor: ''
+    };
 });
 
 // 2) AI 상태 매핑 Helpers
@@ -245,9 +284,65 @@ const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
 const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
 const getAiAbsent = (status: string) => (status === 'AWAY' ? 1 : 0);
 
-// 눈 깜빡임 & 입모양 상태 (기본값)
-const isBlinking = ref(false); 
-const mouthState = ref<'closed' | 'slightly_open' | 'wide_open'>('closed');
+const shadeColor = (hex: string, percent: number) => {
+    const normalized = hex.replace('#', '');
+    if (normalized.length !== 6) return hex;
+    const num = parseInt(normalized, 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    const t = percent < 0 ? 0 : 255;
+    const p = Math.abs(percent);
+    const rr = Math.round((t - r) * p) + r;
+    const gg = Math.round((t - g) * p) + g;
+    const bb = Math.round((t - b) * p) + b;
+    const toHex = (c: number) => c.toString(16).padStart(2, '0');
+    return `#${toHex(rr)}${toHex(gg)}${toHex(bb)}`;
+};
+
+const getHeartStyle = (score: number) => {
+    const base = getScoreColor(score);
+    return {
+        '--heart-base': base,
+        '--heart-line': shadeColor(base, -0.35),
+        '--heart-shadow': shadeColor(base, -0.2),
+    };
+};
+
+type BgState = 'GREEN' | 'YELLOW' | 'RED';
+
+const getStateFromScore = (score: number): BgState => {
+    if (score > 79) return 'GREEN';
+    if (score > 59) return 'YELLOW';
+    return 'RED';
+};
+
+const computeAverageScore = () => {
+    const scores = [aiStore.concentrationScore];
+    Object.values(remoteParticipantScores.value).forEach((score) => {
+        if (typeof score === 'number') scores.push(score);
+    });
+    if (!scores.length) return 0;
+    return scores.reduce((acc, v) => acc + v, 0) / scores.length;
+};
+
+const teamAverageScore = ref<number>(100);
+const bgState = computed<BgState>(() => getStateFromScore(teamAverageScore.value));
+
+const bgPhotoSrc = computed(() => {
+    if (bgState.value === 'GREEN') return bgPhoto1;
+    if (bgState.value === 'YELLOW') return bgPhoto2;
+    return bgPhoto3;
+});
+
+const bgHeartStyle = computed(() => {
+    if (bgState.value === 'GREEN') return getHeartStyle(90);
+    if (bgState.value === 'YELLOW') return getHeartStyle(70);
+    return getHeartStyle(30);
+});
+
+const TEAM_AVG_INTERVAL_MS = 5000;
+let teamAverageInterval: number | undefined;
 
 // =================================================================
 // 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
@@ -280,14 +375,57 @@ onMounted(() => {
             roomDescription.value = '';
         }
         console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
-        await joinRoom(roomId, userId, token);
+        await joinRoom(roomId, userId, token, displayName.value);
     };
     init();
+
+    const updateTeamAverage = () => {
+        teamAverageScore.value = computeAverageScore();
+    };
+
+    updateTeamAverage();
+    teamAverageInterval = window.setInterval(updateTeamAverage, TEAM_AVG_INTERVAL_MS);
+});
+
+// [추가] 다른 참가자의 방 정보 업데이트 수신 처리
+watch(roomInfoUpdate, (update) => {
+    if (!update || update.roomId !== roomId) return;
+    if (typeof update.title === 'string') {
+        roomTitle.value = update.title || roomId;
+    }
+    if (typeof update.description === 'string') {
+        roomDescription.value = update.description || '방 설명이 없습니다.';
+    }
+    if (roomDetail.value) {
+        roomDetail.value = {
+            ...roomDetail.value,
+            title: roomTitle.value,
+            description: roomDescription.value,
+        };
+    }
 });
 
 watch(isConnected, (connected) => {
     if (connected) {
         nextTick().then(() => attachLocalVideo());
+    }
+});
+
+const scrollChatToBottom = () => {
+    nextTick(() => {
+        if (chatListRef.value) {
+            chatListRef.value.scrollTop = chatListRef.value.scrollHeight;
+        }
+    });
+};
+
+watch(() => messages.value.length, () => {
+    scrollChatToBottom();
+});
+
+watch(isChatOpen, (open) => {
+    if (open) {
+        scrollChatToBottom();
     }
 });
 
@@ -324,7 +462,15 @@ const handleSendChat = () => {
     chatMessage.value = '';
 };
 
+const toggleChat = () => {
+    isChatOpen.value = !isChatOpen.value;
+};
+
 onUnmounted(() => {
+    if (teamAverageInterval) {
+        window.clearInterval(teamAverageInterval);
+        teamAverageInterval = undefined;
+    }
     const focusMinutes = Math.floor(focusSeconds.value / 60);
     leaveRoom({
         'study-time': String(focusMinutes),
@@ -334,6 +480,103 @@ onUnmounted(() => {
 
 <template>
     <div class="page-container">
+        <svg class="heart-symbols" aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;">
+            <symbol id="heart-pixel-symbol" viewBox="0 0 32 24">
+            <g class="heart-line">
+            <path d="M13.3334 2.84446H16V5.51113H13.3334V2.84446Z"/>
+            <path d="M10.6667 0.177794H13.3334L13.3334 2.84446H10.6667V0.177794Z"/>
+            <path d="M8.00002 0.177794H10.6667V2.84446H8.00002V0.177794Z"/>
+            <path d="M5.33335 2.66667H8.00002V5.33333H5.33335V2.66667Z"/>
+            <path d="M2.66669 5.51113H5.33335V8.17779H2.66669V5.51113Z"/>
+            <path d="M2.66669 8H5.33335V10.6667H2.66669V8Z"/>
+            <path d="M5.33335 10.6667H8.00002V13.3333H5.33335V10.6667Z"/>
+            <path d="M8.00002 13.3333L10.6667 13.3333V16H8.00002L8.00002 13.3333Z"/>
+            <path d="M10.6667 16H13.3334V18.6667H10.6667V16Z"/>
+            <path d="M13.3334 18.6667H16V21.3333H13.3334L13.3334 18.6667Z"/>
+            <path d="M16 21.3333L18.6667 21.3333V24H16V21.3333Z"/>
+            <path d="M18.6667 18.6667H21.3334V21.3333L18.6667 21.3333L18.6667 18.6667Z"/>
+            <path d="M21.3334 16H24V18.6667H21.3334L21.3334 16Z"/>
+            <path d="M24 13.3333H26.6667V16H24V13.3333Z"/>
+            <path d="M26.6667 10.6667H29.3334V13.3333L26.6667 13.3333V10.6667Z"/>
+            <path d="M29.3334 8H32V10.6667H29.3334L29.3334 8Z"/>
+            <path d="M29.3334 5.51113H32V8.17779H29.3334V5.51113Z"/>
+            <path d="M26.6667 2.66667H29.3334V5.33333H26.6667V2.66667Z"/>
+            <path d="M24 0H26.6667V2.66667H24V0Z"/>
+            <path d="M21.3334 0H24V2.66667H21.3334V0Z"/>
+            <path d="M18.6667 2.66667H21.3334L21.3334 5.33333H18.6667V2.66667Z"/>
+            <path d="M16 5.51113H18.6667V8.17779H16V5.51113Z"/>
+            </g>
+            <g class="heart-highlight">
+            <path d="M10.6667 5.33337H13.3333V8.00004H10.6667V5.33337Z"/>
+            <path d="M8 8.00004L10.6667 8.00004L10.6667 10.6667H8V8.00004Z"/>
+            </g>
+            <g class="heart-base">
+            <path d="M26.6666 2.66663H24V5.33329H26.6666V2.66663Z"/>
+            <path d="M10.6666 13.3333H13.3333V16H10.6666V13.3333Z"/>
+            <path d="M13.3333 13.3333H16V16H13.3333V13.3333Z"/>
+            <path d="M16 13.3333H18.6666V16H16V13.3333Z"/>
+            <path d="M16 10.6666H18.6666V13.3333H16V10.6666Z"/>
+            <path d="M16 7.99996H18.6666V10.6666H16V7.99996Z"/>
+            <path d="M10.6666 2.84442H13.3333V5.51109H10.6666V2.84442Z"/>
+            <path d="M7.99998 2.84442H10.6666V5.51109H7.99998V2.84442Z"/>
+            <path d="M5.33331 5.33329H7.99998V7.99996H5.33331V5.33329Z"/>
+            <path d="M7.99998 5.33329H10.6666V7.99996H7.99998V5.33329Z"/>
+            <path d="M13.3333 5.51109H16V8.17775H13.3333L13.3333 5.51109Z"/>
+            <path d="M13.3333 7.99996H16V10.6666H13.3333V7.99996Z"/>
+            <path d="M13.3333 10.6666H16V13.3333H13.3333L13.3333 10.6666Z"/>
+            <path d="M10.6666 10.6666H13.3333L13.3333 13.3333H10.6666V10.6666Z"/>
+            <path d="M10.6666 7.99996L13.3333 7.99996V10.6666H10.6666L10.6666 7.99996Z"/>
+            <path d="M7.99998 10.6666H10.6666V13.3333L7.99998 13.3333V10.6666Z"/>
+            <path d="M5.33331 7.99996H7.99998L7.99998 10.6666H5.33331V7.99996Z"/>
+            <path d="M16 18.6666H18.6666V21.3333H16V18.6666Z"/>
+            <path d="M18.6666 16H21.3333V18.6666L18.6666 18.6666V16Z"/>
+            <path d="M16 16H18.6666V18.6666H16V16Z"/>
+            <path d="M13.3333 16H16V18.6666L13.3333 18.6666L13.3333 16Z"/>
+            <path d="M21.3333 13.3333H24V16H21.3333L21.3333 13.3333Z"/>
+            <path d="M21.3333 10.6666H24V13.3333H21.3333V10.6666Z"/>
+            <path d="M21.3333 7.99996H24V10.6666H21.3333V7.99996Z"/>
+            <path d="M18.6666 5.33329H21.3333L21.3333 7.99996H18.6666L18.6666 5.33329Z"/>
+            <path d="M18.6666 7.99996H21.3333V10.6666H18.6666V7.99996Z"/>
+            <path d="M18.6666 10.6666H21.3333V13.3333H18.6666V10.6666Z"/>
+            <path d="M18.6666 13.3333H21.3333L21.3333 16H18.6666V13.3333Z"/>
+            <path d="M21.3333 5.33329H24L24 7.99996H21.3333L21.3333 5.33329Z"/>
+            <path d="M21.3333 2.66663H24V5.33329H21.3333L21.3333 2.66663Z"/>
+            <path d="M24 2.66663H26.6666V5.33329H24V2.66663Z"/>
+            <path d="M24 5.33329H26.6666V7.99996L24 7.99996L24 5.33329Z"/>
+            <path d="M24 7.99996L26.6666 7.99996V10.6666H24V7.99996Z"/>
+            <path d="M24 10.6666H26.6666V13.3333L24 13.3333V10.6666Z"/>
+            <path d="M26.6666 5.33329H29.3333V7.99996H26.6666V5.33329Z"/>
+            <path d="M26.6666 7.99996H29.3333V10.6666H26.6666V7.99996Z"/>
+            </g>
+            <g id="heart_shadow">
+            <path d="M13.3333 21.3333H16V24H13.3333V21.3333Z"/>
+            <path d="M10.6667 18.6667H13.3333L13.3333 21.3333L10.6667 21.3333V18.6667Z"/>
+            <path d="M16 2.84446H18.6667V5.51113H16V2.84446Z"/>
+            <path d="M8 16H10.6667V18.6667H8V16Z"/>
+            <path d="M5.33333 13.3333H8V16H5.33333V13.3333Z"/>
+            <path d="M2.66667 10.6667H5.33333V13.3333L2.66667 13.3333V10.6667Z"/>
+            <path d="M0 8H2.66667V10.6667H0V8Z"/>
+            <path d="M0 5.51113H2.66667V8.17779H0V5.51113Z"/>
+            <path d="M2.66667 2.84446H5.33333V5.51113H2.66667V2.84446Z"/>
+            <path d="M5.33333 0.177794H8V2.84446H5.33333V0.177794Z"/>
+            <path d="M18.6667 0H21.3333V2.66667H18.6667V0Z"/>
+            </g>
+            </symbol>
+        </svg>
+        <!-- 섬광탄 효과 컴포넌트 -->
+        <FlashbangEffect :visible="isStunned" />
+
+        <div v-if="showSentFeedback" class="feedback-toast">
+            ✨ 섬광탄 발사 완료!
+        </div>
+
+        <WakeUpModal 
+            :isOpen="isModalOpen"
+            :targets="drowsyParticipants"
+            @close="closeModal"
+            @send="sendFlashbang"
+        />
+
         <!-- pip 로직 추가 -->
         <div ref="pipSourceContainerRef" style="display: none;">
             <div ref="pipDashboardRef" class="pip-content-root">
@@ -343,6 +586,9 @@ onUnmounted(() => {
                     :aiScore="aiStore.concentrationScore"
                     :aiStatus="aiStore.focusStatus"
                     :teammates="teammatesData"
+                    :isWakeUpAvailable="isWakeUpAvailable"
+                    :onOpenWakeUpModal="openModal"
+                    :isStunned="isStunned"
                 />
             </div>
         </div>
@@ -375,6 +621,14 @@ onUnmounted(() => {
                             <div class="mini-bar">
                                 <div class="fill" :style="{ width: aiStore.concentrationScore + '%', background: aiStore.concentrationScore < 50 ? 'red' : 'green' }"></div>
                             </div>
+                        </div>
+                        <div>
+                            <DebugControls 
+                                :scores="remoteParticipantScores"
+                                :names="remoteParticipantNames"
+                                :isStunned="isStunned"
+                                :onTriggerStun="triggerStunEffect"
+                            />
                         </div>
                     </div>
 
@@ -419,8 +673,33 @@ onUnmounted(() => {
                         <button @click="handleLeave" class="btn-leave">나가기</button>
                     </div>
                     
-                    <div class="combined-timer-widget">
-                        <!-- Window Frame -->
+                    <div class="frame-wrapper">
+                        <img 
+                            :src="bgPhotoSrc" 
+                            alt="Background Photo" 
+                            class="scene-photo"
+                        />
+                        <img 
+                            src="@/assets/room/frame_border.png" 
+                            alt="Frame" 
+                            class="scene-frame"
+                        />
+                    </div>
+                    
+                    <!-- 타이머 / PIP / 깨우기 버튼 영역 -->
+                    <div class="timer-floating-widget">
+                        <div class="hearts-container">
+                            <svg class="heart-svg heart-svg--timer" :style="bgHeartStyle" viewBox="0 0 32 24">
+                                <use href="#heart-pixel-symbol" />
+                            </svg>
+                            <svg class="heart-svg heart-svg--timer" :style="bgHeartStyle" viewBox="0 0 32 24">
+                                <use href="#heart-pixel-symbol" />
+                            </svg>
+                            <svg class="heart-svg heart-svg--timer" :style="bgHeartStyle" viewBox="0 0 32 24">
+                                <use href="#heart-pixel-symbol" />
+                            </svg>
+                        </div>
+
                         <div class="window-frame">
                             <div class="window-framing">
                                 <div class="window-title">
@@ -434,9 +713,18 @@ onUnmounted(() => {
                             <StudyTimer />
                             <FocusTimer :seconds="focusSeconds" />
                         </div>
+                        
                         <div class="pip-btn-area">
-                            <button @click="togglePip" class="btn-pip" :class="{ active: isPipActive }">
-                                {{ isPipActive ? 'PIP 종료' : '미니 모드 (PIP)' }}
+                            <button @click="togglePip" class="btn-pip btn-pixel-action">
+                                {{ isPipActive ? 'PIP종료' : 'PIP전환' }}
+                            </button>
+                            <button 
+                                class="btn-pixel-action btn-wakeup"
+                                :class="{ 'active': isWakeUpAvailable }"
+                                :disabled="!isWakeUpAvailable"
+                                @click="openModal"
+                            >
+                                깨우기!
                             </button>
                         </div>
                     </div>
@@ -452,14 +740,19 @@ onUnmounted(() => {
                                     :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
                                     :aiPhone="getAiPhone(aiStore.focusStatus)"
                                     :aiAbsent="getAiAbsent(aiStore.focusStatus)"
-                                    :isBlinking="isBlinking"
-                                    :mouthState="mouthState"
                                 />
                             </div>
                             
                             <div class="user-info">
-                                <span class="user-name">나 ({{ displayName }})</span>
-                                <span class="heart-icon" :style="{ color: getScoreColor(aiStore.concentrationScore) }">♥</span>
+                                <span class="user-name">{{ displayName }}</span>
+                                <svg
+                                    class="heart-svg"
+                                    :style="getHeartStyle(aiStore.concentrationScore)"
+                                    aria-label="my-focus-heart"
+                                    viewBox="0 0 32 24"
+                                >
+                                    <use href="#heart-pixel-symbol" />
+                                </svg>
                             </div>
                         </div>
 
@@ -476,31 +769,118 @@ onUnmounted(() => {
                                     :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
                                     :aiPhone="getAiPhone(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
                                     :aiAbsent="getAiAbsent(remoteParticipantStates[rt.participantId] || 'FOCUS')"
-                                    :isBlinking="false"
-                                    :mouthState="'closed'"
                                 />
                             </div>
                             <div class="user-info">
-                                <span class="user-name">{{ rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
-                                <span class="heart-icon" :style="{ color: getScoreColor(remoteParticipantScores[rt.participantId] || 50) }">♥</span>
+                                <span class="user-name">{{ remoteParticipantNames[rt.participantId] || rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
+                                <svg
+                                    class="heart-svg"
+                                    :style="getHeartStyle(remoteParticipantScores[rt.participantId] ?? 50)"
+                                    aria-label="teammate-focus-heart"
+                                    viewBox="0 0 32 24"
+                                >
+                                    <use href="#heart-pixel-symbol" />
+                                </svg>
                             </div>
                         </div>
                     </div>
                 </main>
 
-                <aside class="chat-section">
-                    <div class="chat-header-simple">채팅창 영역</div> <div class="chat-messages">
-                        <div v-for="(msg, idx) in messages" :key="idx" class="message-bubble" :class="{ 'my-msg': msg.sender === userId, 'sys-msg': msg.type !== 'CHAT' }">
-                            <div v-if="msg.type === 'CHAT'">
-                                <span class="sender">{{ msg.sender }}</span>
-                                <p class="text">{{ msg.data?.message || msg.message }}</p>
+                <!-- 채팅 영역 -->
+                <aside 
+                    class="flex flex-col h-full w-80 min-w-80"
+                >
+                    <!-- 채팅창이 열려있을 때 -->
+                    <div 
+                        v-if="isChatOpen" 
+                        class="bg-[var(--color-choco)] h-full flex flex-col overflow-hidden"
+                    >
+                        <!-- 채팅 헤더 -->
+                        <div class="flex items-center justify-center pt-1 px-1 pb-1 shrink-0">
+                            <div class="relative w-[19.9375rem] h-[3.25rem]">
+                                <!-- Window Title 배경 (Rectangle2) -->
+                                <div class="absolute inset-0 bg-[var(--color-butter2)]"></div>
+                                <!-- 채팅 제목 -->
+                                <div class="absolute left-[0.6875rem] top-1/2 transform -translate-y-1/2">
+                                    <h3 class="text-[var(--color-choco)] text-[2rem] font-['exqt'] font-medium leading-normal">채팅</h3>
+                                </div>
+                                <!-- X 버튼 -->
+                                <button 
+                                    @click="toggleChat"
+                                    class="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="2.25rem" height="2.25rem" viewBox="0 0 36 36" fill="none">
+                                        <path d="M21 19.5H22.5V21H24V22.5H25.5V24H27V25.5H28.5V27H30V28.5H31.5V30H33V31.5H31.5V33H30V31.5H28.5V30H27V28.5H25.5V27H24V25.5H22.5V24H21V22.5H19.5V21H16.5V22.5H15V24H13.5V25.5H12V27H10.5V28.5H9V30H7.5V31.5H6V33H4.5V31.5H3V30H4.5V28.5H6V27H7.5V25.5H9V24H10.5V22.5H12V21H13.5V19.5H15V16.5H13.5V15H12V13.5H10.5V12H9V10.5H7.5V9H6V7.5H4.5V6H3V4.5H4.5V3H6V4.5H7.5V6H9V7.5H10.5V9H12V10.5H13.5V12H15V13.5H16.5V15H19.5V13.5H21V12H22.5V10.5H24V9H25.5V7.5H27V6H28.5V4.5H30V3H31.5V4.5H33V6H31.5V7.5H30V9H28.5V10.5H27V12H25.5V13.5H24V15H22.5V16.5H21V19.5Z" fill="#DFA67B"/>
+                                    </svg>
+                                </button>
                             </div>
-                            <div v-else class="system-text">🔔 {{ msg.type }} 이벤트</div>
+                        </div>
+
+                        <!-- 구분선 -->
+                        <div class="h-px bg-[var(--color-choco)] opacity-80 shrink-0"></div>
+
+                        <!-- 메시지 목록 -->
+                        <div ref="chatListRef" class="chat-list flex-1 overflow-y-auto p-6 space-y-2.5">
+                            <div v-for="(msg, idx) in messages" :key="idx" class="flex flex-col">
+                                <div v-if="msg.type === 'CHAT'">
+                                    <!-- 내 메시지 -->
+                                    <div v-if="msg.sender === userId" class="flex justify-end">
+                                        <div class="flex flex-col items-end space-y-1.5">
+                                            <div class="bg-[var(--color-butter2)] px-4 py-1 rounded-xl max-w-64">
+                                                <p class="text-[var(--color-choco)] text-[1.3rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 다른 사용자 메시지 -->
+                                    <div v-else class="flex flex-col space-y-1.5">
+                                        <p class="text-[var(--color-cream2)] text-[0.9375rem] font-['PfStardust30S'] leading-normal tracking-[-0.0375rem]">{{ remoteParticipantNames[msg.sender] || msg.sender }}</p>
+                                        <div class="bg-[var(--color-syrup)] px-4 py-1 rounded-xl max-w-64 w-fit">
+                                            <p class="text-[var(--color-cream2)] text-[1.3rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 시스템 메시지 -->
+                                <div v-else class="flex justify-center">
+                                    <div class="text-[var(--color-cream)] text-sm opacity-70">🔔 {{ msg.type }} 이벤트</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 메시지 입력 박스 (Figma Frame 6 디자인) -->
+                        <div class="p-[15px] shrink-0">
+                            <div class="bg-[#fff8e5] border-2 border-[#fff2cc] rounded-[12px] flex items-center justify-between h-[50px] px-[20px] py-[10px]">
+                                <input 
+                                    v-model="chatMessage" 
+                                    @keyup.enter="handleSendChat" 
+                                    type="text" 
+                                    placeholder="Type a message"
+                                    class="flex-1 bg-transparent text-[#805143] text-[20px] font-['PfStardust30S'] leading-normal tracking-[-0.8px] placeholder:opacity-40 outline-none"
+                                />
+                                <button 
+                                    @click="handleSendChat" 
+                                    class="w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity overflow-hidden relative"
+                                >
+                                    <div class="absolute translate-y-0.5 inset-[10.68%_10.66%_10.66%_10.66%]">
+                                        <img alt="send" class="block max-w-none size-full" src="https://www.figma.com/api/mcp/asset/b9d70265-6324-4b42-bf69-7dfa3a62b17a" />
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="chat-input-area">
-                        <input v-model="chatMessage" @keyup.enter="handleSendChat" type="text" placeholder="메시지 입력..." />
-                        <button @click="handleSendChat">전송</button>
+                    
+                    <!-- 채팅창이 닫혀있을 때 표시할 영역 (흰 배경) -->
+                    <div 
+                        v-else
+                        class="flex-1 bg-white flex items-center justify-end"
+                    >
+                        <button 
+                            @click="toggleChat"
+                            class="btn-chat-open"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M12.5 15L7.5 10L12.5 5" stroke="#805143" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
                     </div>
                 </aside>
 
@@ -538,8 +918,15 @@ onUnmounted(() => {
 .content-wrapper { display: flex; flex: 1; height: 100vh; overflow: hidden; }
 
 /* 메인 윈도우 */
-.main-window-area { flex: 3; position: relative; background-color: #a29bfe; overflow: hidden; }
-/* [NEW] 좌측 상단 방 정보 오버레이 */
+.main-window-area { 
+    flex: 3; 
+    position: relative; 
+    background: url('@/assets/room/room_wood_bg.png') center/cover no-repeat;
+    background-color: #dcd0c0; /* 이미지 로드 전 폴백 색상 */
+    overflow: hidden; 
+}
+
+/* 좌측 상단 방 정보 오버레이 */
 .room-info-overlay {
     position: absolute;
     top: 20px;
@@ -632,7 +1019,7 @@ onUnmounted(() => {
     transform: translate(4px, 4px);
     box-shadow: none;
 }
-/* 멤버 수 표시: 피그마 디자인 정확 구현 */
+/* 멤버 수 표시 */
 .member-count {
     color: var(--text-stroke-choco, #805143);
     /* p */
@@ -648,7 +1035,7 @@ onUnmounted(() => {
     letter-spacing: 0;
 }
 
-/* 설정 버튼 스타일: 피그마 디자인 정확 구현 */
+/* 설정 버튼 스타일: */
 .btn-settings {
     background: transparent;
     border: none;
@@ -711,6 +1098,41 @@ onUnmounted(() => {
     animation: tooltipFadeIn 0.2s ease-in-out;
 }
 
+/* 액자 + 사진 래퍼 */
+.frame-wrapper {
+    position: absolute;
+    top: 50%;
+    left: 40%;
+    transform: translate(-50%, -50%); /* 화면 정중앙 */
+    width: 700px;  /* 액자 PNG 크기에 맞춰 조정 필요 */
+    height: 450px; /* 액자 PNG 크기에 맞춰 조정 필요 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 사진 (뒤) - z-index 낮음 */
+.scene-photo {
+    position: absolute;
+    top: 20px;   /* 프레임 두께 고려하여 내부 배치 */
+    left: 20px;  /* 프레임 두께 고려하여 내부 배치 */
+    width: calc(100% - 40px);
+    height: calc(100% - 40px);
+    object-fit: cover;
+    z-index: 1;
+}
+
+/* 프레임 (앞) - z-index 높음 */
+.scene-frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none; /* 클릭 통과 */
+}
+
 .tooltip-arrow {
     position: absolute;
     bottom: 100%;
@@ -734,21 +1156,47 @@ onUnmounted(() => {
     }
 }
 /* 타이머 */
-.combined-timer-widget { 
+.timer-floating-widget { 
     position: absolute; 
-    top: 100px; 
+    top: 20%; 
     right: 40px; 
     width: 323px;
-    height: 213.377px;
-    z-index: 5; 
+    height: auto;
+    z-index: 10; 
 }
 
+.hearts-container {
+    display: flex;
+    justify-content: flex-end; /* 우측 정렬 */
+    gap: 5px;
+    margin-bottom: -10px; /* 윈도우와 겹치지 않게 간격 조정 */
+    margin-right: 0px;
+    position: relative;
+    z-index: 11; /* 윈도우보다 위에 뜨도록 */
+}
+.heart-svg {
+    width: 30px;
+    height: 30px;
+    display: inline-block;
+    margin-left: 2px;
+}
+.heart-svg--timer {
+    display: block;
+    margin-left: 0;
+    margin-bottom: 3px;
+}
+.heart-line path { fill: var(--heart-line, #668128); }
+.heart-base path { fill: var(--heart-base, #B8D576); }
+.heart-highlight path { fill: #FFFFDB; }
+.heart-shadow path,
+#heart_shadow path { fill: var(--heart-shadow, var(--heart-line, #668128)); }
+
 .window-frame {
-    position: absolute;
+    position: relative;
     width: 323px;
     height: 200px;
     right: -10px;
-    top: 80px;
+    top: 10px;
     background: #fff8e5;
 }
 
@@ -782,34 +1230,102 @@ onUnmounted(() => {
     font-size: 28.805px;
     color: white;
     font-weight: normal;
-    line-height: normal;
 }
 
+/* 타이머 디스플레이 중앙 정렬 */
 .timer-display {
     position: absolute;
-    left: 45px;
-    top: 137px;
+    width: 100%; /* 전체 너비 사용 */
+    top: 55%;
+    left: 47%;
+    transform: translate(-50%, -40%); /* 정중앙보다 약간 아래로 보정 */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 가로 중앙 정렬 */
+    justify-content: center;
+    text-align: center;
+    z-index: 5;
 }
 
 .pip-btn-area {
-    margin-top: 12px;
-    border-top: 1px solid #f1f2f6;
-    padding-top: 10px;
+    position: relative;
+    top: 18px; /* 윈도우 프레임과의 간격 */
+    width: 323px;
+    display: flex;
+    justify-content: center; /* 버튼 가운데 정렬 */
+    gap: 8px; /* 버튼 사이 간격 */
+    justify-content: flex-end; /* 우측 정렬 */
 }
-.btn-pip {
-    background: #4b6584;
-    color: white;
-    border: none;
-    padding: 8px 0;
-    width: 100%;
-    border-radius: 6px;
+
+/* 버튼 스타일 */
+.btn-pixel-action {
+    background: var(--color-butter2);
+    color: var(--color-choco); /* 텍스트 갈색 */
+    border: 2px solid var(--color-choco); /* 진한 갈색 테두리 */
+    border-radius: 50px; /* 둥근 알약 모양 */
+    padding: 10px;
     cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: bold;
-    transition: background 0.2s;
+    font-family: 'PF Stardust S', sans-serif; /* 폰트 유지 */
+    font-size: 1.5rem;
+    line-height: normal;
+    
+    /* 픽셀 아트 느낌의 그림자 효과 */
+    box-shadow: 0px 4px 0px var(--color-choco); 
+    transform: translateY(0);
+    transition: all 0.1s;
+    
+    /* PIP 버튼 너비 리셋 */
+    width: 110px; 
+    max-width: 140px;
 }
-.btn-pip:hover { background: #778ca3; }
-.btn-pip.active { background: #2ed573; }
+
+/* 버튼 클릭/호버 효과 */
+.btn-pixel-action:active {
+    transform: translateY(4px); /* 눌리는 효과 */
+    box-shadow: 0px 0px 0px var(--color-choco);
+}
+
+.btn-pixel-action:hover {
+    filter: brightness(1.05);
+}
+
+/* 깨우기 버튼 스타일 */
+.btn-wakeup {
+    background: #e0e0e0; /* 비활성: 회색 */
+    color: #999;
+    border-color: #999;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none !important;
+}
+
+.btn-wakeup.active:active {
+    transform: translateY(4px);
+}
+
+/* 활성화 상태 (노란색) */
+.btn-wakeup.active {
+    background: #FFD966; 
+    color: #805143;
+    border-color: #805143;
+    cursor: pointer;
+    box-shadow: 0px 4px 0px #805143;
+    animation: bounce 1s infinite; /* 통통 튀는 애니메이션 */
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.feedback-toast {
+    position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: #FFF2CC;
+    padding: 15px 30px; border-radius: 30px;
+    font-family: 'PfStardust30S'; z-index: 3000;
+    animation: fadeOut 2s forwards;
+}
+@keyframes fadeOut { 0% {opacity: 1;} 80% {opacity: 1;} 100% {opacity: 0;} }
 
 /* 아바타 스트립: 긴 바(Bar)*/
 .avatar-strip {
@@ -818,9 +1334,12 @@ onUnmounted(() => {
     left: 0;
     width: 100%;
     height: 50px; /* 바의 높이 */
-    
-    /* 긴 바의 배경색 */
     background-color:#FFC497; 
+
+    background-image: url('@/assets/room/footer_bar_bg.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
     
     display: flex;
     flex-direction: row;
@@ -848,54 +1367,72 @@ onUnmounted(() => {
 /*아바타 이미지: 바 위로 올려서 배치 */
 .avatar-display {
     position: absolute;
-    bottom: 100px; 
-    width: 140px;
-    height: 140px;
+    bottom: -40px; 
+    width: 200px;
+    height: 200px;
+    left: 7px
 }
 
-/* 텍스트*/
+/* 텍스트 */
 .user-info {
-    /* 바 내부 중앙 정렬 */
+    width: 90%;
+    height: 40px; /* 이름표 높이 */
+    /* 이름표 PNG 배경 */
+    background: url('@/assets/room/nametag_bg.png') center/100% 100% no-repeat; 
     display: flex;
     align-items: center;
-    gap: 6px;
-    
-    color: #fff; /* 글자색 */
-    font-weight: bold;
-    font-size: 1rem;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-    /* 배경(strip)보다는 위 */
-    z-index: 15; 
+    justify-content: center;
+    font-family: 'PF Stardust S';
+    color: #805143;
+    font-size: 1.7rem;
+    z-index: 11;
+    position: relative;
 }
 
 .user-name {
-    max-width: 100px;
+    max-width: 110px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    margin-bottom: 3px;
 }
 
-.heart-icon { 
-    font-size: 1.2rem; 
-    transition: color 0.5s ease; /* 색상 변경 시 부드럽게 */
-    margin-left: 2px;
-}
 
 .hidden-video { display: none; }
 
-/* 채팅 */
-.chat-section { 
-    flex: 1; 
-    min-width: 300px; 
-    background-color: #FFD966;
-    display: flex; 
-    flex-direction: column; 
+.btn-chat-open {
+    display: flex;
+    width: 1.5rem;
+    height: 5rem;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0.875rem 0 0 0.875rem;
+    border: 1px solid var(--text-stroke-choco, #805143);
+    background: var(--primary-butter, #FFD966);
+    box-shadow: 4px 4px 0 0 #805143;
+    color: var(--text-stroke-choco, #805143);
+    font-family: 'PfStardust30S', sans-serif;
+    font-size: 0.875rem;
+    line-height: 1;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    cursor: pointer;
+    transition: opacity 0.2s;
 }
-.chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-.message-bubble { background: white; padding: 8px 12px; border-radius: 10px; max-width: 90%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-.message-bubble.my-msg { align-self: flex-end; background: #7bed9f; }
-.message-bubble.sys-msg { align-self: center; background: none; box-shadow: none; color: #888; font-size: 0.8rem; }
-.chat-input-area { padding: 15px; display: flex; gap: 10px; flex-shrink: 0; }
-.chat-input-area input { flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #ddd; }
-.chat-input-area button { padding: 0 20px; border-radius: 4px; border: none; background: #333; color: white; cursor: pointer; }
+
+.btn-chat-open:hover {
+    opacity: 0.85;
+}
+
+/* 채팅 스크롤바 숨김 */
+.chat-list {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.chat-list::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+
 </style>

@@ -2,6 +2,17 @@
   <div class="min-h-screen bg-[var(--color-syrup)] relative w-full flex flex-col">
     <GlobalNavBar />
 
+    <div
+      class="absolute left-[21.5rem] top-[8.5rem] z-10"
+      :style="{ width: avatarSize, height: avatarSize }"
+    >
+      <CharacterAvatar
+        v-if="hasAvatarConfig"
+        :config="displayAvatar!"
+        class="w-full h-full"
+      />
+    </div>
+
     <div class="flex-1 flex flex-col pt-[4.5rem] pb-[6.5rem] w-full min-h-[calc(100vh-200px)] px-[4.75rem]">
       <div class="w-full max-w-[74rem] mx-auto relative">
         <button @click="goBack"
@@ -19,16 +30,7 @@
           </h1>
 
           <!-- 아바타와 순위 정보 -->
-          <div class="flex items-center gap-[1.5rem] translate-x-[1rem]">
-            <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)] bg-[var(--color-cream)] shadow-md ">
-              <img v-if="authStore.userInfo?.avatarImageUrl" :src="authStore.userInfo.avatarImageUrl" alt="프로필"
-                class="w-full h-full object-cover" />
-              <div v-else
-                class="w-full h-full flex items-center justify-center text-[var(--color-choco)] font-bold text-xl">
-                ME
-              </div>
-            </div>
-
+          <div class="flex items-center translate-x-[1rem]">
             <div class="flex flex-col items-start">
               <div class="flex items-end gap-[0.5rem] -mt-[5rem]">
                 <span class="text-[var(--color-choco)] text-[clamp(1.5rem,2.625rem,2.625rem)] font-['Ram'] font-medium leading-none">
@@ -68,19 +70,21 @@
         <div class="max-w-[61.375rem] w-full ml-26 mr-0 relative mb-[2rem] translate-x-[rem]">
 
         <div class="flex justify-between items-end mb-[-2px] relative z-10 px-[2rem]">
-          <div class="flex gap-0">
-            <button @click="changeType('private')" :class="[
-              'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
-              rankType === 'private' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
-            ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
-              <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">개인</span>
-            </button>
-            <button @click="changeType('team')" :class="[
-              'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px] ml-[-2px]',
-              rankType === 'team' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
-            ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
-              <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">팀</span>
-            </button>
+          <div class="flex items-center gap-[1rem]">
+            <div class="flex gap-0">
+              <button @click="changeType('private')" :class="[
+                'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
+                rankType === 'private' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
+              ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
+                <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">개인</span>
+              </button>
+              <button @click="changeType('team')" :class="[
+                'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px] ml-[-2px]',
+                rankType === 'team' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
+              ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
+                <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">팀</span>
+              </button>
+            </div>
           </div>
 
           <div
@@ -201,18 +205,27 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useRanking } from '../logic/useRanking';
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 
 // [중요] RankItem 인터페이스 임포트 (Ranking.types.ts에 정의된 것)
 import type { RankItem } from '../types/ranking.types';
 
 const authStore = useAuthStore();
 const router = useRouter();
+
+const avatarSize = '8rem';
+
+const displayAvatar = computed(() => myRankInfo.value?.avatar ?? authStore.userInfo?.avatar);
+const hasAvatarConfig = computed(() => {
+  if (!displayAvatar.value) return false;
+  return Object.values(displayAvatar.value).some((value) => Boolean(value));
+});
 
 const {
   rankType, searchKeyword, rankList, myRankInfo, isLoading,

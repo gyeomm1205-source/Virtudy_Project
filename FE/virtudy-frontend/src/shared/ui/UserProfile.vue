@@ -1,19 +1,25 @@
 <template>
   <div class="user-profile-card shadow-[4px_4px_0px_0px_var(--color-choco)]">
     <div class="profile-main">
-      <div class="profile-image-wrapper">
-        <div class="image-container" @click="emit('clickProfile')">
-          <img 
-            :src="profileFrameUrl" 
-            alt="프로필 프레임"
-            class="frame-img"
-          />
-          <div class="user-img-box">
-            <img 
-              :src="avatarImageUrl || defaultProfileImage" 
-              alt="프로필 이미지"
-              class="user-img"
+      <div class="profile-image-wrapper" @click="emit('clickProfile')">
+        <div class="relative w-[9rem] h-[7.5rem] mb-[0.5rem]">
+          <div class="w-[10.5rem] h-[13rem]">
+            <CharacterAvatar 
+              v-if="hasAvatarConfig" 
+              :config="avatar!" 
+              :offset-x="avatarOffsetX"
+              :offset-y="avatarOffsetY"
+              class="w-full h-full"
             />
+            <img 
+              v-else-if="avatarImageUrl" 
+              :src="avatarImageUrl" 
+              alt="프로필 이미지"
+              class="w-full h-full object-cover"
+            />
+            <div v-else class="w-[9rem] h-[9rem] mx-auto translate-x-[9.5rem] translate-y-[0.7rem] rounded-full bg-[var(--color-butter)] flex items-center justify-center text-[1.25rem] font-bold text-[var(--color-choco)] text-center font-['Xcu']">
+              아바타 생성하기
+            </div>
           </div>
         </div>
       </div>
@@ -55,23 +61,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import MiniReport from '@/shared/ui/MiniReport.vue'; 
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import type { AvatarConfig } from '@/shared/types/common.types';
 
 // 클릭 이벤트
 const emit = defineEmits<{
   (e: 'clickProfile'): void
 }>();
-
-// [수정] 백엔드 명세와 동일한 필드명으로 Props 정의
-interface AvatarConfig {
-  hairFront: string;
-  hairBack: string;
-  hairColor: string;
-  eyes: string;
-  glasses: string;
-  outfit: string;
-  clothesColor: string;
-}
 
 interface UserProfileProps {
   nickName?: string;
@@ -83,21 +81,32 @@ interface UserProfileProps {
   focusDepth?: number;      // concentration -> focusDepth (퍼센트 숫자) 
   avatarImageUrl?: string;  // userProfileImage -> avatarImageUrl
   avatar?: AvatarConfig;    // 백엔드 avatar 설정 값
+  avatarOffsetX?: string;   // 아바타 X 오프셋
+  avatarOffsetY?: string;   // 아바타 Y 오프셋
 }
 
 // 기본값 설정 (데이터가 없을 때 보여줄 값)
-withDefaults(defineProps<UserProfileProps>(), {
+const props = withDefaults(defineProps<UserProfileProps>(), {
   nickName: "닉네임",
   tierScore: 0,
   tier: "티어명",
   favoriteRoomTitle: "",
   pureStudyTime: 0,
   focusDepth: 0,
-  avatarImageUrl: ""
+  avatarImageUrl: "",
+  avatarOffsetX: '75%',
+  avatarOffsetY: '-20%'
+});
+
+const avatarOffsetX = computed(() => props.avatarOffsetX || '-15%');
+const avatarOffsetY = computed(() => props.avatarOffsetY || '-30%');
+
+const hasAvatarConfig = computed(() => {
+  if (!props.avatar) return false;
+  return Object.values(props.avatar).some((value) => Boolean(value));
 });
 
 // 이미지 URLs
-const profileFrameUrl = "/vite.svg"; // [수정] 임시 플레이스홀더
 const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
 </script>
 
@@ -119,33 +128,14 @@ const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
   width: 100%;
 }
 
-/* 클릭 가능한 영역 스타일 추가 */
-.image-container { 
-  position: relative; 
-  width: 146px; 
-  height: 146px; 
-  margin: 0 auto; 
-  top: 10px; 
-  
-  /* 마우스 커서 변경 및 호버 효과 */
-  cursor: pointer; 
-  transition: transform 0.2s ease; 
-}
+/* 클릭 가능한 영역 스타일 */
+.profile-image-wrapper { cursor: pointer; }
+.profile-image-wrapper:hover { transform: scale(1.05); transition: transform 0.2s ease; }
 
-/* 마우스 올렸을 때 살짝 커지게 */
-.image-container:hover {
-  transform: scale(1.05);
-}
-
-.image-container { position: relative; width: 146px; height: 146px; margin: 0 auto; top: 10px; }
-.frame-img { width: 100%; height: 100%; object-fit: cover; }
-.user-img-box { position: absolute; top: 6px; left: 8px; width: 130px; height: 130px; border-radius: 50%; overflow: hidden; }
-.user-img { width: 100%; height: 100%; object-fit: cover; }
-
-.nickname-area { position: absolute; top: 158px; width: 100%; text-align: center; }
+.nickname-area { position: absolute; top: 160px; width: 100%; text-align: center; }
 .nickname-text { color: var(--color-choco); font-size: 28px; font-weight: bold; font-family: 'Xcu', sans-serif; }
 
-.score-tier-area { position: absolute; top: 190px; width: 100%; display: flex; justify-content: center; gap: 20px; }
+.score-tier-area { position: absolute; top: 196px; width: 100%; display: flex; justify-content: center; gap: 20px; }
 .info-text { color: var(--color-pancake); font-size: 24px; font-family: 'PfStardust30S', sans-serif; }
 
 .fav-study-area { position: absolute; top: 218px; width: 100%; text-align: center; }

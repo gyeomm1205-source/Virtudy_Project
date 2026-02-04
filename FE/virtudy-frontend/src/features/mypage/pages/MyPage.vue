@@ -69,29 +69,31 @@
           </span>
         </button>
         <!-- 프로필 영역 -->
-        <div class="absolute left-[18.125rem] top-[4.75rem] flex flex-col items-center">
+        <div class="absolute left-0 top-[3.5rem] w-full flex flex-col items-center">
           <!-- 아바타 -->
-          <div class="relative w-[9.125rem] h-[9.125rem] mb-[1.5rem]">
-            <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)]">
+          <div class="flex items-center justify-center text-[2rem] relative w-[10.5rem] h-[10.5rem] mb-[0.5rem] translate-y-[4.5rem] translate-x-[2rem]">
+            <div class="w-[12rem] h-[13rem]">
+              <CharacterAvatar
+                v-if="hasAvatarConfig"
+                :config="userInfo!.avatar!"
+                class="w-full h-full"
+              />
               <img 
-                v-if="userInfo?.avatarImageUrl" 
+                v-else-if="userInfo?.avatarImageUrl" 
                 :src="userInfo.avatarImageUrl" 
                 alt="프로필 사진"
                 class="w-full h-full object-cover"
               />
-              <div v-else class="w-full h-full bg-[var(--color-butter)] flex items-center justify-center text-[2rem] font-bold text-[var(--color-choco)]">
-                ME
-              </div>
             </div>
           </div>
           
           <!-- 닉네임 -->
-          <h2 class="text-[var(--color-choco)] text-[1.75rem] font-['Xcu'] font-medium leading-none mb-[1.1rem]">
+          <h2 class="text-[var(--color-choco)] text-[1.75rem] font-['Xcu'] font-medium leading-none mb-[0.3rem] text-center max-w-[24rem] break-words">
             {{ userInfo?.nickName || '닉네임' }}
           </h2>
           
           <!-- 점수와 티어 -->
-          <div class="flex items-center gap-[1rem] mb-[0.25rem]">
+          <div class="flex items-center gap-[1rem] mb-[-0.2rem] justify-center">
             <span class="text-[var(--color-pancake)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none">
               {{ userInfo?.tierScore || 0 }}p
             </span>
@@ -101,7 +103,7 @@
           </div>
           
           <!-- 최애 스터디 -->
-          <p class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none">
+          <p class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none text-center max-w-[28rem] break-words">
             &lt;{{ userInfo?.favoriteRoomTitle || '최애 스터디 없음' }}&gt;
           </p>
         </div>
@@ -160,6 +162,8 @@
     <ProfileEditModal 
       v-if="isEditModalOpen"
       :email="userInfo?.email || ''"
+      :avatar="userInfo?.avatar"
+      :avatar-image-url="userInfo?.avatarImageUrl"
       v-model:nickName="editForm.nickName"
       v-model:jobType="editForm.jobType"
       :jobOptions="JOB_OPTIONS"
@@ -178,6 +182,7 @@ import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import MiniReport from '@/shared/ui/MiniReport.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';  
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import ProfileEditModal from '../ui/ProfileEditModal.vue';
 import { useWeeklyReport } from  '@/features/report/logic/useWeeklyReport';
 import { authAPI } from '@/features/auth/api/authAPI';
@@ -193,6 +198,10 @@ const {
 // useWeeklyReport 내부의 onMounted가 실행되면서 자동으로 '지난주' 데이터를 불러옵니다.
 const { reportData, isLoading } = useWeeklyReport();
 const hasReport = computed(() => Boolean(reportData.value && reportData.value.reportId));
+const hasAvatarConfig = computed(() => {
+  if (!userInfo.value?.avatar) return false;
+  return Object.values(userInfo.value.avatar).some((value) => Boolean(value));
+});
 const goBack = () => {
   router.push({ name: 'user' });
 };

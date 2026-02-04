@@ -12,14 +12,14 @@ import SockJS from 'sockjs-client';
 
 // 백엔드 URL 설정 (환경 변수 또는 상수로 관리 권장)
 // const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880'; // 환경변수 우선 사용
-const LIVEKIT_URL = 'wss://i14a703.p.ssafy.io'; // 환경변수 우선 사용
+const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880';
 
 // const SOCKET_URL = 'http://127.0.0.1:8081/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
-const SOCKET_URL = 'https://i14a703.p.ssafy.io/ws'; // 백엔드 요구사항: 8081포트로 직접 연결
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://127.0.0.1:8081/ws';
 
 // [추가] AI 서버 웹소켓 주소 (FastAPI 등 AI 서버의 웹소켓 엔드포인트)
 // const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
-const AI_SOCKET_URL = 'wss://i14a703.p.ssafy.io/fastapi/ws/analysis';
+const AI_SOCKET_URL = import.meta.env.VITE_AI_SOCKET_URL || 'ws://127.0.0.1:8000/ws/analysis';
 
 
 export class RoomManager {
@@ -112,6 +112,14 @@ export class RoomManager {
 
         this.room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
             this.handleTrackUnsubscribed(track, publication, participant);
+        });
+
+        this.room.on(RoomEvent.ParticipantConnected, (participant) => {
+            this.handleParticipantConnected(participant);
+        });
+
+        this.room.on(RoomEvent.ParticipantDisconnected, (participant) => {
+            this.handleParticipantDisconnected(participant);
         });
 
         this.room.on(RoomEvent.Disconnected, (reason) => {
@@ -242,12 +250,28 @@ export class RoomManager {
         this.trackCleanupListeners.forEach(listener => listener(track, participant));
     }
 
+    // 참가자 입장 핸들러
+    private handleParticipantConnected(participant: RemoteParticipant) {
+        console.log(`[LiveKit] 참가자 입장: ${participant.identity}`);
+        this.participantConnectedListeners.forEach(listener => listener(participant));
+    }
+
+    // 참가자 퇴장 핸들러
+    private handleParticipantDisconnected(participant: RemoteParticipant) {
+        console.log(`[LiveKit] 참가자 퇴장: ${participant.identity}`);
+        this.participantDisconnectedListeners.forEach(listener => listener(participant));
+    }
+
     // 메시지 리스너 관리
     // [수정] listener 타입 변경: payload + senderId
     private messageListeners: ((payload: any, senderId?: string) => void)[] = [];
     // 트랙 리스너 관리
     private trackListeners: ((track: RemoteTrack, participant: RemoteParticipant) => void)[] = [];
     private trackCleanupListeners: ((track: RemoteTrack, participant: RemoteParticipant) => void)[] = [];
+    // 참가자 입/퇴장 리스너 관리
+    private participantConnectedListeners: ((participant: RemoteParticipant) => void)[] = [];
+    // 참가자 퇴장 리스너 관리
+    private participantDisconnectedListeners: ((participant: RemoteParticipant) => void)[] = [];
 
     // 메시지 수신 이벤트 등록
     onMessage(callback: (payload: any, senderId?: string) => void) {
@@ -264,11 +288,23 @@ export class RoomManager {
         this.trackCleanupListeners.push(callback);
     }
 
+    // 참가자 입장 이벤트 등록
+    onParticipantConnected(callback: (participant: RemoteParticipant) => void) {
+        this.participantConnectedListeners.push(callback);
+    }
+
+    // 참가자 퇴장 이벤트 등록
+    onParticipantDisconnected(callback: (participant: RemoteParticipant) => void) {
+        this.participantDisconnectedListeners.push(callback);
+    }
+
     // 모든 리스너 제거 (중복 방지용)
     removeAllListeners() {
         this.messageListeners = [];
         this.trackListeners = [];
         this.trackCleanupListeners = [];
+        this.participantConnectedListeners = [];
+        this.participantDisconnectedListeners = [];
     }
 
     // 소켓 메시지 핸들러 (상태 업데이트)

@@ -30,17 +30,37 @@
         </div>
       </button>
 
-      <div class="flex flex-col gap-[3rem] h-[31.125rem]">
+      <div class="flex flex-col gap-[2.5rem] pb-[1rem]">
         <!-- 상단 섹션: 프로필 이미지와 기본 정보 -->
         <div class="flex flex-col gap-[1.625rem]">
           <div class="flex flex-col gap-[1.25rem] items-center justify-center">
             <!-- 프로필 이미지 -->
             <div class="relative">
-              <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)]">
-                <div class="w-full h-full bg-[var(--color-butter)] flex items-center justify-center text-[1.75rem] font-['Xcu'] font-medium text-[var(--color-cream2)] text-center">
-                  아바타<br/>수정
+              <div class="w-[11.5rem] h-[11.5rem] rounded-full bg-[var(--color-butter)] flex items-center justify-center">
+                <div
+                  class="w-[10.5rem] h-[12.5rem]"
+                  :style="{ transform: `translate(${avatarOffsetX}, ${avatarOffsetY})` }"
+                >
+                  <CharacterAvatar
+                    v-if="hasAvatarConfig"
+                    :config="avatar!"
+                    class="w-full h-full"
+                  />
+                  <img
+                    v-else-if="avatarImageUrl"
+                    :src="avatarImageUrl"
+                    alt="프로필 사진"
+                    class="w-full h-full object-cover"
+                  />
                 </div>
               </div>
+              <button
+                type="button"
+                @click="goToAvatar"
+                class="absolute inset-0 flex items-center justify-center text-[1.2rem] font-['Xcu'] text-[var(--color-cream2)] rounded-full bg-black/30"
+              >
+                아바타 수정하기
+              </button>
             </div>
             
             <!-- 닉네임 -->
@@ -93,7 +113,7 @@
         </div>
 
         <!-- 하단: 변경하기 버튼 -->
-        <div class="flex justify-start">
+        <div class="flex justify-start mt-[0.5rem]">
           <button 
             @click="$emit('submit')"
             class="butter-btn h-[2.25rem] px-[1.5rem] py-[0.75rem] !rounded-[0.8rem]"
@@ -107,14 +127,36 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { JOB_OPTIONS } from '../types/mypage.types';
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import type { AvatarConfig } from '@/shared/types/common.types';
 
-defineProps<{
+const router = useRouter();
+
+const props = withDefaults(defineProps<{
   email: string;
   nickName: string;
   jobType: string;
   jobOptions: typeof JOB_OPTIONS;
-}>();
+  avatar?: AvatarConfig;
+  avatarImageUrl?: string;
+  avatarOffsetX?: string;
+  avatarOffsetY?: string;
+}>(), {
+  avatarOffsetX: '0.35rem',
+  avatarOffsetY: '2.25rem',
+});
 
 defineEmits(['close', 'submit', 'update:nickName', 'update:jobType']);
+
+const hasAvatarConfig = computed(() => {
+  if (!props.avatar) return false;
+  return Object.values(props.avatar).some((value) => Boolean(value));
+});
+
+const goToAvatar = () => {
+  router.push('/avatar/create');
+};
 </script>

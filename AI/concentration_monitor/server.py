@@ -1,3 +1,11 @@
+import os
+import sys
+
+# Ensure the current directory is in the python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 import asyncio
@@ -35,13 +43,15 @@ class JoinRequest(BaseModel):
     token: str
     room_id: str
 
-def bot_process(url: str, token: str, queue: multiprocessing.Queue):
+def bot_process(url: str, token: str, room_id: str, queue: multiprocessing.Queue, debug_visual: bool = False):
     """
     Wrapper to run the async bot in a separate process.
     """
     print(f"[DEBUG] Bot Process Spawned! (PID: {multiprocessing.current_process().pid})", flush=True)
+    if debug_visual:
+        print(f"[DEBUG] Visual debugging mode ENABLED", flush=True)
     try:
-        asyncio.run(run_bot(url, token, queue))
+        asyncio.run(run_bot(url, token, room_id, queue, debug_visual))
     except Exception as e:
         print(f"[ERROR] Bot Process Crashed: {e}", flush=True)
         logger.error(f"Bot execution failed: {e}")
@@ -53,13 +63,17 @@ async def join_room(request: JoinRequest):
     """
     logger.info(f"Received request to join room: {request.room_id}")
     
+    # [DEV] Check environment variable for debug mode
+    # Usage: set DEBUG_VISUAL=1 && python server.py
+    debug_visual = os.environ.get("DEBUG_VISUAL", "0") == "1"
+    
     # Create a shared queue for this room using standard multiprocessing.Queue
     # (Since we are forking/spawning from this process, it works)
     queue = multiprocessing.Queue()
     active_queues[request.room_id] = queue
 
     # Spawn a new process for the bot so it doesn't block the API server
-    p = multiprocessing.Process(target=bot_process, args=(request.url, request.token, queue))
+    p = multiprocessing.Process(target=bot_process, args=(request.url, request.token, request.room_id, queue, debug_visual))
     p.start()
     
     return {"status": "started", "pid": p.pid, "message": f"Bot joining room {request.room_id}"}

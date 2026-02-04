@@ -47,6 +47,19 @@
 
     <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem]">
       <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border">
+        <div class="absolute right-[-1rem] bottom-[-6rem] w-[12rem] h-[14rem] z-10">
+          <CharacterAvatar
+            v-if="hasAvatarConfig"
+            :config="authStore.userInfo!.avatar!"
+            class="w-full h-full"
+          />
+          <img
+            v-else-if="authStore.userInfo?.avatarImageUrl"
+            :src="authStore.userInfo.avatarImageUrl"
+            alt="프로필"
+            class="w-full h-full object-cover"
+          />
+        </div>
         <div
           v-if="!hasReport && !isLoading"
           class="absolute inset-0 z-20 flex items-center justify-center rounded-[1.25rem] bg-[rgba(255,253,245,0.75)] backdrop-blur-[2px]"
@@ -152,14 +165,8 @@
             <p class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.25rem] leading-relaxed pr-[4rem]">
               {{ reportData?.aiComment || "열심히 공부한 당신에게 멋진 분석을 준비 중이에요..." }}
             </p>
-            <img 
-              src="http://localhost:3845/assets/ae7ca0939b29738c16aee5cf86953e893d60c594.svg" 
-              class="absolute right-4 bottom-2 w-[4rem] h-[4rem]"
-              alt="AI Character"
-            />
           </div>
         </div>
-
       </div>
     </div>
 
@@ -168,7 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useWeeklyReport } from '../logic/useWeeklyReport';
 
@@ -176,9 +183,12 @@ import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';
 import WeeklyCalendar from '../pages/WeeklyCalendar.vue';
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import { useAuthStore } from '@/stores/authStore';
 
 const router = useRouter();
 const showCalendar = ref(false);
+const authStore = useAuthStore();
 
 const { 
   reportData, 
@@ -189,6 +199,16 @@ const {
 } = useWeeklyReport();
 
 const hasReport = computed(() => Boolean(reportData.value && reportData.value.reportId));
+const hasAvatarConfig = computed(() => {
+  if (!authStore.userInfo?.avatar) return false;
+  return Object.values(authStore.userInfo.avatar).some((value) => Boolean(value));
+});
+
+onMounted(() => {
+  if (authStore.isLoggedIn && !authStore.userInfo) {
+    authStore.fetchUserInfo();
+  }
+});
 
 const formatDateRange = (startDate: Date, endDate: Date) => {
   const monthNames = [

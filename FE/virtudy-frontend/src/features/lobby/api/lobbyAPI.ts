@@ -100,6 +100,7 @@ export const lobbyAPI = {
     // 2. data만 꺼내서 + memberId 매핑까지 해서 반환
     return {
       userId: response.data.memberId,
+      roomId: response.data.roomId,
       nickName: response.data.nickName,
       avatar: response.data.avatar,
       liveKitToken: response.data.liveKitToken
@@ -118,6 +119,7 @@ export const lobbyAPI = {
 
     return {
       userId: response.data.memberId,
+      roomId: response.data.roomId,
       nickName: response.data.nickName,
       avatar: response.data.avatar,
       liveKitToken: response.data.liveKitToken
