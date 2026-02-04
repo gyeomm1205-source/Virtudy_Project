@@ -39,6 +39,8 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
     last_valid_event = "FOCUS" # [NEW] To hold state during UNKNOWN
 
     frame_count = 0
+    # [수정] 30프레임마다 1번 실행 (즉, 1초에 1번 분석)
+    SKIP_FRAMES = 45
     last_sent_time = 0
     SEND_INTERVAL = 0.1 # Send data every 100ms
 
@@ -46,6 +48,8 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         start_time = time.time()
         frame_count += 1
         
+        if frame_count % SKIP_FRAMES != 0:
+            continue
         # Convert LiveKit VideoFrame to CV2 image
         # frame is VideoFrameEvent, so we need frame.frame
         real_frame = frame.frame
@@ -229,7 +233,7 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                 if empty_room_start is not None:
                      print(f"[INFO] Participant detected! Timer reset.", flush=True)
                 empty_room_start = None
-                
+
             # 2. [추가된 기능] 루프 돌 때마다 비디오 트랙 다시 확인 (안전장치)
             for identity, participant in room.remote_participants.items():
                 for track_sid, publication in participant.track_publications.items():
