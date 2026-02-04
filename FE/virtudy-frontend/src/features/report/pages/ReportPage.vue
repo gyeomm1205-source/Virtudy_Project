@@ -47,7 +47,7 @@
 
     <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem]">
       <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border">
-        <div class="absolute right-[-1rem] bottom-[-6rem] w-[12rem] h-[14rem] z-10">
+        <div class="absolute right-[0rem] bottom-[-5rem] w-[12rem] h-[14rem] z-10">
           <CharacterAvatar
             v-if="hasAvatarConfig"
             :config="authStore.userInfo!.avatar!"

@@ -30,7 +30,7 @@
           </h1>
 
           <!-- 아바타와 순위 정보 -->
-          <div class="flex items-center translate-x-[17rem]">
+          <div class="flex items-center translate-x-[20rem]">
             <div class="flex flex-col items-start">
               <div class="flex items-end gap-[0.5rem] -mt-[5rem]">
                 <span
@@ -90,10 +90,8 @@
 
           <div
             class="w-[min(24.5625rem,40vw)] h-[2.0625rem] border-2 border-[var(--color-choco)] bg-[var(--color-cream2)] flex items-center px-[0.5rem] gap-[0.5rem] mb-[0.5rem] shadow-[4px_4px_0px_0px_var(--color-choco)]">
-            <svg viewBox="0 0 21 21" class="w-[1.25rem] h-[1.25rem]">
-              <path
-                d="M8 2C11.314 2 14 4.686 14 8C14 9.248 13.587 10.397 12.897 11.324L18.707 17.071C19.098 17.461 19.098 18.095 18.707 18.485C18.317 18.876 17.683 18.876 17.293 18.485L11.486 12.678C10.559 13.368 9.41 13.781 8.162 13.781C4.848 13.781 2.162 11.095 2.162 7.781C2.162 4.467 4.848 1.781 8.162 1.781Z"
-                fill="var(--color-choco)" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" class="w-[1.25rem] h-[1.25rem]">
+              <path d="M18 16.3637V15.5455H17.1818V14.7273H16.3636V13.9091H15.5454V13.0909H13.909V12.2727H14.7272V10.6364H15.5454V5.72728H14.7272V4.09091H13.909V3.27273H13.0909V2.45454H12.2727V1.63636H10.6363V0.818176H5.72722V1.63636H4.09085V2.45454H3.27267V3.27273H2.45448V4.09091H1.6363V5.72728H0.818115V10.6364H1.6363V12.2727H2.45448V13.0909H3.27267V13.9091H4.09085V14.7273H5.72722V15.5455H10.6363V14.7273H12.2727V13.9091H13.0909V15.5455H13.909V16.3637H14.7272V17.1818H15.5454V18H16.3636V18.8182H18V18H18.8181V16.3637H18ZM9.81813 12.2727V13.0909H6.5454V12.2727H4.90903V11.4546H4.09085V9.81819H3.27267V6.54546H4.09085V4.90909H4.90903V4.09091H6.5454V3.27273H9.81813V4.09091H11.4545V4.90909H12.2727V6.54546H13.0909V9.81819H12.2727V11.4546H11.4545V12.2727H9.81813Z" fill="#805143"/>
             </svg>
             <input v-model="searchKeyword" @input="handleSearch" @paste="handleSearch" @keyup.enter="handleSearch" type="text" placeholder="Search"
               class="flex-1 bg-transparent border-none outline-none text-[var(--color-syrup)] text-[1.125rem] font-['PfStardust30S'] placeholder-[var(--color-syrup)] opacity-70" />
