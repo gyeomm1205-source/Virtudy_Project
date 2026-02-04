@@ -1,9 +1,5 @@
 package com.ssafy.virtudy.global.config;
 
-import com.ssafy.virtudy.member.domain.Member;
-import com.ssafy.virtudy.member.repository.MemberRepository;
-import com.ssafy.virtudy.study.domain.StudySession;
-import com.ssafy.virtudy.study.repository.StudySessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -15,15 +11,20 @@ import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
-import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class StompHeaderChannelInterceptor implements ChannelInterceptor {
 
-    private final MemberRepository memberRepository;
-    private final StudySessionRepository studySessionRepository;
+    // 중복 접속 방지를 위한 인메모리 저장소
+    private final Set<String> connectedUsers = ConcurrentHashMap.newKeySet();
+
+    public void removeUser(String memberId) {
+        connectedUsers.remove(memberId);
+    }
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -36,18 +37,13 @@ public class StompHeaderChannelInterceptor implements ChannelInterceptor {
             log.info("STOMP Connect: memberId={}, roomId={}", memberId, roomId);
 
             if (memberId != null && roomId != null) {
-                // 중복 입장 방지 로직
-                Member member = memberRepository.findByMemberId(memberId).orElse(null);
-                if (member != null) {
-                    Optional<StudySession> activeSession = studySessionRepository.findByMemberAndEndTimeIsNull(member);
-                    if (activeSession.isPresent()) {
-                        String activeRoomId = activeSession.get().getRoom().getRoomId();
-                        if (activeRoomId.equals(roomId)) {
-                            log.warn("User {} is already in room {}", memberId, roomId);
-                            throw new MessagingException("User is already in this room.");
-                        }
-                    }
+                // 중복 입장 방지 로직 (메모리 체크)
+                if (connectedUsers.contains(memberId)) {
+                    log.warn("User {} is already connected.", memberId);
+                    throw new MessagingException("User is already connected.");
                 }
+
+                connectedUsers.add(memberId);
 
                 Objects.requireNonNull(accessor.getSessionAttributes()).put("memberId", memberId);
                 accessor.getSessionAttributes().put("roomId", roomId);
