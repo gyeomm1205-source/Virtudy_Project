@@ -145,11 +145,10 @@ export function useStudyRoom() {
                 messages.value.push(payload);
             });
 
-            // 트랙 수신 리스너 등록 (상대방 얼굴 화면)
+            // Track subscription (remote video)
             roomManager.onTrackSubscribed((track, participant) => {
                 if (track.kind === 'video') {
-                    // ?????? ???
-                    console.log(`?? ????????: ${participant.identity}`);
+                    console.log(`[TrackSubscribed] ${participant.identity}`);
                     remoteTracks.value.push({
                         participantId: participant.identity,
                         track: track,
