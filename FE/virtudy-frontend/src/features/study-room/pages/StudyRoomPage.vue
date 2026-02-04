@@ -454,24 +454,6 @@ watch(isConnected, (connected) => {
     }
 });
 
-const scrollChatToBottom = () => {
-    nextTick(() => {
-        if (chatListRef.value) {
-            chatListRef.value.scrollTop = chatListRef.value.scrollHeight;
-        }
-    });
-};
-
-watch(() => messages.value.length, () => {
-    scrollChatToBottom();
-});
-
-watch(isChatOpen, (open) => {
-    if (open) {
-        scrollChatToBottom();
-    }
-});
-
 const attachLocalVideo = () => {
     const roomManager = RoomManager.getInstance();
     const room = roomManager.getRoom();
@@ -1351,7 +1333,7 @@ onUnmounted(() => {
 
 .hidden-video { display: none; }
 
-.btn-chat-open {
+/* .btn-chat-open {
     display: flex;
     width: 1.5rem;
     height: 5rem;
@@ -1373,7 +1355,7 @@ onUnmounted(() => {
 
 .btn-chat-open:hover {
     opacity: 0.85;
-}
+} */
 
 /* 채팅 스크롤바 숨김 */
 .chat-list {
