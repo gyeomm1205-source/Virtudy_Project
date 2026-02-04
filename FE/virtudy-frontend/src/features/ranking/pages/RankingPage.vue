@@ -19,21 +19,7 @@
           </h1>
 
           <!-- 아바타와 순위 정보 -->
-          <div class="flex items-center gap-[1.5rem] translate-x-[1rem]">
-            <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)] bg-[var(--color-cream)] shadow-md ">
-              <CharacterAvatar
-                v-if="hasAvatarConfig"
-                :config="authStore.userInfo!.avatar!"
-                class="w-full h-full"
-              />
-              <img v-else-if="authStore.userInfo?.avatarImageUrl" :src="authStore.userInfo.avatarImageUrl" alt="프로필"
-                class="w-full h-full object-cover" />
-              <div v-else
-                class="w-full h-full flex items-center justify-center text-[var(--color-choco)] font-bold text-xl">
-                ME
-              </div>
-            </div>
-
+          <div class="flex items-center translate-x-[1rem]">
             <div class="flex flex-col items-start">
               <div class="flex items-end gap-[0.5rem] -mt-[5rem]">
                 <span class="text-[var(--color-choco)] text-[clamp(1.5rem,2.625rem,2.625rem)] font-['Ram'] font-medium leading-none">
@@ -73,19 +59,31 @@
         <div class="max-w-[61.375rem] w-full ml-26 mr-0 relative mb-[2rem] translate-x-[rem]">
 
         <div class="flex justify-between items-end mb-[-2px] relative z-10 px-[2rem]">
-          <div class="flex gap-0">
-            <button @click="changeType('private')" :class="[
-              'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
-              rankType === 'private' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
-            ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
-              <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">개인</span>
-            </button>
-            <button @click="changeType('team')" :class="[
-              'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px] ml-[-2px]',
-              rankType === 'team' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
-            ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
-              <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">팀</span>
-            </button>
+          <div class="flex items-center gap-[1rem]">
+            <div class="flex gap-0">
+              <button @click="changeType('private')" :class="[
+                'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
+                rankType === 'private' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
+              ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
+                <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">개인</span>
+              </button>
+              <button @click="changeType('team')" :class="[
+                'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px] ml-[-2px]',
+                rankType === 'team' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
+              ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
+                <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">팀</span>
+              </button>
+            </div>
+
+            <div class="w-[4rem] h-[4rem]">
+              <CharacterAvatar
+                v-if="hasAvatarConfig"
+                :config="authStore.userInfo!.avatar!"
+                class="w-full h-full"
+              />
+              <img v-else-if="authStore.userInfo?.avatarImageUrl" :src="authStore.userInfo.avatarImageUrl" alt="프로필"
+                class="w-full h-full object-cover" />
+            </div>
           </div>
 
           <div

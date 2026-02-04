@@ -112,11 +112,16 @@ const handleConfirm = () => {
       <h2 class="title">짜잔! 완성되었어요 🎉</h2>
       
       <div class="avatar-preview">
-        <CharacterAvatar 
-          v-if="generatedAvatar"
-          :config="generatedAvatar"
-          :aiDrowsy="0" :aiPhone="0" :aiAbsent="0"
-        />
+        <div
+          class="avatar-preview-inner"
+          :style="{ transform: 'translate(62px, 105px)' }"
+        >
+          <CharacterAvatar 
+            v-if="generatedAvatar"
+            :config="generatedAvatar"
+            :aiDrowsy="0" :aiPhone="0" :aiAbsent="0"
+          />
+        </div>
       </div>
 
       <div class="btn-group">
@@ -154,8 +159,21 @@ const handleConfirm = () => {
 .avatar-preview {
   width: 260px;
   height: 260px;
-  margin: 16px 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.avatar-preview-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 120ms ease;
+}
+
 
 .btn-group {
   display: flex;

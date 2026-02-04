@@ -25,25 +25,6 @@
     </button>
 
     <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem]">
-      <div class="absolute top-[0.5rem] left-0 w-full flex justify-center">
-        <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)] bg-[var(--color-cream)]">
-          <CharacterAvatar
-            v-if="hasAvatarConfig"
-            :config="authStore.userInfo!.avatar!"
-            class="w-full h-full"
-          />
-          <img
-            v-else-if="authStore.userInfo?.avatarImageUrl"
-            :src="authStore.userInfo.avatarImageUrl"
-            alt="프로필"
-            class="w-full h-full object-cover"
-          />
-          <div v-else class="w-full h-full flex items-center justify-center text-[var(--color-choco)] font-bold text-xl">
-            ME
-          </div>
-        </div>
-      </div>
-
       <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[0.625rem]">
         <button 
           @click="goToMyPage"
@@ -66,6 +47,19 @@
 
     <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem]">
       <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border">
+        <div class="absolute right-[-1rem] bottom-[-6rem] w-[12rem] h-[14rem] z-10">
+          <CharacterAvatar
+            v-if="hasAvatarConfig"
+            :config="authStore.userInfo!.avatar!"
+            class="w-full h-full"
+          />
+          <img
+            v-else-if="authStore.userInfo?.avatarImageUrl"
+            :src="authStore.userInfo.avatarImageUrl"
+            alt="프로필"
+            class="w-full h-full object-cover"
+          />
+        </div>
         <div
           v-if="!hasReport && !isLoading"
           class="absolute inset-0 z-20 flex items-center justify-center rounded-[1.25rem] bg-[rgba(255,253,245,0.75)] backdrop-blur-[2px]"
@@ -171,14 +165,8 @@
             <p class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.25rem] leading-relaxed pr-[4rem]">
               {{ reportData?.aiComment || "열심히 공부한 당신에게 멋진 분석을 준비 중이에요..." }}
             </p>
-            <img 
-              src="http://localhost:3845/assets/ae7ca0939b29738c16aee5cf86953e893d60c594.svg" 
-              class="absolute right-4 bottom-2 w-[4rem] h-[4rem]"
-              alt="AI Character"
-            />
           </div>
         </div>
-
       </div>
     </div>
 
