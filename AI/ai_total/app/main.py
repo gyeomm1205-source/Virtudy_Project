@@ -38,8 +38,6 @@ app.add_middleware(
 # 3. 라우터 등록
 # 이제 /makeAvatar 같은 API 주소를 사용할 수 있게 됩니다.
 app.include_router(avatar.router, prefix="/fastapi")
-
-app.include_router(main_router, prefix="/fastapi")
  
 # 4. (선택사항) 서버가 잘 켜졌는지 확인하는 테스트용 루트 경로
 @app.get("/")
