@@ -26,7 +26,7 @@ from fusion.state_fuser import StateFuser
 from scoring.focus_scorer import FocusScorer
 
 
-async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: multiprocessing.Queue = None):
+async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: multiprocessing.Queue = None, participant_identity: str = ""):
     print("[INFO] AI Processing Loop Started", flush=True)
     
     # Initialize Logic
@@ -130,17 +130,20 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
 
             # Send STATUS Event (Strict JSON Spec)
             # We pass 'event_type' as category, but _send_data will now ensure it maps to 'eventType'
-            await _send_data(room, event_type, value, queue)
+            await _send_data(room, event_type, value, queue, participant_identity)
             
             # Send SCORE Event (Separate)
-            await _send_data(room, "SCORE", int(snap.score), queue)
+            await _send_data(room, "SCORE", int(snap.score), queue, participant_identity)
 
             last_sent_time = current_time
 
-async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None):
+async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None, target_id: str = None):
     # 1. Send via LiveKit
-    payload = json.dumps({"category": category, "value": value})
-
+    payload_dict = {"category": category, "value": value}
+    if target_id:
+        payload_dict["participantId"] = target_id
+        
+    payload = json.dumps(payload_dict)
     data = payload.encode('utf-8')
     await room.local_participant.publish_data(data, reliable=False)
 
@@ -149,6 +152,8 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
         try:
             # 프론트엔드 에러 해결의 핵심: participantId 추가
             queue_payload = {"eventType": category, "value": value}
+            if target_id:
+                queue_payload["participantId"] = target_id
             
             queue.put(queue_payload)
             # print(f"[DEBUG] Queue Put: {category} -> {value} (User: {target_id})") 
@@ -196,7 +201,13 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                      publication.set_video_quality(rtc.VideoQuality.HIGH)
                      video_stream = rtc.VideoStream(publication.track)
                      asyncio.create_task(ai_process_loop(room, video_stream, queue))
-
+                
+                # 2. 구독 안 됨 -> 구독 시도
+                elif not publication.subscribed:
+                    print(f"[INFO] Found unsubscribed video for {identity}. Subscribing...", flush=True)
+                    publication.set_subscribed(True)
+                    # 구독하면 자동으로 on_track_subscribed가 호출되므로 
+                    # 여기서 ai_process_loop를 직접 실행할 필요는 없습니다.
         # ==============================================================================
         # [추가] 봇 인내심 기르기 (입장 후 30초 대기)
         # ==============================================================================
