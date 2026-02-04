@@ -73,8 +73,13 @@
           <!-- 아바타 -->
           <div class="relative w-[9.125rem] h-[9.125rem] mb-[1.5rem]">
             <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)]">
+              <CharacterAvatar
+                v-if="hasAvatarConfig"
+                :config="userInfo!.avatar!"
+                class="w-full h-full"
+              />
               <img 
-                v-if="userInfo?.avatarImageUrl" 
+                v-else-if="userInfo?.avatarImageUrl" 
                 :src="userInfo.avatarImageUrl" 
                 alt="프로필 사진"
                 class="w-full h-full object-cover"
@@ -178,6 +183,7 @@ import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import MiniReport from '@/shared/ui/MiniReport.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';  
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import ProfileEditModal from '../ui/ProfileEditModal.vue';
 import { useWeeklyReport } from  '@/features/report/logic/useWeeklyReport';
 import { authAPI } from '@/features/auth/api/authAPI';
@@ -193,6 +199,10 @@ const {
 // useWeeklyReport 내부의 onMounted가 실행되면서 자동으로 '지난주' 데이터를 불러옵니다.
 const { reportData, isLoading } = useWeeklyReport();
 const hasReport = computed(() => Boolean(reportData.value && reportData.value.reportId));
+const hasAvatarConfig = computed(() => {
+  if (!userInfo.value?.avatar) return false;
+  return Object.values(userInfo.value.avatar).some((value) => Boolean(value));
+});
 const goBack = () => {
   router.push({ name: 'user' });
 };

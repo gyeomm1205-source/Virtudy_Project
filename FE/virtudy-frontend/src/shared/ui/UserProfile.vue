@@ -3,17 +3,19 @@
     <div class="profile-main">
       <div class="profile-image-wrapper">
         <div class="image-container" @click="emit('clickProfile')">
-          <img 
-            :src="profileFrameUrl" 
-            alt="프로필 프레임"
-            class="frame-img"
+          <CharacterAvatar 
+            v-if="hasAvatarConfig" 
+            :config="avatar!" 
+            class="user-avatar"
           />
-          <div class="user-img-box">
-            <img 
-              :src="avatarImageUrl || defaultProfileImage" 
-              alt="프로필 이미지"
-              class="user-img"
-            />
+          <img 
+            v-else-if="avatarImageUrl" 
+            :src="avatarImageUrl" 
+            alt="프로필 이미지"
+            class="user-img"
+          />
+          <div v-else class="avatar-empty">
+            아바타 생성하기
           </div>
         </div>
       </div>
@@ -55,23 +57,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import MiniReport from '@/shared/ui/MiniReport.vue'; 
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import type { AvatarConfig } from '@/shared/types/common.types';
 
 // 클릭 이벤트
 const emit = defineEmits<{
   (e: 'clickProfile'): void
 }>();
-
-// [수정] 백엔드 명세와 동일한 필드명으로 Props 정의
-interface AvatarConfig {
-  hairFront: string;
-  hairBack: string;
-  hairColor: string;
-  eyes: string;
-  glasses: string;
-  outfit: string;
-  clothesColor: string;
-}
 
 interface UserProfileProps {
   nickName?: string;
@@ -86,7 +80,7 @@ interface UserProfileProps {
 }
 
 // 기본값 설정 (데이터가 없을 때 보여줄 값)
-withDefaults(defineProps<UserProfileProps>(), {
+const props = withDefaults(defineProps<UserProfileProps>(), {
   nickName: "닉네임",
   tierScore: 0,
   tier: "티어명",
@@ -96,8 +90,12 @@ withDefaults(defineProps<UserProfileProps>(), {
   avatarImageUrl: ""
 });
 
+const hasAvatarConfig = computed(() => {
+  if (!props.avatar) return false;
+  return Object.values(props.avatar).some((value) => Boolean(value));
+});
+
 // 이미지 URLs
-const profileFrameUrl = "/vite.svg"; // [수정] 임시 플레이스홀더
 const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
 </script>
 
@@ -119,13 +117,21 @@ const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
   width: 100%;
 }
 
-/* 클릭 가능한 영역 스타일 추가 */
+/* 클릭 가능한 영역 스타일 */
 .image-container { 
   position: relative; 
   width: 146px; 
   height: 146px; 
   margin: 0 auto; 
   top: 10px; 
+  border-radius: 50%; 
+  background: var(--color-cream); 
+  border: 4px solid var(--color-choco); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  box-sizing: border-box;
+  overflow: hidden; /* 원형 마스크 유지 */
   
   /* 마우스 커서 변경 및 호버 효과 */
   cursor: pointer; 
@@ -137,10 +143,9 @@ const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
   transform: scale(1.05);
 }
 
-.image-container { position: relative; width: 146px; height: 146px; margin: 0 auto; top: 10px; }
-.frame-img { width: 100%; height: 100%; object-fit: cover; }
-.user-img-box { position: absolute; top: 6px; left: 8px; width: 130px; height: 130px; border-radius: 50%; overflow: hidden; }
-.user-img { width: 100%; height: 100%; object-fit: cover; }
+.user-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.user-avatar { width: 100%; height: 100%; transform: none; }
+.avatar-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--color-choco); font-size: 16px; font-family: 'PfStardust30S', sans-serif; padding: 8px; }
 
 .nickname-area { position: absolute; top: 158px; width: 100%; text-align: center; }
 .nickname-text { color: var(--color-choco); font-size: 28px; font-weight: bold; font-family: 'Xcu', sans-serif; }

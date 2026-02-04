@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
 import { getScoreColor } from '../logic/scoreUtils';
+import FlashbangEffect from '../ui/FlashbangEffect.vue';
 
 const props = defineProps<{
   focusSeconds: number;
@@ -11,7 +12,27 @@ const props = defineProps<{
   aiStatus: string;
   // 팀원들 정보 (ID, Score)
   teammates: Array<{ id: string; score: number }>;
+  isWakeUpAvailable: boolean;
+  onOpenWakeUpModal: () => void;
+  isStunned?: boolean;
 }>();
+
+// 안내 메시지 표시 상태
+const showGuideMessage = ref(false);
+
+// 깨우기 버튼 클릭 핸들러 (PIP 전용)
+const handlePipWakeUpClick = () => {
+  // 1. 메인 윈도우의 모달 열기 함수 실행
+  props.onOpenWakeUpModal();
+  
+  // 2. 안내 메시지 표시
+  showGuideMessage.value = true;
+
+  // 3. 10초 뒤에 다시 버튼/상태 표시로 복귀
+  setTimeout(() => {
+    showGuideMessage.value = false;
+  }, 10000);
+};
 
 // 시간 포맷팅 (HH:MM:SS)
 const formattedTime = computed(() => {
@@ -53,49 +74,73 @@ const teamHeartSlots = computed(() => {
 <template>
   <div class="pip-container">
     
-    <div class="top-section-wrapper">
-      <div class="top-section">
-        <div class="avatar-layer">
-          <CharacterAvatar 
-            :config="myAvatarConfig"
-            :aiDrowsy="getAiDrowsy(aiStatus)"
-            :aiPhone="getAiPhone(aiStatus)"
-            :aiAbsent="getAiAbsent(aiStatus)"
-            :isBlinking="false"
-            mouthState="closed"
-          />
-        </div>
+    <FlashbangEffect :visible="!!isStunned" />
 
-        <div class="overlay-layer">
-          <div class="status-row">
-            <span class="pixel-text">현재상태</span>
+    <div v-if="showGuideMessage" class="guide-overlay">
+      <div class="guide-text">
+        ⚡<br>
+        깨우기가 활성화됐어요!<br>
+        스터디룸으로 돌아가<br>
+        팀원을 깨워보세요!
+      </div>
+    </div>
+
+    <template v-else>
+      <div class="top-section-wrapper">
+        <div class="top-section">
+          <div class="avatar-layer">
+            <CharacterAvatar 
+              :config="myAvatarConfig"
+              :aiDrowsy="getAiDrowsy(aiStatus)"
+              :aiPhone="getAiPhone(aiStatus)"
+              :aiAbsent="getAiAbsent(aiStatus)"
+              :isBlinking="false"
+              mouthState="closed"
+            />
           </div>
-          <div class="my-heart-wrapper">
-            <svg viewBox="0 0 24 24" class="pixel-heart big" :style="{ fill: getScoreColor(aiScore) }">
+
+          <div class="overlay-layer">
+            <div class="status-row">
+              <template v-if="isWakeUpAvailable">
+                <button 
+                  class="btn-pixel-action btn-wakeup active"
+                  @click="handlePipWakeUpClick"
+                >
+                  깨우기!
+                </button>
+              </template>
+              <template v-else>
+                <span class="pixel-text">현재상태</span>
+              </template>
+            </div>
+            
+            <div v-if="!isWakeUpAvailable" class="my-heart-wrapper">
+              <svg viewBox="0 0 24 24" class="pixel-heart big" :style="{ fill: getScoreColor(aiScore) }">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-section">
+        <div class="timer-text">{{ formattedTime }}</div>
+        <div class="team-hearts-row">
+          <div v-for="(slot, idx) in teamHeartSlots" :key="idx" class="heart-slot">
+            <svg viewBox="0 0 24 24" class="pixel-heart small" :style="{ fill: slot.color }">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="bottom-section">
-      <div class="timer-text">{{ formattedTime }}</div>
-      <div class="team-hearts-row">
-        <div v-for="(slot, idx) in teamHeartSlots" :key="idx" class="heart-slot">
-          <svg viewBox="0 0 24 24" class="pixel-heart small" :style="{ fill: slot.color }">
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-          </svg>
-        </div>
-      </div>
-    </div>
+    </template>
 
   </div>
 </template>
 
 <style scoped>
 
-.pip-dashboard {
+.pip-container {
   width: 100vw;
   height: 100vh;
   /* 베이지색 배경 */
@@ -109,7 +154,25 @@ const teamHeartSlots = computed(() => {
   font-family: 'PfStardust30S', monospace, sans-serif;
   color: #5d4037; /* 진한 갈색 텍스트 */
   overflow: hidden;
+  position: relative;
 }
+
+/* 안내 메시지 오버레이 */
+.guide-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(255, 244, 217, 0.95); /* 배경색과 동일하되 약간 투명 */
+  display: flex; align-items: center; justify-content: center;
+  z-index: 50; text-align: center;
+}
+.guide-text {
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: #805143;
+  font-weight: bold;
+  animation: fadeIn 0.5s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* 상단 아바타 영역 래퍼: 배경색이 늘어날 때 아바타만 둥둥 뜨지 않도록 처리 */
 .top-section-wrapper {
@@ -205,4 +268,31 @@ const teamHeartSlots = computed(() => {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
 }
+
+/* 깨우기 버튼 스타일 (PIP 전용) */
+.btn-wakeup {
+  background: #FFD966; /* 기본 노란색 */
+  color: #805143;
+  border: 2px solid #805143;
+  padding: 5px 15px;
+  font-family: 'PfStardust30S';
+  font-size: 1.2rem;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0px 4px 0px #805143;
+  /* 애니메이션: 활성화 시에만 작동 */
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+.feedback-toast {
+    position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: #FFF2CC;
+    padding: 15px 30px; border-radius: 30px;
+    font-family: 'PfStardust30S'; z-index: 3000;
+    animation: fadeOut 2s forwards;
+}
+
+@keyframes fadeOut { 0% {opacity: 1;} 80% {opacity: 1;} 100% {opacity: 0;} }
 </style>
