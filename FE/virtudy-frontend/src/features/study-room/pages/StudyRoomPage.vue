@@ -7,10 +7,10 @@ import { useStudyRoom } from '../logic/useStudyRoom';
 import { useFocusTimer } from '../logic/useFocusTimer';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
-import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
+import { useAuthStore } from '@/stores/authStore'; // 피나이아 스토어
 import { useStudyStore } from '@/stores/studyStore';
 
-// UI ???? ???
+// 스터디룸 UI 컴포넌트 임포트
 import StudyTimer from '@/shared/ui/StudyTimer.vue';
 import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
@@ -21,10 +21,10 @@ import WakeUpModal from '../ui/WakeUpModal.vue';
 import MatchingModal from '@/shared/ui/MatchingModal.vue';
 import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
 
-// ??? ?? ??? (?? ? ?? ??)
+// 디버그 패널 임포트 (배포 시 제거 권장)
 import DebugControls from '../ui/DebugControls.vue';
 
-// API ???
+// API 임포트
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 import type { AvatarConfig } from '@/shared/types/common.types';
 import type { RoomData } from '@/features/lobby/types/lobby.types';
