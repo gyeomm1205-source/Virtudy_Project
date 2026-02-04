@@ -4,6 +4,13 @@
 
     <div class="flex-1 flex flex-col pt-[4.5rem] pb-[6.5rem] w-full min-h-[calc(100vh-200px)] px-[4.75rem]">
       <div class="w-full max-w-[74rem] mx-auto relative">
+        <div class="absolute left-[21.5rem] top-[8.5rem] w-[4rem] h-[4rem]">
+          <CharacterAvatar
+            v-if="hasAvatarConfig"
+            :config="displayAvatar!"
+            class="w-full h-full"
+          />
+        </div>
         <button @click="goBack"
           class="absolute -left-13 top-[2rem] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -73,14 +80,6 @@
               ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
                 <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">팀</span>
               </button>
-            </div>
-
-            <div class="w-[4rem] h-[4rem]">
-              <CharacterAvatar
-                v-if="hasAvatarConfig"
-                :config="displayAvatar!"
-                class="w-full h-full"
-              />
             </div>
           </div>
 
