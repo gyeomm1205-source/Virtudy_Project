@@ -162,6 +162,8 @@
     <ProfileEditModal 
       v-if="isEditModalOpen"
       :email="userInfo?.email || ''"
+      :avatar="userInfo?.avatar"
+      :avatar-image-url="userInfo?.avatarImageUrl"
       v-model:nickName="editForm.nickName"
       v-model:jobType="editForm.jobType"
       :jobOptions="JOB_OPTIONS"
