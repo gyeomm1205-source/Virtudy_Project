@@ -83,6 +83,7 @@ async def join_room(request: JoinRequest):
     """
     logger.info(f"Received request to join room: {request.room_id}")
     
+    logger.info(f"REQUEST : ROOM ID : {request.room_id}, QUEUE: {queue}")
     # Create a shared queue for this room using standard multiprocessing.Queue
     # (Since we are forking/spawning from this process, it works)
     queue = multiprocessing.Queue()
