@@ -139,10 +139,17 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
 
 async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None, target_id: str = None):
     
+
+
     payload_dict = {"category": category, "value": value}
-    if target_id:
+    
+    # [수정] target_id가 None만 아니면 (빈 문자열이라도) 무조건 넣기
+    if target_id is not None:
         payload_dict["participantId"] = target_id
-        
+    else:
+        # 만약 진짜 없으면 "UNKNOWN"이라도 넣어서 프론
+        payload_dict["participantId"] = "UNKNOWN"
+
     payload = json.dumps(payload_dict)
     data = payload.encode('utf-8')
     await room.local_participant.publish_data(data, reliable=False)
@@ -152,8 +159,11 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
         try:
             # 프론트엔드 에러 해결의 핵심: participantId 추가
             queue_payload = {"eventType": category, "value": value}
-            if target_id:
+            
+            if target_id is not None:
                 queue_payload["participantId"] = target_id
+            else:
+                queue_payload["participantId"] = "UNKNOWN"
             
             queue.put(queue_payload)
             # print(f"[DEBUG] Queue Put: {category} -> {value} (User: {target_id})") 
