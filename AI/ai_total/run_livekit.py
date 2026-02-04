@@ -137,7 +137,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
 
             last_sent_time = current_time
 
-async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None):
+async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None, participant_identity: str = ""):
     
 
 
@@ -151,7 +151,7 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
     if queue:
         try:
             # 프론트엔드 에러 해결의 핵심: participantId 추가
-            queue_payload = {"eventType": category, "value": value}
+            queue_payload = {"eventType": category, "value": value, "participantId": participant_identity}
             
             queue.put(queue_payload)
             # print(f"[DEBUG] Queue Put: {category} -> {value} (User: {target_id})") 
@@ -209,8 +209,11 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                     # 여기서 ai_process_loop를 직접 실행할 필요는 없습니다.
         
         # Keep alive & Monitor
+        # Keep alive & Monitor
         empty_room_start = None
         
+        # [수정 1] 대기 시간을 30초로 늘림 (프론트엔드 연결 지연 대비)
+        MAX_WAIT_SECONDS = 30.0
         while True:
             await asyncio.sleep(1) # 1초 대기
             
@@ -219,12 +222,14 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
             if count == 0:
                 if empty_room_start is None:
                     empty_room_start = time.time()
-                elif time.time() - empty_room_start > 1.0:
+                elif time.time() - empty_room_start > MAX_WAIT_SECONDS:
                     print(f"[INFO] Room empty for 1 second. Disconnecting...", flush=True)
                     break
             else:
+                if empty_room_start is not None:
+                     print(f"[INFO] Participant detected! Timer reset.", flush=True)
                 empty_room_start = None
-
+                
             # 2. [추가된 기능] 루프 돌 때마다 비디오 트랙 다시 확인 (안전장치)
             for identity, participant in room.remote_participants.items():
                 for track_sid, publication in participant.track_publications.items():
