@@ -23,6 +23,9 @@ export function useStudyRoom() {
     const remoteParticipantScores = ref<Record<string, number>>({});
     // [추가] 상대방 닉네임 저장용 (key: participantId, value: nickName)
     const remoteParticipantNames = ref<Record<string, string>>({});
+    // [Add] remote participant join order
+    const remoteParticipantJoinedAt = ref<Record<string, number>>({});
+    const remoteParticipantOrder = ref<string[]>([]);
     const localNickName = ref<string | null>(null);
     const localUserId = ref<string | null>(null);
     // [추가] 방 정보 업데이트 이벤트
@@ -30,6 +33,27 @@ export function useStudyRoom() {
 
     // null이 아니고 FOCUS가 아니면 '딴짓 중(true)'으로 판단
     const isDistracted = computed(() => focusEventType.value !== null && focusEventType.value !== 'FOCUS');
+
+    const updateParticipantOrder = (participant: { identity: string; joinedAt?: Date | undefined }) => {
+        if (!participant?.identity) return;
+        if (participant.identity === localUserId.value) return;
+        const joinedAt = participant.joinedAt ? participant.joinedAt.getTime() : Date.now();
+        if (!remoteParticipantJoinedAt.value[participant.identity]) {
+            remoteParticipantJoinedAt.value[participant.identity] = joinedAt;
+        }
+        const ordered = Object.entries(remoteParticipantJoinedAt.value)
+            .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
+            .map(([id]) => id);
+        remoteParticipantOrder.value = ordered;
+    };
+
+    const removeParticipantOrder = (participantId: string) => {
+        if (!participantId) return;
+        if (remoteParticipantJoinedAt.value[participantId]) {
+            delete remoteParticipantJoinedAt.value[participantId];
+        }
+        remoteParticipantOrder.value = remoteParticipantOrder.value.filter((id) => id !== participantId);
+    };
 
     /**
      * 방 입장 함수
@@ -47,6 +71,8 @@ export function useStudyRoom() {
             remoteParticipantStates.value = {}; // 초기화
             remoteParticipantScores.value = {};
             remoteParticipantNames.value = {};
+            remoteParticipantJoinedAt.value = {};
+            remoteParticipantOrder.value = [];
             localNickName.value = nickName || userId;
             localUserId.value = userId;
 
@@ -119,11 +145,10 @@ export function useStudyRoom() {
                 messages.value.push(payload);
             });
 
-            // 트랙 수신 리스너 등록 (상대방 얼굴 화면)
+            // Track subscription (remote video)
             roomManager.onTrackSubscribed((track, participant) => {
                 if (track.kind === 'video') {
-                    // 디버깅용 콘솔
-                    console.log(`📹 비디오 수신: ${participant.identity}`);
+                    console.log(`[TrackSubscribed] ${participant.identity}`);
                     remoteTracks.value.push({
                         participantId: participant.identity,
                         track: track,
@@ -133,7 +158,9 @@ export function useStudyRoom() {
                         roomManager.sendLiveKitData('USER_INFO_REQUEST', { targetId: participant.identity });
                     }
                 }
+                updateParticipantOrder(participant);
             });
+
 
             // 트랙 해제 리스너 등록 (상대방 나감, 화면 해제)
             roomManager.onTrackUnsubscribed((track, participant) => {
@@ -146,6 +173,7 @@ export function useStudyRoom() {
 
             // 참가자 입장 리스너 등록 (닉네임 공유)
             roomManager.onParticipantConnected((_participant) => {
+                updateParticipantOrder(_participant);
                 if (localNickName.value) {
                     roomManager.sendLiveKitData('USER_INFO', { nickName: localNickName.value });
                 }
@@ -166,6 +194,7 @@ export function useStudyRoom() {
                 if (remoteParticipantNames.value[participant.identity]) {
                     delete remoteParticipantNames.value[participant.identity];
                 }
+                removeParticipantOrder(participant.identity);
             });
 
             // RoomManager를 통해 입장
@@ -176,6 +205,13 @@ export function useStudyRoom() {
 
             if (localNickName.value) {
                 roomManager.sendLiveKitData('USER_INFO', { nickName: localNickName.value });
+            }
+
+            const room = roomManager.getRoom();
+            if (room?.remoteParticipants) {
+                room.remoteParticipants.forEach((participant) => {
+                    updateParticipantOrder(participant);
+                });
             }
 
         } catch (e: any) {
@@ -194,6 +230,8 @@ export function useStudyRoom() {
         remoteParticipantStates.value = {};
         remoteParticipantScores.value = {};
         remoteParticipantNames.value = {};
+        remoteParticipantJoinedAt.value = {};
+        remoteParticipantOrder.value = [];
     };
 
     // 채팅 전송
@@ -222,6 +260,7 @@ export function useStudyRoom() {
         remoteParticipantStates,
         remoteParticipantScores, // [추가]
         remoteParticipantNames,
+        remoteParticipantOrder,
         focusEventType,
         isDistracted,
         setDebugState, // [추가] 디버그용 함수 반환
