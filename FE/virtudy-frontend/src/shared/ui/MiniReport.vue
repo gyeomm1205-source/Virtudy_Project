@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-[var(--color-choco)] flex items-center justify-center gap-[12.5rem] h-[8.9375rem] px-[12.75rem] py-[1.125rem] rounded-[1.25rem] overflow-hidden">
+  <div class="study-stats-container bg-[var(--color-choco)] flex items-center justify-center rounded-[1.25rem] overflow-hidden">
     <div class="flex flex-col gap-[0.3125rem] items-start">
       <div class="text-[var(--color-cream2)] text-[2.625rem] font-['Ram'] font-medium leading-[3rem] tracking-[-0.0525rem]">
         {{ formatTime(studyTime) }}

@@ -44,7 +44,7 @@
                   <CharacterAvatar
                     v-if="hasAvatarConfig"
                     :config="avatar!"
-                    class="w-full h-full"
+                    class="absolute inset-0 w-full h-full object-cover scale-[1.16] origin-center translate-y-[17.5%] translate-x-[0.35rem]"
                   />
                   <img
                     v-else-if="avatarImageUrl"

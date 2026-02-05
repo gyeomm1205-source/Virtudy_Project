@@ -2,8 +2,6 @@
 import { ref, computed, onMounted } from 'vue';
 import { getMyRank, getRankList } from '../api/rankingApi';
 import type { RankItem, RankType, MyRankInfo } from '../types/ranking.types';
-import { useAuthStore } from '@/stores/authStore';
-
 export const useRanking = () => {
   // --- 상태 (State) ---
   const rankType = ref<RankType>('private');
