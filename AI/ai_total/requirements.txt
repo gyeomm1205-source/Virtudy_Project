@@ -46,6 +46,7 @@ av==16.1.0
 livekit==1.0.23
 livekit-api==1.1.0
 livekit-protocol==1.1.2
+kafka-python==2.0.2
 grpcio==1.76.0
 
 # ✅ agents / plugins-openai는 1.0.x 라인으로 (otel 1.25 고정 유지 목적)
