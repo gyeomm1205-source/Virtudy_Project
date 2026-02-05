@@ -5,6 +5,7 @@ import { useWebcam } from '../logic/useWebcam';
 import { avatarAPI } from '../api/avatarAPI';
 import { useAuthStore } from '@/stores/authStore'; // 내 정보 스토어
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue'; // 아바타 컴포넌트
+import MatchingModal from '@/shared/ui/MatchingModal.vue';
 
 // 상태 관리
 const step = ref<'camera' | 'loading' | 'result'>('camera');
@@ -36,6 +37,7 @@ const loadAvatarCreateCount = () => {
   remainingChances.value = AVATAR_CREATE_LIMIT - avatarCreateCount.value;
 };
 
+
 const incrementAvatarCreateCount = () => {
   const data = JSON.parse(localStorage.getItem(AVATAR_CREATE_KEY) || '{}');
   const todayKey = getTodayKey();
@@ -45,9 +47,19 @@ const incrementAvatarCreateCount = () => {
   remainingChances.value = AVATAR_CREATE_LIMIT - avatarCreateCount.value;
 };
 
+const decrementAvatarCreateCount = () => {
+  const data = JSON.parse(localStorage.getItem(AVATAR_CREATE_KEY) || '{}');
+  const todayKey = getTodayKey();
+  if (data[todayKey] && data[todayKey] > 0) {
+    data[todayKey] = data[todayKey] - 1;
+    localStorage.setItem(AVATAR_CREATE_KEY, JSON.stringify(data));
+    avatarCreateCount.value = data[todayKey];
+    remainingChances.value = AVATAR_CREATE_LIMIT - avatarCreateCount.value;
+  }
+};
+
 const getChanceMessage = () => {
-  if (remainingChances.value > 1) return `아바타 생성 기회가 ${remainingChances.value}번 남았습니다.`;
-  if (remainingChances.value === 1) return '아바타 생성 마지막 기회입니다!';
+  if (remainingChances.value > 0) return `아바타 생성 기회가 ${remainingChances.value}번 남아있습니다.`;
   return '아바타 생성 기회를 모두 사용하셨습니다.';
 };
 
@@ -60,6 +72,10 @@ onMounted(() => {
 });
 
 // 2. 촬영 및 생성 요청 핸들러
+
+// 저장 여부를 추적하는 플래그
+const hasSavedCurrentAvatar = ref(false);
+
 const handleCapture = async () => {
   if (remainingChances.value <= 0) {
     alert(getChanceMessage());
@@ -108,8 +124,7 @@ const handleCapture = async () => {
     // 결과 저장 및 화면 전환
     generatedAvatar.value = newConfig;
     step.value = 'result';
-    incrementAvatarCreateCount();
-    // ...existing code...
+    hasSavedCurrentAvatar.value = false; // 새로 촬영하면 저장 안된 상태로 초기화
 
   } catch (error) {
     console.error('아바타 생성 실패:', error);
@@ -121,18 +136,44 @@ const handleCapture = async () => {
   }
 };
 
+
+
+const showChanceAfterSave = ref(false);
+
+
 const handleRetry = () => {
+  // result 상태에서 다시 찍기를 누르면, 이전에 저장하지 않은 경우만 카운트 복구
+  if (step.value === 'result' && hasSavedCurrentAvatar.value) {
+    decrementAvatarCreateCount();
+  }
   generatedAvatar.value = null;
   step.value = 'camera';
+  showChanceAfterSave.value = false;
+  hasSavedCurrentAvatar.value = false;
   loadAvatarCreateCount();
   if (remainingChances.value > 0) {
     startCamera();
   }
 };
 
+
+
+
 const handleConfirm = () => {
   if (generatedAvatar.value) {
     authStore.setAvatarConfig(generatedAvatar.value);
+    if (!hasSavedCurrentAvatar.value) {
+      incrementAvatarCreateCount(); // 저장할 때 카운트 증가 (중복 방지)
+      loadAvatarCreateCount();
+      hasSavedCurrentAvatar.value = true;
+    }
+    showChanceAfterSave.value = true;
+    // 저장 후 1.5초간 남은 기회 메시지 보여주고 로비로 이동
+    setTimeout(() => {
+      showChanceAfterSave.value = false;
+      router.push('/lobby');
+    }, 1500);
+    return;
   }
   router.push('/lobby'); // 로비나 마이페이지로 이동
 };
@@ -155,14 +196,18 @@ const handleConfirm = () => {
       </button>
     </div>
 
-    <div v-else-if="step === 'loading'" class="loading-view">
-      <div class="spinner"></div> <h3>AI가 열심히 아바타를<br>만들고 있어요! 🎨</h3>
-      <p>잠시만 기다려주세요...</p>
-    </div>
+    <template v-if="step === 'loading'">
+      <div class="avatar-loading-overlay"></div>
+      <MatchingModal
+        :titleText="'아바타 생성 중...'"
+        :subtitleText="'AI가 열심히 아바타를 만들고 있어요!'"
+        style="z-index: 1000;"
+      />
+    </template>
 
     <div v-else-if="step === 'result'" class="result-view">
       <h2 class="title">🎉짜잔🎉<br>완성되었어요!</h2>
-      <p class="guide-text" style="color: #b85c00; font-size: 20px; margin-bottom: 0;">
+      <p v-if="showChanceAfterSave" class="guide-text" style="color: #b85c00; font-size: 20px; margin-bottom: 0;">
         {{ getChanceMessage() }}
       </p>
       <div class="avatar-preview">
@@ -223,12 +268,14 @@ const handleConfirm = () => {
   margin-top: 16px;
   font-weight: 700;
   animation: title-wiggle 900ms ease-in-out infinite;
+  color: #805143;
 }
 
 .guide-text {
   font-size: 30px;
   line-height: 1.4;
   margin-top: -7px;
+  color: #805143;
 }
 
 .loading-view h3 {
@@ -286,7 +333,6 @@ const handleConfirm = () => {
 .confirm-btn {
   padding: 10px 18px;
   border: 2px solid var(--color-choco);
-  border-radius: 8px;
   background: var(--color-butter);
   color: var(--color-choco);
   font-family: 'PfStardust30S', sans-serif;
@@ -394,4 +440,13 @@ video {
 
 
 /* 버튼 스타일 생략... */
+</style>
+<style scoped>
+.avatar-loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 253, 245, 0.82); /* 더 높은 투명도 */
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}
 </style>
