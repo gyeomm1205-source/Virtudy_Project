@@ -27,8 +27,8 @@ from scoring.focus_scorer import FocusScorer
 from utils.kafka_logger import KafkaLogger
 
 
-async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: multiprocessing.Queue = None, participant_identity: str = ""):
-    print("[INFO] AI Processing Loop Started", flush=True)
+async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: multiprocessing.Queue = None, participant_identity: str = "", session_id: str = None):
+    print(f"[INFO] AI Processing Loop Started (SessionID: {session_id})", flush=True)
     
     # Initialize Logic
     extractor = FeatureExtractor() # Use original extractor
@@ -39,7 +39,9 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
     scorer = FocusScorer()
 
     # 카프카 로거 초기화
-    kafka_logger = KafkaLogger(session_id=room.name)
+    # [FIX] Use session_id if provided, else fallback to room.name (though likely to fail in backend)
+    logger_id = session_id if session_id else room.name
+    kafka_logger = KafkaLogger(session_id=logger_id)
     
     last_valid_event = "FOCUS" # [NEW] To hold state during UNKNOWN
     last_phone_signal = PhoneSignal(phone_present=False)
@@ -205,7 +207,8 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
             # [Fix] Request High Quality Video for AI Analysis
             # publication.set_video_quality(rtc.VideoQuality.HIGH) # Unsupported in v1.0.23
             video_stream = rtc.VideoStream(track)
-            asyncio.create_task(ai_process_loop(room, video_stream, queue, participant.identity))
+            session_id = participant.metadata
+            asyncio.create_task(ai_process_loop(room, video_stream, queue, participant.identity, session_id))
 
     @room.on("track_published")
     def on_track_published(publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
@@ -234,7 +237,8 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                      # [Fix] Request High Quality Video for AI Analysis
                      publication.set_video_quality(rtc.VideoQuality.HIGH)
                      video_stream = rtc.VideoStream(publication.track)
-                     asyncio.create_task(ai_process_loop(room, video_stream, queue, identity))
+                     session_id = participant.metadata
+                     asyncio.create_task(ai_process_loop(room, video_stream, queue, identity, session_id))
                      pass
                 
                 # 2. 구독 안 됨 -> 구독 시도
