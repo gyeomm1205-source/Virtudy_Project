@@ -127,6 +127,14 @@ export function useStudyRoom() {
                     if (isNewUser && rNick) {
                         addSystemMessage(`${rNick}님이 들어왔습니다.`);
                     }
+                    /* TEMP-DEBUG: remove after verifying multi-user AI status */
+                    console.log('[DBG-AI][RemoteMap]', {
+                        senderId,
+                        status: payload.status,
+                        score: payload.score,
+                        stateKeys: Object.keys(remoteParticipantStates.value),
+                        scoreKeys: Object.keys(remoteParticipantScores.value),
+                    });
                     return;
                 }
 
@@ -157,6 +165,10 @@ export function useStudyRoom() {
                 const directType = payload?.eventType || payload?.data?.eventType;
                 const signalType = payload?.type;
                 if (signalType === 'AI_EVENT' || signalType === 'AI_STATE' || directType) {
+                    // Only apply local AI events (LiveKit broadcasts include senderId).
+                    if (senderId) {
+                        return;
+                    }
                     const eventType = (directType || payload?.data?.state || payload?.data?.focusState) as FocusEventType | undefined;
                     if (eventType === 'FOCUS' || eventType === 'SLEEP' || eventType === 'PHONE' || eventType === 'AWAY') {
                         focusEventType.value = eventType;

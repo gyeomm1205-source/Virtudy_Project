@@ -8,7 +8,11 @@ export function useAiHandler() {
     const aiStore = useStudyRoomAiStore();
 
     // AI 데이터 수신 핸들러
-    const handleMessage = (payload: any) => {
+    const handleMessage = (payload: any, senderId?: string) => {
+        // Ignore AI_Bot LiveKit broadcasts to prevent global state sync.
+        if (senderId && senderId.startsWith('AI_Bot_')) {
+            return;
+        }
         // [수정] RoomManager에서 보낸 포장지(AI_EVENT) 확인
         // 모양: { type: 'AI_EVENT', data: { eventType: 'FOCUS', value: 0 } }
 
@@ -32,6 +36,13 @@ export function useAiHandler() {
         }
 
         console.log('🤖 [useAiHandler] Parsed:', aiData); // [DEBUG]
+        /* TEMP-DEBUG: remove after verifying multi-user AI status */
+        console.log('[DBG-AI][AiHandler]', {
+            category: aiData.category,
+            value: aiData.value,
+            rawType: payload?.type,
+            rawEventType: payload?.data?.eventType ?? payload?.eventType,
+        });
 
         switch (aiData.category) { // 이제 매핑된 category 사용
             case 'SCORE':
