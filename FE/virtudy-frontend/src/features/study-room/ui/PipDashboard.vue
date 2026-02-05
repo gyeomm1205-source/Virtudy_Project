@@ -88,13 +88,13 @@ const teamHeartSlots = computed(() => {
   for (let i = 0; i < maxSlots; i++) {
     const teammate = props.teammates[i];
     if (teammate) {
-      // ????? ??? ???: ??? ????? ??? ???
+// Socket handler: score/state updates
       slots.push({
         filled: true,
         style: getHeartStyle(teammate.score)
       });
     } else {
-      // ????? ??? ???: ??? (?????
+// Socket handler: focus (sleep?)
       slots.push({
         filled: false,
         style: getEmptyHeartStyle()

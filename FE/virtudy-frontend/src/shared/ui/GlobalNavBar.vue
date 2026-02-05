@@ -1,6 +1,6 @@
 <template>
-  <nav class="bg-[var(--color-cream2)] h-[75px] absolute top-0 left-0 right-0 flex items-center justify-between px-[78px] py-[28px] overflow-clip z-50">
-    <div class="flex items-center gap-[var(--spacing-m)]">
+  <nav class="bg-[var(--color-cream2)] h-[75px] absolute top-0 left-0 right-0 flex items-center justify-between px-[78px] py-[28px] overflow-clip z-50 navbar">
+    <div class="flex items-center gap-[var(--spacing-m)] navbar-links">
       <router-link 
         :to="logoLink" 
         class="relative z-10 cursor-pointer"
@@ -14,7 +14,7 @@
         버터디 소개
       </router-link>
     </div>
-    <div class="flex items-center gap-[var(--spacing-m)]">
+    <div class="flex items-center gap-[var(--spacing-m)] navbar-links">
       <router-link 
         to="/ranking" 
         class="text-[var(--color-choco)] text-[24px] font-['PfStardust30S'] font-normal leading-none hover:opacity-80 transition-opacity relative z-10 cursor-pointer"
@@ -70,5 +70,18 @@ const logout = () => {
   router.push('/guest');
 };
 </script>
+
+<style scoped>
+@media (max-width: 1280px) {
+  .navbar-links {
+    gap: 24px !important;
+  }
+
+  .navbar-links a,
+  .navbar-links button {
+    font-size: 18px;
+  }
+}
+</style>
 
 

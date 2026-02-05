@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-[var(--color-cream)] relative min-h-[85rem] w-full pb-[8rem]">
+  <div class="bg-[var(--color-cream)] relative min-h-[85rem] w-full pb-[8rem] report-root">
     <GlobalNavBar />
     
     <div class="absolute left-[4.75rem] top-[22.25rem] -translate-y-1/2">
@@ -10,7 +10,7 @@
 
     <button 
       @click="goBack"
-      class="absolute left-[4.75rem] top-[7.4375rem] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform"
+      class="absolute left-[4.75rem] top-[7.4375rem] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform report-back"
     >
       <svg 
         xmlns="http://www.w3.org/2000/svg" 
@@ -24,8 +24,8 @@
       </svg>
     </button>
 
-    <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem]">
-      <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[0.625rem]">
+    <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem] report-menu">
+      <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[12px] report-menu-buttons">
         <button 
           @click="goToMyPage"
           class="w-full px-[2rem] py-[1.25rem] border-2 border-[var(--color-choco)] border-solid rounded-[0.125rem] shadow-[4px_4px_0px_0px_var(--color-choco)] cursor-pointer transition-transform hover:scale-105 bg-[var(--color-butter2)]"
@@ -45,9 +45,9 @@
       </div>
     </div>
 
-    <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem]">
-      <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border">
-        <div class="absolute right-[0rem] bottom-[-5rem] w-[12rem] h-[14rem] z-10">
+    <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem] report-content">
+      <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border report-card">
+        <div class="absolute right-[-1rem] bottom-[-6rem] w-[12rem] h-[14rem] z-10">
           <CharacterAvatar
             v-if="hasAvatarConfig"
             :config="authStore.userInfo!.avatar!"
@@ -243,3 +243,46 @@ const goToMyPage = () => {
   router.push({ name: 'mypage' });
 };
 </script>
+
+<style scoped>
+@media (max-width: 1280px) {
+  .report-root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 140px;
+    gap: 28px;
+  }
+
+  .report-menu {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(92vw, 360px);
+    height: auto;
+    order: 2;
+  }
+
+  .report-content {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(95vw, 760px);
+    height: auto;
+    order: 1;
+    margin-top: 109px;
+  }
+
+  .report-menu-buttons {
+    position: static;
+    margin-top: 16px;
+    flex-direction: row;
+  }
+
+  .report-card {
+    height: auto !important;
+    min-height: 1100px;
+  }
+
+}
+</style>

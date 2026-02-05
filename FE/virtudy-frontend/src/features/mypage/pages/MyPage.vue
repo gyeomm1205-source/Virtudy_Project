@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-[var(--color-cream)] relative min-h-[85rem] w-full pb-[8rem]">
+  <div class="bg-[var(--color-cream)] relative min-h-[85rem] w-full pb-[8rem] mypage-root">
     <!-- Global Navigation -->
     <GlobalNavBar />
     
@@ -28,9 +28,9 @@
     </button>
 
     <!-- 왼쪽 프로필과 메뉴 -->
-    <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem]">
+    <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem] mypage-menu">
       <!-- 메뉴 버튼들 -->
-      <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[0.625rem]">
+      <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[12px] mypage-menu-buttons">
         <button 
           @click="activeTab = 'profile'"
           :class="[
@@ -57,8 +57,8 @@
     </div>
 
     <!-- 오른쪽 메인 콘텐츠 -->
-    <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem]">
-      <div class="bg-[var(--color-syrup)] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] overflow-hidden relative shadow-[4px_4px_0px_0px_var(--color-choco)]">
+    <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem] mypage-content">
+      <div class="bg-[var(--color-syrup)] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] overflow-hidden relative shadow-[4px_4px_0px_0px_var(--color-choco)] mypage-card">
         <!-- 회원정보수정 버튼 -->
         <button 
           @click="openEditModal"
@@ -226,4 +226,46 @@ const handleWithdraw = async () => {
   }
 };
 </script>
+
+<style scoped>
+@media (max-width: 1280px) {
+  .mypage-root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 140px;
+    gap: 28px;
+  }
+
+  .mypage-menu {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(92vw, 360px);
+    height: auto;
+    order: 2;
+  }
+
+  .mypage-content {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(95vw, 760px);
+    height: auto;
+    order: 1;
+    margin-top: 109px;
+  }
+
+  .mypage-card {
+    height: auto !important;
+    min-height: 1100px;
+  }
+
+  .mypage-menu-buttons {
+    position: static;
+    margin-top: 16px;
+    flex-direction: row;
+  }
+}
+</style>
 
