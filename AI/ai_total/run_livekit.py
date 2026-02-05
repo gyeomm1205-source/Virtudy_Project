@@ -49,7 +49,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
     frame_count = 0
     # Sampling controls (30 FPS 기준)
     DROWSY_EVERY_N_FRAMES = 3   # 약 10 FPS (졸음 실시간성)
-    PHONE_EVERY_N_FRAMES = 75   # 약 2.5초 (폰 감지 지연 허용)
+    PHONE_EVERY_N_FRAMES = 30   # 약 2.5초 (폰 감지 지연 허용)
     last_sent_time = 0
     SEND_INTERVAL = 0.1 # Send data every 100ms
 
