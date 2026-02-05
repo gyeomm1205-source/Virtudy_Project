@@ -112,6 +112,10 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         signals = FrameSignals(drowsy=sig_drowsy, absent=sig_abs, phone=sig_phone)
         decision = fuser.decide(signals)
         snap = scorer.update(decision.state)
+        
+        # [DEBUG] Decision Trace
+        if signals.phone.phone_in_use or decision.state == FocusState.PHONE:
+             print(f"[DEBUG-DECISION] Final: {decision.state.name}, PhoneInUse: {signals.phone.phone_in_use}, Score: {signals.phone.phone_in_use_score}", flush=True)
 
         # [KAFKA] Log State
         kafka_logger.log_state(decision.state)
