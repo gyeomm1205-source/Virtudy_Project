@@ -4,6 +4,7 @@ import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
 import { getScoreColor } from '../logic/scoreUtils';
 import FlashbangEffect from '../ui/FlashbangEffect.vue';
+import roomWoodBg from '@/assets/room/room_wood_bg.png';
 
 const props = defineProps<{
   focusSeconds: number;
@@ -106,7 +107,7 @@ const teamHeartSlots = computed(() => {
 </script>
 
 <template>
-  <div class="pip-container">
+  <div class="pip-container" :style="{ backgroundImage: `url(${roomWoodBg})` }">
     <svg class="heart-symbols" aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;">
       <symbol id="heart-pixel-symbol" viewBox="0 0 32 24">
             <g class="heart-line">
@@ -262,8 +263,6 @@ const teamHeartSlots = computed(() => {
 .pip-container {
   width: 100vw;
   height: 100vh;
-  /* 베이지색 배경 */
-  background-color: #FFF4D9; 
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -274,6 +273,10 @@ const teamHeartSlots = computed(() => {
   color: #5d4037; /* 진한 갈색 텍스트 */
   overflow: hidden;
   position: relative;
+  background-color: #FFF4D9;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
 }
 
 /* 안내 메시지 오버레이 */
@@ -299,7 +302,7 @@ const teamHeartSlots = computed(() => {
   width: 100%;
   display: flex;
   justify-content: center; /* 아바타 중앙 정렬 */
-  background-color: #ffeaa7; /* 아바타 배경색이 좌우로 꽉 차게 */
+  background-color: #ffeaa7;
   padding-bottom: 6px;
 }
 

@@ -18,7 +18,7 @@
       <div class="absolute left-1/2 top-[calc(50%+1.594rem)] transform -translate-x-1/2 -translate-y-1/2 w-[26.938rem] h-[15.688rem] flex flex-col rounded-[1.25rem] overflow-hidden">
         
         <div v-if="isLoading" class="flex-1 flex items-center justify-center bg-[var(--color-cream)] text-[var(--color-choco)] font-['PfStardust30S'] text-xl">
-           불러오는 중...
+          불러오는 중...
         </div>
 
         <div 

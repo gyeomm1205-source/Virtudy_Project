@@ -4,7 +4,7 @@
     <div v-if="visible" class="flashbang-overlay">
         <div class="rainbow-flash"></div>
         <div class="alert-msg">
-            🚨 WAKE UP! 🚨
+            WAKE UP!
         </div>
     </div>
 </template>
@@ -27,13 +27,13 @@ defineProps<{ visible: boolean }>();
 .rainbow-flash {
     position: absolute;
     width: 100%; height: 100%;
-    animation: rainbow 0.15s infinite; /* 매우 빠른 깜빡임 */
+    animation: rainbow 0.1s infinite; /* 매우 빠른 깜빡임 */
     opacity: 0.7;
 }
 
 .alert-msg {
     position: relative;
-    font-size: 5rem;
+    font-size: 7rem;
     font-weight: 900;
     color: white;
     text-shadow: 4px 4px 0 #000;
