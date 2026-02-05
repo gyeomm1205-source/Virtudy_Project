@@ -42,7 +42,6 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
     SKIP_FRAMES = 30  # 30프레임마다 1번만 분석 (부하 1/5로 감소)
     last_sent_time = 0
 
-    
     SEND_INTERVAL = 0.1 # Send data every 100ms
 
     async for frame in video_stream:
@@ -219,40 +218,40 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
         # [추가] 봇 인내심 기르기 (입장 후 30초 대기)
         # ==============================================================================
         # 처음 확인했을 때 아무도 없다면, 30초 동안은 사용자가 들어올 때까지 기다립니다.
-        if len(room.remote_participants) == 0:
-            print("[WAIT] No participants found. Waiting 30s for user to join...", flush=True)
-            for i in range(30):
-                if len(room.remote_participants) > 0:
-                    print(f"[INFO] User detected! Starting analysis. (Waited {i}s)", flush=True)
-                    break
-                await asyncio.sleep(1)
+        # if len(room.remote_participants) == 0:
+        #     print("[WAIT] No participants found. Waiting 30s for user to join...", flush=True)
+        #     for i in range(30):
+        #         if len(room.remote_participants) > 0:
+        #             print(f"[INFO] User detected! Starting analysis. (Waited {i}s)", flush=True)
+        #             break
+        #         await asyncio.sleep(1)
             
-            # 30초를 기다렸는데도 여전히 아무도 없으면 그때 종료합니다.
-            if len(room.remote_participants) == 0:
-                print("[INFO] Room empty for 30 seconds. Disconnecting.", flush=True)
-                await room.disconnect()
-                return
-        # ==============================================================================            
+        #     # 30초를 기다렸는데도 여전히 아무도 없으면 그때 종료합니다.
+        #     if len(room.remote_participants) == 0:
+        #         print("[INFO] Room empty for 30 seconds. Disconnecting.", flush=True)
+        #         await room.disconnect()
+        #         return
+        # # ==============================================================================            
         
-        # Keep alive & Monitor
-        empty_room_start = None
+        # # Keep alive & Monitor
+        # empty_room_start = None
         
-        while True:
-            await asyncio.sleep(1)
-            count = len(room.remote_participants)
+        # while True:
+        #     await asyncio.sleep(1)
+        #     count = len(room.remote_participants)
             
-            if count == 0:
-                if empty_room_start is None:
-                    empty_room_start = time.time()
-                elif time.time() - empty_room_start > 1.0:
-                    print(f"[INFO] Room empty for 1 second. Disconnecting...", flush=True)
-                    break
-            else:
-                empty_room_start = None
+        #     if count == 0:
+        #         if empty_room_start is None:
+        #             empty_room_start = time.time()
+        #         elif time.time() - empty_room_start > 1.0:
+        #             print(f"[INFO] Room empty for 1 second. Disconnecting...", flush=True)
+        #             break
+        #     else:
+        #         empty_room_start = None
 
-            # Periodic check for debug
-            if count > 0:
-                 print(f"[DEBUG] Room Status: {count} participants connected.", flush=True)
+        #     # Periodic check for debug
+        #     if count > 0:
+        #          print(f"[DEBUG] Room Status: {count} participants connected.", flush=True)
     except Exception as e:
         print(f"[ERROR] Connection failed: {e}")
     finally:

@@ -4,6 +4,11 @@ FROM python:3.11-slim
 # 2. 작업 디렉토리 설정
 WORKDIR /app
 
+
+# [중요] bestv7.pt 파일을 컨테이너 내부로 복사
+COPY bestv7.pt /app/bestv7.pt 
+
+COPY . /app
 # 3. [수정됨] 시스템 라이브러리 설치
 # Debian 최신 버전(Trixie/Bookworm)에서는 libgl1-mesa-glx가 삭제되었습니다.
 # 대신 'libgl1'을 설치해야 합니다.
