@@ -87,28 +87,7 @@ const handleSubmit = async () => {
         </div>
       </button>
 
-      <div class="flex items-center gap-[0.55rem] absolute left-7 top-6 z-10">
-        <span class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1rem]">
-          {{ form.type === 'PRIVATE' ? '비공개' : '공개' }}
-        </span>
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            class="sr-only"
-            :checked="form.type === 'PRIVATE'"
-            :disabled="isEditMode"
-            @change="form.type = ($event.target as HTMLInputElement).checked ? 'PRIVATE' : 'PUBLIC'"
-          />
-          <span
-            class="w-[3.25rem] h-[1.75rem] rounded-full border-2 border-[var(--color-choco)] transition-colors"
-            :class="form.type === 'PRIVATE' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream2)]'"
-          ></span>
-          <span
-            class="absolute left-[0.35rem] top-[0.3rem] w-[1.1rem] h-[1.1rem] rounded-full border-2 border-[var(--color-choco)] bg-white transition-transform"
-            :class="form.type === 'PRIVATE' ? 'translate-x-[1.5rem]' : 'translate-x-0'"
-          ></span>
-        </label>
-      </div>
+      <!-- 공개/비공개 토글 삭제 -->
 
       <h2 class="text-[var(--color-choco)] text-[32px] font-['Ram'] text-center mb-6">
         {{ isEditMode ? '방 정보 수정' : '방 만들기' }}
@@ -138,6 +117,20 @@ const handleSubmit = async () => {
             placeholder="어떤 스터디인지 알려주세요!" 
             class="input-box h-24 resize-none"
           ></textarea>
+        </div>
+        <!-- 설명 박스 아래에 비공개방 체크박스 추가 -->
+        <div class="flex items-center gap-2 mt-[-0.5rem]">
+          <input
+            type="checkbox"
+            id="privateRoomCheckbox"
+            :checked="form.type === 'PRIVATE'"
+            :disabled="isEditMode"
+            @change="form.type = ($event.target as HTMLInputElement).checked ? 'PRIVATE' : 'PUBLIC'"
+            class="w-4 h-4 accent-[var(--color-butter)] border-2 border-[var(--color-choco)] rounded focus:ring-2 focus:ring-[var(--color-butter)]"
+          />
+          <label for="privateRoomCheckbox" class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1rem] select-none cursor-pointer">
+            비공개방으로 설정
+          </label>
         </div>
 
         <transition name="slide-fade">

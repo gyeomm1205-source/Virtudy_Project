@@ -4,9 +4,9 @@
     <div class="flex gap-[0.178rem] items-center px-[0.948rem] py-[0.474rem] w-full">
       <div class="relative shrink-0 size-[1.422rem]">
         <img 
-          alt="" 
+          alt="calendar icon" 
           class="block max-w-none size-full" 
-          src="http://localhost:3845/assets/26c10d0c668fb718223796e90bbc41cc49cda090.svg" 
+          src="/src/assets/icons/calendar.svg" 
         />
       </div>
       <p class="font-['PfStardust30S'] leading-normal text-[#805143] text-[1.25rem] tracking-[-0.05rem]">
@@ -53,9 +53,9 @@
       <div class="flex gap-[0.356rem] items-center">
         <div class="h-[0.729rem] w-[0.693rem]">
           <img 
-            alt="" 
+            alt="calendar icon" 
             class="block max-w-none size-full" 
-            src="http://localhost:3845/assets/60bf6e782bf83b3e152652d5af5b26e99092f571.svg" 
+            src="/src/assets/icons/calendar.svg" 
           />
         </div>
         <p class="font-['PfStardust30S'] leading-normal text-[#805143] text-[1.25rem] tracking-[-0.05rem]">

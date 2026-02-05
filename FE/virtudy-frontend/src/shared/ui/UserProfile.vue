@@ -65,6 +65,7 @@
     
     <div class="stats-area">
       <MiniReport 
+       class="w-full h-full gap-[6rem]"
         :studyTime="pureStudyTime" 
         :focusing="focusDepth" 
       />
@@ -148,8 +149,7 @@ const hasAvatarConfig = computed(() => {
   return Object.values(props.avatar).some((value) => Boolean(value));
 });
 
-// 이미지 URLs
-const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
+
 </script>
 
 <style scoped>
@@ -188,7 +188,7 @@ const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
 /* MiniReport 위치 및 스타일 오버라이딩 */
 .stats-area {
   position: absolute;
-  top: 276px; /* 기존 디자인 위치 */
+  top: 288px; /* 기존 디자인 위치 */
   left: 13px;
   width: 447px;
   height: 133px;
@@ -202,6 +202,7 @@ const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
   padding: 0; /* 내부 패딩 조정 */
   display: flex;
   align-items: center;
+  justify-content: center; /* 중앙 정렬 */
 }
 
 :deep(.value) {

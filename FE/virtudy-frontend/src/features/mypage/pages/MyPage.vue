@@ -68,21 +68,26 @@
           </span>
         </button>
         <!-- 프로필 영역 -->
-        <div class="absolute left-0 top-[3.5rem] w-full flex flex-col items-center">
+        <div class="absolute left-0 top-[4.5rem] w-full flex flex-col items-center">
           <!-- 아바타 -->
-          <div class="flex items-center justify-center text-[2rem] relative w-[10.5rem] h-[10.5rem] mb-[0.5rem] translate-y-[4.5rem] translate-x-[2rem]">
-            <div class="w-[12rem] h-[13rem]">
-              <CharacterAvatar
+          <div class="flex items-center justify-center text-[2rem] relative w-[10.5rem] h-[10.5rem] mb-[0.5rem] translate-y-[-0.1rem] translate-x-[0.2rem]">
+            <div class="w-[9rem] h-[9rem] rounded-full bg-[var(--color-butter)] relative overflow-hidden shadow-md mx-auto mt-[1.5rem] transform-gpu">
+              <CharacterAvatar 
                 v-if="hasAvatarConfig"
                 :config="userInfo!.avatar!"
-                class="w-full h-full"
+                class="absolute inset-0 w-full h-full object-cover scale-[1.45] origin-center translate-y-[58%] translate-x-[1.45rem]"
               />
               <img 
                 v-else-if="userInfo?.avatarImageUrl" 
                 :src="userInfo.avatarImageUrl" 
                 alt="프로필 사진"
-                class="w-full h-full object-cover"
+                class="absolute inset-0 w-full h-full object-cover scale-110 origin-center"
               />
+              <div v-else @click="goToAvatarCreate"class="w-full h-full flex flex-col items-center justify-center hover:bg-[#FFE08C] transition-colors cursor-pointer group">
+                <span class="text-[var(--color-choco)] font-bold text-[1.1rem] font-['Xcu'] leading-tight text-center">
+                  아바타<br>생성하기
+                </span>
+              </div>
             </div>
           </div>
           
@@ -117,8 +122,9 @@
           </div>
     
           <!-- 공부시간/집중도 카드 -->
-          <div class="mb-[1.25rem]">
+          <div class="mb-[1.25rem] mini-report-wrapper">
             <MiniReport 
+              class="gap-[12.5rem] h-[8.9375rem] px-[12.75rem] py-[1.125rem]"
               :studyTime="userInfo?.dailyPureStudyTime" 
               :focusing="userInfo?.dailyFocusDepth" 
             />
@@ -227,6 +233,10 @@ const handleWithdraw = async () => {
     alert('회원탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.');
   }
 };
+
+const goToAvatarCreate = () => {
+  router.push('/avatar/create'); 
+};
 </script>
 
 <style scoped>
@@ -268,6 +278,7 @@ const handleWithdraw = async () => {
     margin-top: 16px;
     flex-direction: row;
   }
+
 }
 </style>
 
