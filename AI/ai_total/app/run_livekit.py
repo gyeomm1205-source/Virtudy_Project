@@ -165,96 +165,105 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
         except Exception as e:
             print(f"[WARN] Queue put failed: {e}")
 
+"""
+url, token, queue 를 받아서 ai bot을 실행시킨다. 
+"""
 async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
     print(f"[DEBUG] run_bot started! Connecting to: {url}", flush=True)
     room = rtc.Room()
     
+    # 중복 처리 방지용 Set
+    processed_tracks = set()
+
     @room.on("track_subscribed")
     def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
+        # 이미 처리 중인 트랙이면 스킵 (안전장치)
+        if track.sid in processed_tracks:
+            return
+
         if track.kind == rtc.TrackKind.KIND_VIDEO:
             print(f"[INFO] Subscribed to Video Track from {participant.identity}", flush=True)
-            # [Fix] Request High Quality Video for AI Analysis
-            # publication.set_video_quality(rtc.VideoQuality.HIGH) # Unsupported in v1.0.23
+            processed_tracks.add(track.sid) # 처리 목록 등록
+            
+            # [AI Loop 시작]
             video_stream = rtc.VideoStream(track)
             asyncio.create_task(ai_process_loop(room, video_stream, queue, participant.identity))
 
     @room.on("track_published")
     def on_track_published(publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
-        print(f"[DEBUG] Track Published: {publication.kind} from {participant.identity}", flush=True)
+        # [수정] 새로운 유저가 비디오를 켜면 자동으로 구독 시도
+        if publication.kind == rtc.TrackKind.KIND_VIDEO and not publication.subscribed:
+            print(f"[INFO] New video track published by {participant.identity}. Subscribing...", flush=True)
+            publication.set_subscribed(True)
+
+    @room.on("track_unsubscribed")
+    def on_track_unsubscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
+        # 구독 해제 및 나간 유저 처리
+        if track.sid in processed_tracks:
+            print(f"[INFO] Video track unsubscribed: {track.sid}", flush=True)
+            processed_tracks.discard(track.sid)
 
     @room.on("participant_connected")
     def on_participant_connected(participant: rtc.RemoteParticipant):
         print(f"[DEBUG] Participant Connected: {participant.identity}", flush=True)
+
+    @room.on("participant_disconnected")
+    def on_participant_disconnected(participant: rtc.RemoteParticipant):
+        print(f"[DEBUG] Participant Disconnected: {participant.identity}", flush=True)
 
     print(f"[INFO] Connecting to LiveKit Room...", flush=True)
     try:
         await room.connect(url, token)
         print(f"[INFO] Connected to {room.name}", flush=True)
 
-        # [CRITICAL Fix] Check for EXISTING participants/tracks
-        # If user is already in room, 'track_published' might not fire, but they are in room.remote_participants
+        # ------------------------------------------------------------------
+        # 1. 초기 진입 시 기존 유저 스캔 (Initial Scan)
+        # ------------------------------------------------------------------
         print(f"[DEBUG] Checking for existing participants... (Count: {len(room.remote_participants)})", flush=True)
         
         for identity, participant in room.remote_participants.items():
-            print(f"[DEBUG] Found existing participant: {identity}", flush=True)
             for track_sid, publication in participant.track_publications.items():
-                print(f"[DEBUG] Found existing track: {publication.kind} (Subscribed: {publication.subscribed})", flush=True)
-                # If already subscribed but logic didn't trigger (unlikely but safe)
-                if publication.subscribed and publication.track and publication.kind == rtc.TrackKind.KIND_VIDEO:
-                     print(f"[INFO] Found existing subscribed video, starting loop for {identity}", flush=True)
-                     # [Fix] Request High Quality Video for AI Analysis
-                     publication.set_video_quality(rtc.VideoQuality.HIGH)
-                     video_stream = rtc.VideoStream(publication.track)
-                     asyncio.create_task(ai_process_loop(room, video_stream, queue))
-                
-                # 2. 구독 안 됨 -> 구독 시도
-                elif not publication.subscribed:
-                    print(f"[INFO] Found unsubscribed video for {identity}. Subscribing...", flush=True)
-                    publication.set_subscribed(True)
-                    # 구독하면 자동으로 on_track_subscribed가 호출되므로 
-                    # 여기서 ai_process_loop를 직접 실행할 필요는 없습니다.
+                if publication.kind == rtc.TrackKind.KIND_VIDEO:
+                    # Case A: 이미 구독되어 있는데 처리가 안 된 경우
+                    if publication.subscribed and publication.track and track_sid not in processed_tracks:
+                         print(f"[INFO] Found existing subscribed video for {identity}", flush=True)
+                         processed_tracks.add(track_sid)
+                         video_stream = rtc.VideoStream(publication.track)
+                         # [Fix] 인자 개수 맞춤 (identity 추가)
+                         asyncio.create_task(ai_process_loop(room, video_stream, queue, identity))
+                    
+                    # Case B: 구독이 안 되어 있는 경우 -> 구독 요청
+                    elif not publication.subscribed:
+                        print(f"[INFO] Found unsubscribed video for {identity}. Subscribing...", flush=True)
+                        publication.set_subscribed(True)
+                        # 여기서 processed_tracks에 넣지 않음 -> on_track_subscribed에서 처리됨
 
-        # ==============================================================================
-        # [추가] 봇 인내심 기르기 (입장 후 30초 대기)
-        # ==============================================================================
-        # 처음 확인했을 때 아무도 없다면, 30초 동안은 사용자가 들어올 때까지 기다립니다.
-        # if len(room.remote_participants) == 0:
-        #     print("[WAIT] No participants found. Waiting 30s for user to join...", flush=True)
-        #     for i in range(30):
-        #         if len(room.remote_participants) > 0:
-        #             print(f"[INFO] User detected! Starting analysis. (Waited {i}s)", flush=True)
-        #             break
-        #         await asyncio.sleep(1)
-            
-        #     # 30초를 기다렸는데도 여전히 아무도 없으면 그때 종료합니다.
-        #     if len(room.remote_participants) == 0:
-        #         print("[INFO] Room empty for 30 seconds. Disconnecting.", flush=True)
-        #         await room.disconnect()
-        #         return
-        # # ==============================================================================            
-        
-        # # Keep alive & Monitor
-        # empty_room_start = None
-        
-        # while True:
-        #     await asyncio.sleep(1)
-        #     count = len(room.remote_participants)
-            
-        #     if count == 0:
-        #         if empty_room_start is None:
-        #             empty_room_start = time.time()
-        #         elif time.time() - empty_room_start > 1.0:
-        #             print(f"[INFO] Room empty for 1 second. Disconnecting...", flush=True)
-        #             break
-        #     else:
-        #         empty_room_start = None
+        # ------------------------------------------------------------------
+        # 2. 메인 루프 (Keep-Alive & Monitoring) - 주석 해제 필수!
+        # ------------------------------------------------------------------
+        empty_room_start = None
+        MAX_WAIT_SECONDS = 30.0 # 30초 동안 비어있으면 종료
 
-        #     # Periodic check for debug
-        #     if count > 0:
-        #          print(f"[DEBUG] Room Status: {count} participants connected.", flush=True)
+        while True:
+            await asyncio.sleep(1) # 1초 대기 (CPU 과부하 방지)
+            
+            # 방 인원 체크
+            count = len(room.remote_participants)
+            
+            if count == 0:
+                if empty_room_start is None:
+                    empty_room_start = time.time()
+                elif time.time() - empty_room_start > MAX_WAIT_SECONDS:
+                    print(f"[INFO] Room empty for {MAX_WAIT_SECONDS}s. Shutting down.", flush=True)
+                    break # while 루프 탈출 -> finally 실행
+            else:
+                # 사람이 있으면 타이머 리셋
+                empty_room_start = None
+
     except Exception as e:
         print(f"[ERROR] Connection failed: {e}")
     finally:
+        print("[INFO] Disconnecting bot...", flush=True)
         await room.disconnect()
 
 if __name__ == "__main__":
