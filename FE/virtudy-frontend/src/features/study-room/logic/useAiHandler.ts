@@ -36,13 +36,6 @@ export function useAiHandler() {
         }
 
         console.log('🤖 [useAiHandler] Parsed:', aiData); // [DEBUG]
-        /* TEMP-DEBUG: remove after verifying multi-user AI status */
-        console.log('[DBG-AI][AiHandler]', {
-            category: aiData.category,
-            value: aiData.value,
-            rawType: payload?.type,
-            rawEventType: payload?.data?.eventType ?? payload?.eventType,
-        });
 
         switch (aiData.category) { // 이제 매핑된 category 사용
             case 'SCORE':
