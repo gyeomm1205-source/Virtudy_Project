@@ -32,6 +32,9 @@ const handleSubmit = async () => {
   if (!form.value.title.trim()) {
     return alert('방 제목을 입력해주세요! 📝');
   }
+  if (form.value.title.length > 20) {
+    return alert('방 제목은 20자 이내로 입력해주세요!');
+  }
 
   // 비공개 방 생성 시 비밀번호 필수
   if (!isEditMode.value && form.value.type === 'PRIVATE' && !form.value.password?.trim()) {
@@ -63,12 +66,25 @@ const handleSubmit = async () => {
     <div class="bg-[var(--color-cream2)] w-[480px] rounded-[24px] border-2 border-[var(--color-choco)] p-8 shadow-[4px_4px_0px_0px_var(--color-choco)] transform transition-all relative">
       
       <button 
-        class="absolute top-4 right-4 text-[var(--color-choco)] hover:scale-110 transition-transform"
         @click="$emit('close')"
+        class="absolute top-4 right-4 w-[2.625rem] h-[2.625rem] cursor-pointer hover:scale-110 transition-transform flex items-center justify-center"
+        aria-label="닫기"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <div class="w-[1.5rem] h-[1.5rem] relative">
+          <!-- 마름모 점선 X 패턴 - 중심 기준 대칭 -->
+          <!-- 왼쪽 위에서 오른쪽 아래 대각선 -->
+          <div class="absolute top-[4px] left-[4px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[8px] left-[8px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[11px] left-[11px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[14px] left-[14px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[18px] left-[18px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <!-- 오른쪽 위에서 왼쪽 아래 대각선 -->
+          <div class="absolute top-[4px] left-[18px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[8px] left-[14px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[11px] left-[11px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[14px] left-[8px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[18px] left-[4px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+        </div>
       </button>
 
       <div class="flex items-center gap-[0.55rem] absolute left-7 top-6 z-10">
@@ -104,10 +120,15 @@ const handleSubmit = async () => {
           <input 
             v-model="form.title" 
             type="text" 
-            placeholder="예) 알고리즘 뿌시기 👊" 
+            placeholder="예) 알고리즘 뿌시기" 
             class="input-box"
+            maxlength="20"
             autofocus
           />
+          <div class="flex justify-between items-center mt-[-0.25rem] px-1">
+            <span class="text-xs text-[var(--color-syrup)]">최대 20자까지 입력할 수 있어요.</span>
+            <span class="text-xs text-[var(--color-choco)]">{{ form.title.length }}/20</span>
+          </div>
         </div>
 
         <div class="flex flex-col gap-2">
@@ -137,11 +158,11 @@ const handleSubmit = async () => {
 
       <div class="mt-8 flex justify-center">
         <button
-          class="butter-btn w-[9rem] h-[3.5rem] !rounded-[2rem] !px-[5px] py-[11px] disabled:opacity-50 disabled:cursor-not-allowed"
+          class="butter-btn w-[7rem] h-[2.5rem] !rounded-[1.5rem] !px-[5px] py-[7px] disabled:opacity-50 disabled:cursor-not-allowed"
           @click="handleSubmit"
           :disabled="isLoading"
         >
-          <span class="butter-btn-text text-[18px]">
+          <span class="butter-btn-text text-[15px]">
             {{ isLoading ? '처리 중...' : (isEditMode ? '수정 완료!' : '만들기 완료!') }}
           </span>
         </button>
@@ -189,5 +210,8 @@ const handleSubmit = async () => {
 .slide-fade-leave-to {
   transform: translateY(-10px);
   opacity: 0;
+}
+.butter-btn-text {
+ font-size: 21px;
 }
 </style>

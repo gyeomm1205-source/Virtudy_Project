@@ -66,7 +66,7 @@
             
             <!-- 닉네임 -->
             <div class="text-[var(--color-syrup)] text-[1.75rem] font-['Xcu'] font-medium leading-none">
-              닉네임
+              {{ nickName }}
             </div>
             
             <!-- 이메일 -->

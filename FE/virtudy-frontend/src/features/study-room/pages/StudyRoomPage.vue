@@ -1346,9 +1346,9 @@ onUnmounted(() => {
 /*아바타 이미지: 바 위로 올려서 배치 */
 .avatar-display {
     position: absolute;
-    bottom: -40px; 
+    bottom: -46px; 
     width: 200px;
-    height: 200px;
+    height: 215px;
     left: 7px
 }
 

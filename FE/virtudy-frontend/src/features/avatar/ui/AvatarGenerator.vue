@@ -168,7 +168,7 @@ const handleConfirm = () => {
       <div class="avatar-preview">
         <div
           class="avatar-preview-inner"
-          :style="{ transform: 'translate(31px, 56px)' }"
+          :style="{ transform: 'translate(34.5px, 56px)' }"
         >
           <CharacterAvatar 
             v-if="generatedAvatar"
