@@ -44,7 +44,7 @@ class FeatureExtractor:
         denom = (chin_y - eye_mid_y)
         return (nose_y - eye_mid_y) / denom if denom > 1e-6 else 0.0
 
-    def process(self, frame):
+    def process(self, frame, detect_hands: bool = True, detect_phone: bool = True):
         h, w, _ = frame.shape
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         face_res = self.face.process(rgb)
@@ -64,15 +64,16 @@ class FeatureExtractor:
                 face_detected = False
                 # We interpret this as "No Face" (Absent) rather than "Sleep"
             
-        hand_res = self.hands.process(rgb)
         hand_centers = []
-        if hand_res.multi_hand_landmarks:
-            for hand in hand_res.multi_hand_landmarks:
-                sx, sy = sum([l.x for l in hand.landmark]) / 21, sum([l.y for l in hand.landmark]) / 21
-                hand_centers.append((int(sx*w), int(sy*h)))
+        if detect_hands:
+            hand_res = self.hands.process(rgb)
+            if hand_res.multi_hand_landmarks:
+                for hand in hand_res.multi_hand_landmarks:
+                    sx, sy = sum([l.x for l in hand.landmark]) / 21, sum([l.y for l in hand.landmark]) / 21
+                    hand_centers.append((int(sx*w), int(sy*h)))
 
         phone_conf, phone_box = 0.0, None
-        if self.yolo:
+        if detect_phone and self.yolo:
             # [Fix] Revert to Phone Only (Round 6)
             results = self.yolo(frame, verbose=False, classes=[0], conf=0.4)
             for r in results:
@@ -114,7 +115,7 @@ class FeatureExtractor:
             self.prev_face_center = None
 
         hand_interaction = False
-        if phone_box and hand_centers:
+        if detect_phone and phone_box and hand_centers:
             px, py = (phone_box[0] + phone_box[2]) // 2, (phone_box[1] + phone_box[3]) // 2
             thresh = (w**2 + h**2)**0.5 * 0.3
             for hx, hy in hand_centers:

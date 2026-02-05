@@ -17,7 +17,7 @@ import livekit.rtc as rtc
 # Reuse imports from core modules
 # Reuse imports from core modules
 from core.feature_extractor import FeatureExtractor
-from core.types import FrameSignals, FocusState
+from core.types import FrameSignals, FocusState, PhoneSignal
 from core.config import Config
 from detectors.absence_detector import AbsenceDetector
 from detectors.drowsiness_detector import DrowsinessDetector
@@ -42,10 +42,12 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
     kafka_logger = KafkaLogger(session_id=room.name)
     
     last_valid_event = "FOCUS" # [NEW] To hold state during UNKNOWN
+    last_phone_signal = PhoneSignal(phone_present=False)
 
     frame_count = 0
-    # [수정] 30프레임마다 1번 실행 (즉, 1초에 1번 분석)
-    SKIP_FRAMES = 45
+    # Sampling controls (30 FPS 기준)
+    DROWSY_EVERY_N_FRAMES = 3   # 약 10 FPS (졸음 실시간성)
+    PHONE_EVERY_N_FRAMES = 75   # 약 2.5초 (폰 감지 지연 허용)
     last_sent_time = 0
     SEND_INTERVAL = 0.1 # Send data every 100ms
 
@@ -53,7 +55,9 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         start_time = time.time()
         frame_count += 1
         
-        if frame_count % SKIP_FRAMES != 0:
+        do_drowsy = (frame_count % DROWSY_EVERY_N_FRAMES == 0)
+        do_phone = (frame_count % PHONE_EVERY_N_FRAMES == 0)
+        if not do_drowsy and not do_phone:
             continue
         # Convert LiveKit VideoFrame to CV2 image
         # frame is VideoFrameEvent, so we need frame.frame
@@ -85,12 +89,25 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
             print(f"[DEBUG] Frame Resolution: {w}x{h}", flush=True)
 
         # 1. Feature Extraction
-        feats = extractor.process(img)
+        feats = extractor.process(
+            img,
+            detect_hands=do_phone,
+            detect_phone=do_phone,
+        )
 
         # 2. Detectors
         sig_abs = abs_det.process(feats["face_detected"])
         sig_drowsy = drowsy_det.process(feats["face_detected"], feats["ear"], feats["pitch"])
-        sig_phone = phone_det.process(feats["phone_conf"], feats["face_detected"], feats["pitch"], feats["hand_interaction"])
+        if do_phone:
+            sig_phone = phone_det.process(
+                feats["phone_conf"],
+                feats["face_detected"],
+                feats["pitch"],
+                feats["hand_interaction"],
+            )
+            last_phone_signal = sig_phone
+        else:
+            sig_phone = last_phone_signal
         
         # [DEBUG] Print raw values to debug detection failure
         # [DEBUG] Print raw values to debug detection failure
