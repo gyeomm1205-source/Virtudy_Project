@@ -20,6 +20,7 @@ import FlashbangEffect from '../ui/FlashbangEffect.vue';
 import WakeUpModal from '../ui/WakeUpModal.vue';
 import MatchingModal from '@/shared/ui/MatchingModal.vue';
 import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
+import RoomBackgroundFrame from '@/features/study-room/ui/RoomBackgroundFrame.vue';
 
 // 디버그 패널 임포트 (배포 시 제거 권장)
 import DebugControls from '../ui/DebugControls.vue';
@@ -34,9 +35,6 @@ import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 import { getScoreColor } from '../logic/scoreUtils'; 
 import { useFlashbang } from '../logic/useFlashbang';
-import bgPhoto1 from '@/assets/room/bg_photo_1.png';
-import bgPhoto2 from '@/assets/room/bg_photo_2.png';
-import bgPhoto3 from '@/assets/room/bg_photo_3.png';
 
 // ==========================================================
 // 라우터 및 스토어 설정
@@ -414,12 +412,6 @@ const computeAverageScore = () => {
 const teamAverageScore = ref<number>(100);
 const bgState = computed<BgState>(() => getStateFromScore(teamAverageScore.value));
 
-const bgPhotoSrc = computed(() => {
-    if (bgState.value === 'GREEN') return bgPhoto1;
-    if (bgState.value === 'YELLOW') return bgPhoto2;
-    return bgPhoto3;
-});
-
 const bgHeartStyle = computed(() => {
     if (bgState.value === 'GREEN') return getHeartStyle(90);
     if (bgState.value === 'YELLOW') return getHeartStyle(70);
@@ -653,6 +645,7 @@ onUnmounted(() => {
                     :isWakeUpAvailable="isWakeUpAvailable"
                     :onOpenWakeUpModal="openModal"
                     :isStunned="isStunned"
+                    :bgState="bgState"
                 />
             </div>
         </div>
@@ -740,18 +733,7 @@ onUnmounted(() => {
                         <button @click="handleLeave" class="btn-leave">나가기</button>
                     </div>
                     
-                    <div class="frame-wrapper">
-                        <img 
-                            :src="bgPhotoSrc" 
-                            alt="Background Photo" 
-                            class="scene-photo"
-                        />
-                        <img 
-                            src="@/assets/room/frame_border.png" 
-                            alt="Frame" 
-                            class="scene-frame"
-                        />
-                    </div>
+                    <RoomBackgroundFrame :bgState="bgState" />
                     
                     <!-- 타이머 / PIP / 깨우기 버튼 영역 -->
                     <div class="timer-floating-widget">
@@ -1093,41 +1075,6 @@ onUnmounted(() => {
     z-index: 1000;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     animation: tooltipFadeIn 0.2s ease-in-out;
-}
-
-/* 액자 + 사진 래퍼 */
-.frame-wrapper {
-    position: absolute;
-    top: 50%;
-    left: 40%;
-    transform: translate(-50%, -50%); /* 화면 정중앙 */
-    width: 700px;  /* 액자 PNG 크기에 맞춰 조정 필요 */
-    height: 450px; /* 액자 PNG 크기에 맞춰 조정 필요 */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/* 사진 (뒤) - z-index 낮음 */
-.scene-photo {
-    position: absolute;
-    top: 20px;   /* 프레임 두께 고려하여 내부 배치 */
-    left: 20px;  /* 프레임 두께 고려하여 내부 배치 */
-    width: calc(100% - 40px);
-    height: calc(100% - 40px);
-    object-fit: cover;
-    z-index: 1;
-}
-
-/* 프레임 (앞) - z-index 높음 */
-.scene-frame {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
-    pointer-events: none; /* 클릭 통과 */
 }
 
 .tooltip-arrow {
