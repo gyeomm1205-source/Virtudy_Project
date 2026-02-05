@@ -19,28 +19,31 @@ const formattedTime = computed(() => {
 </script>
 
 <template>
-  <div class="focus-timer">
+  <div class="study-timer">
     <span class="time">{{ formattedTime }}</span>
   </div>
 </template>
 
 <style scoped>
-.focus-timer {
+.study-timer {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-bottom: 30px;
+  width: 100%;
+  height: 100%;
 }
 
 .time {
   font-family: 'exqt', sans-serif;
-  font-size: 37.497px;
-  color: #dfa67b;
-  font-weight: 500;
-  line-height: normal;
+  font-size: 4.5rem;
+  color: #ffd966;
+  font-weight: 100;
+  line-height: 1;
+  letter-spacing: -2px;
   white-space: nowrap;
   text-align: center;
-  margin-left: 90px;
+  margin-top: 10px;
+  margin-left: 36px;
   transform: scaleY(1.3);
 }
 </style>

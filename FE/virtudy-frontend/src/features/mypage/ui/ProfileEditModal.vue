@@ -30,15 +30,15 @@
         </div>
       </button>
 
-      <div class="flex flex-col gap-[2.5rem] pb-[1rem]">
+      <div class="flex flex-col gap-[2.5rem] pb-[0rem] ">
         <!-- 상단 섹션: 프로필 이미지와 기본 정보 -->
         <div class="flex flex-col gap-[1.625rem]">
           <div class="flex flex-col gap-[1.25rem] items-center justify-center">
             <!-- 프로필 이미지 -->
             <div class="relative">
-              <div class="w-[11.5rem] h-[11.5rem] rounded-full bg-[var(--color-butter)] flex items-center justify-center">
+              <div class="w-[9rem] h-[9rem] rounded-full bg-[var(--color-butter)] flex items-center justify-center overflow-hidden">
                 <div
-                  class="w-[10.5rem] h-[12.5rem]"
+                  class="w-[10.5rem] h-[11.5rem]"
                   :style="{ transform: `translate(${avatarOffsetX}, ${avatarOffsetY})` }"
                 >
                   <CharacterAvatar
@@ -57,15 +57,16 @@
               <button
                 type="button"
                 @click="goToAvatar"
-                class="absolute inset-0 flex items-center justify-center text-[1.2rem] font-['Xcu'] text-[var(--color-cream2)] rounded-full bg-black/30"
+                class="absolute inset-0 flex flex-col items-center justify-center text-[1.35rem] font-['Xcu'] text-[var(--color-cream2)] rounded-full bg-black/30 leading-tight"
               >
-                아바타 수정하기
+                <span>아바타</span>
+                <span>수정하기</span>
               </button>
             </div>
             
             <!-- 닉네임 -->
             <div class="text-[var(--color-syrup)] text-[1.75rem] font-['Xcu'] font-medium leading-none">
-              닉네임
+              {{ nickName }}
             </div>
             
             <!-- 이메일 -->
@@ -145,8 +146,8 @@ const props = withDefaults(defineProps<{
   avatarOffsetX?: string;
   avatarOffsetY?: string;
 }>(), {
-  avatarOffsetX: '0.35rem',
-  avatarOffsetY: '2.25rem',
+  avatarOffsetX: '0.66rem',
+  avatarOffsetY: '2.6rem',
 });
 
 defineEmits(['close', 'submit', 'update:nickName', 'update:jobType']);
@@ -156,7 +157,15 @@ const hasAvatarConfig = computed(() => {
   return Object.values(props.avatar).some((value) => Boolean(value));
 });
 
+const AVATAR_CREATE_LIMIT = 3;
+const AVATAR_CREATE_KEY = 'avatarCreateCount';
 const goToAvatar = () => {
+  const count = parseInt(localStorage.getItem(AVATAR_CREATE_KEY) || '0', 10);
+  const remain = AVATAR_CREATE_LIMIT - (isNaN(count) ? 0 : count);
+  if (remain <= 0) {
+    alert('아바타 생성 기회를 모두 사용하셨습니다.');
+    return;
+  }
   router.push('/avatar/create');
 };
 </script>

@@ -41,8 +41,8 @@ const props = withDefaults(defineProps<{
   titleText?: string;
   subtitleText?: string;
 }>(), {
-  titleText: '?? ?...',
-  subtitleText: '??? ??????...'
+  titleText: '매칭 중...',
+  subtitleText: '잠시만 기다려주세요...'
 });
 
 defineEmits(['close']);

@@ -1,5 +1,12 @@
 <template>
-  <div class="bg-[var(--color-syrup)] border-2 border-[var(--color-choco)] border-solid h-full w-full overflow-clip" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
+  <div
+    class="bg-[var(--color-syrup)] border-2 border-[var(--color-choco)] border-solid h-full w-full overflow-clip cursor-pointer"
+    style="box-shadow: 4px 4px 0px 0px var(--color-choco);"
+    role="button"
+    tabindex="0"
+    @click="goToRanking"
+    @keyup.enter="goToRanking"
+  >
     
     <div class="relative h-[19.625rem] overflow-clip">
       <div class="absolute left-[1.688rem] top-[2.188rem] transform -translate-y-1/2">
@@ -127,6 +134,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 export interface RankItem {
   id: string;
   nickName: string;
@@ -145,6 +153,12 @@ const props = withDefaults(defineProps<RankingSectionMiniProps>(), {
   teamTop5: () => [],    //안에 임시데이터 넣어놓은거 삭제
   isLoading: false,
 });
+
+const router = useRouter();
+
+const goToRanking = () => {
+  router.push({ name: 'ranking' });
+};
 
 // 상위 5개만 안전하게 슬라이싱
 const displayedPrivateRanking = computed(() => {

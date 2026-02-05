@@ -30,7 +30,7 @@
           </h1>
 
           <!-- 아바타와 순위 정보 -->
-          <div class="flex items-center translate-x-[17rem]">
+          <div class="flex items-center translate-x-[20rem]">
             <div class="flex flex-col items-start">
               <div class="flex items-end gap-[0.5rem] -mt-[5rem]">
                 <span

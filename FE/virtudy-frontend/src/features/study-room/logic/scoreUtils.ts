@@ -8,10 +8,10 @@
  */
 export const getScoreColor = (score: number): string => {
     if (score > 79) {
-        return '#2ed573';
+        return '#B8D576';
     } else if (score > 59) {
-        return '#ffa502';
+        return '#FFD966';
     } else {
-        return '#ff4757';
+        return '#D70654';
     }
 };
