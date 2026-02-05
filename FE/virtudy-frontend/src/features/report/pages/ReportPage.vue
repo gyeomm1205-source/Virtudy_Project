@@ -1,7 +1,6 @@
 <template>
   <GlobalBackground :skyType="3">
   <div class="relative min-h-[85rem] w-full pb-[8rem] report-root">
-    <GlobalNavBar />
     
     <div class="absolute left-[4.75rem] top-[22.25rem] -translate-y-1/2">
       <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
@@ -48,7 +47,7 @@
 
     <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem] report-content">
       <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border report-card">
-        <div class="absolute right-[-1rem] bottom-[-6rem] w-[12rem] h-[14rem] z-10">
+        <div class="absolute right-[-1rem] bottom-[-3rem] w-[12rem] h-[14rem] z-10">
           <CharacterAvatar
             v-if="hasAvatarConfig"
             :config="authStore.userInfo!.avatar!"
@@ -108,11 +107,14 @@
             {{ formatDateRange(currentWeek.monday, currentWeek.sunday) }}
             <div class="relative shrink-0 w-[2rem] h-[1.25rem]">
               <div class="absolute left-[0.125rem] top-[0.125rem] w-[1.75rem] h-[1rem]">
-                <img 
-                  alt="" 
-                  class="block max-w-none size-full" 
-                  src="http://localhost:3845/assets/fc82f790716939d8d7fb00be557667ae980832c8.svg" 
-                />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="10" viewBox="0 0 18 10" fill="none" class="block max-w-none size-full">
+                  <path 
+                    d="M18 0V2H16V4H14L14 6H12V8H10V10H8V8L6 8L6 6L4 6V4L2 4L2 2H0L0 0L18 0Z" 
+                    :fill="'var(--color-syrup)'" 
+                    :stroke="'var(--color-choco)'" 
+                    stroke-width="1.2"
+                  />
+                </svg>
               </div>
             </div>
           </button>
@@ -184,7 +186,6 @@ import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useWeeklyReport } from '../logic/useWeeklyReport';
 
-import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';
 import WeeklyCalendar from '../pages/WeeklyCalendar.vue';

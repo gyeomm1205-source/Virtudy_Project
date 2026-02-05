@@ -1,7 +1,6 @@
 <template>
   <GlobalBackground :skyType="1">
   <div class="min-h-screen relative w-full flex flex-col">
-    <GlobalNavBar />
     
     <div class="flex-1 flex justify-center items-start pt-[8rem] pb-[8rem] px-[1rem] user-page-main">
       
@@ -66,8 +65,6 @@ import { useMainRanking } from '@/features/ranking/logic/useMainRanking';
 import { getMyProfile } from '@/features/mypage/api/mypageApi';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 import type { UserProfileResponse } from '@/features/mypage/types/mypage.types';
-
-import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import UserProfile from '@/shared/ui/UserProfile.vue'; 
 import StudyMenu from '@/shared/ui/StudyMenu.vue';

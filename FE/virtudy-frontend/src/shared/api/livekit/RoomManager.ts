@@ -139,9 +139,17 @@ export class RoomManager {
             const strData = new TextDecoder().decode(payload);
             try {
                 const data = JSON.parse(strData);
-                console.log(`[LiveKit] 데이터 수신 (${participant?.identity}):`, data);
-                // 기존 메시지 리스너에게 전달 (useAiHandler 등에서 처리)
-                // [수정] sender 정보(participant.identity)를 함께 전달
+                console.log(`[LiveKit] ?�이???�신 (${participant?.identity}):`, data);
+                // [Fix] Filter AI bot broadcast by participantId
+                if (data && data.category) {
+                    const targetId = data.participantId;
+                    if (!targetId || targetId !== this.userId) {
+                        return;
+                    }
+                }
+// 기존 메시지 리스?�에�??�달 (useAiHandler ?�에??처리)
+
+                // [?�정] sender ?�보(participant.identity)�??�께 ?�달
                 this.messageListeners.forEach(listener => listener(data, participant?.identity));
             } catch (e) {
                 console.warn('[LiveKit] 데이터 파싱 실패:', strData);

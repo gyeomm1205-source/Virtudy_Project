@@ -2,10 +2,6 @@
   <GlobalBackground :skyType="2">
   <div class="w-full min-h-screen flex flex-col relative">
     
-    <div class="flex-none z-50">
-      <GlobalNavBar />
-    </div>
-    
     <main class="flex-1 w-full relative min-h-[850px] lobby-main">
       
       <div class="absolute left-[76px] top-[119px] w-[54px] h-[54px] cursor-pointer hover:scale-110 transition-transform" @click="goBack">
@@ -106,7 +102,6 @@ import { useLobby } from '@/features/lobby/logic/useLobby';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI'; // 랜덤매칭용
 import type { RoomData } from '@/features/lobby/types/lobby.types'; // 방 데이터 타입
 // ✅ UI 컴포넌트 import
-import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RoomList from '@/shared/ui/RoomList.vue';
 import CreateRoomModal from '../ui/CreateRoomModal.vue'; // 새로 만든 모달

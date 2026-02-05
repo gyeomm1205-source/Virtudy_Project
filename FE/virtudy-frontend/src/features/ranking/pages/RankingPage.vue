@@ -1,7 +1,6 @@
 <template>
   <GlobalBackground :skyType="3">
   <div class="min-h-screen relative w-full flex flex-col">
-    <GlobalNavBar />
 
     <div
       class="absolute left-[30rem] top-[20.3rem] z-10 rank-avatar"
@@ -212,7 +211,6 @@ import { onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useRanking } from '../logic/useRanking';
-import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
