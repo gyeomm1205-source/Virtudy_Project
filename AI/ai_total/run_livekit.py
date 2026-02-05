@@ -24,6 +24,7 @@ from detectors.drowsiness_detector import DrowsinessDetector
 from detectors.phone_detector import PhoneDetector
 from fusion.state_fuser import StateFuser
 from scoring.focus_scorer import FocusScorer
+from utils.kafka_logger import KafkaLogger
 
 
 async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: multiprocessing.Queue = None, participant_identity: str = ""):
@@ -36,6 +37,10 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
     phone_det = PhoneDetector()
     fuser = StateFuser()
     scorer = FocusScorer()
+
+    # 카프카 로거 초기화
+    kafka_logger = KafkaLogger(session_id=room.name)
+    
     last_valid_event = "FOCUS" # [NEW] To hold state during UNKNOWN
 
     frame_count = 0
@@ -107,6 +112,13 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         decision = fuser.decide(signals)
         snap = scorer.update(decision.state)
 
+        # [DEBUG] Decision Trace - Check if PHONE is really decided
+        if signals.phone.phone_in_use or decision.state == FocusState.PHONE:
+             print(f"[DEBUG-DECISION] Final: {decision.state.name}, PhoneInUse: {signals.phone.phone_in_use}", flush=True)
+
+        # [KAFKA] Log State
+        kafka_logger.log_state(decision.state)
+
         # 3. Prepare & Send Data Payload (Simplified)
         current_time = time.time()
         if current_time - last_sent_time >= SEND_INTERVAL:
@@ -140,6 +152,9 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
             await _send_data(room, "SCORE", int(snap.score), queue, participant_identity)
 
             last_sent_time = current_time
+
+        # [KAFKA] Close Logger
+        kafka_logger.close()
 
 async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None, participant_identity: str = ""):
     
