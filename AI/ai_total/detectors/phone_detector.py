@@ -10,6 +10,9 @@ class PhoneDetector:
         self.fast_on_start = None
         self.phone_only_on_start = None
         self.off_start = None
+
+        self._last_debug_time = 0.0
+        self._last_debug_state = None
         
         # Configuration (Using centralized Config but logic from root)
         self.fast_on_hold_sec = 0.2
@@ -42,9 +45,13 @@ class PhoneDetector:
         # (B) Phone Only Condition: Confirmed Phone
         phone_only_condition = phone_confirmed
         
-        # [DEBUG] Internal State Print
+        # [DEBUG] Internal State Print (rate-limited)
         if phone_candidate:
-           print(f"[DEBUG-PHONE] Conf={phone_conf:.2f} (Cand={phone_candidate}, Confirm={phone_confirmed}), HeadDown={looking_down}, Hand={hand_interaction} -> Fast={fast_condition}, Only={phone_only_condition}, State={self.state}", flush=True)
+           now = time.time()
+           if (self._last_debug_state != self.state) or (now - self._last_debug_time >= 1.0):
+               print(f"[DEBUG-PHONE] Conf={phone_conf:.2f} (Cand={phone_candidate}, Confirm={phone_confirmed}), HeadDown={looking_down}, Hand={hand_interaction} -> Fast={fast_condition}, Only={phone_only_condition}, State={self.state}", flush=True)
+               self._last_debug_time = now
+               self._last_debug_state = self.state
 
         now = time.time()
         
