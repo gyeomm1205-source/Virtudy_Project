@@ -1,47 +1,85 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import { jwtDecode } from 'jwt-decode';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
-// [Merge] Combined Imports
 import { useFocusTimer } from '../logic/useFocusTimer';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
 import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
+import { useStudyStore } from '@/stores/studyStore';
+
+// UI 컴포넌트 임포트
 import StudyTimer from '@/shared/ui/StudyTimer.vue';
 import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
-import type { AvatarConfig } from '@/shared/types/common.types';
-import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
-import type { RoomData } from '@/features/lobby/types/lobby.types';
+import StudyRoomChat from '../ui/StudyRoomChat.vue';
+import PipDashboard from '../ui/PipDashboard.vue';
+import FlashbangEffect from '../ui/FlashbangEffect.vue';
+import WakeUpModal from '../ui/WakeUpModal.vue';
 import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
+
+// 디버그 패널 임포트 (배포 시 제거 권장)
+import DebugControls from '../ui/DebugControls.vue';
+
+// API 임포트
+import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
+import type { AvatarConfig } from '@/shared/types/common.types';
+import type { RoomData } from '@/features/lobby/types/lobby.types';
+
 // HEAD Imports
 import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 import { getScoreColor } from '../logic/scoreUtils'; 
-import PipDashboard from '../ui/PipDashboard.vue';
-import heartIcon from '@/assets/room/heart_pixel.svg?url';
-// 섬광탄 관련 Imports
 import { useFlashbang } from '../logic/useFlashbang';
-import FlashbangEffect from '../ui/FlashbangEffect.vue';
-import WakeUpModal from '../ui/WakeUpModal.vue';
-// 디버그 패널 임포트 (배포 시 제거 권장)
-import DebugControls from '../ui/DebugControls.vue';
+import bgPhoto1 from '@/assets/room/bg_photo_1.png';
+import bgPhoto2 from '@/assets/room/bg_photo_2.png';
+import bgPhoto3 from '@/assets/room/bg_photo_3.png';
 
-console.log("하트 아이콘 값:", heartIcon);
+// =================================================================
 
-// 1. 라우터 및 스토어 설정
+// 라우터 및 스토어 설정
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const studyStore = useStudyStore();
+const { accessToken, currentRoomId } = storeToRefs(studyStore);
 
-// 2. URL에서 정보 추출
+// URL에서 정보 추출
 const roomId = route.params.roomId as string;
-const token = route.query.token as string;
 const userId = (route.query.userId as string) || authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
-//[추가] 사용자 닉네임 표시용
+// 사용자 닉네임 표시용
 const displayName = computed(() => authStore.userInfo?.nickName || userId);
 
-// 3. 로직 훅
+const isChatOpen = ref(true); // 채팅창 열림 / 닫힘 상태
+
+const toggleChat = () => {
+    isChatOpen.value = !isChatOpen.value;
+};
+
+const getValidStudyToken = (): string | null => {
+    if (!accessToken.value || !currentRoomId.value || currentRoomId.value !== roomId) {
+        studyStore.clearToken();
+        router.replace('/guest');
+        return null;
+    }
+    try {
+        const decoded = jwtDecode<{ exp?: number }>(accessToken.value);
+        if (decoded?.exp && Date.now() / 1000 >= decoded.exp) {
+            studyStore.clearToken();
+            router.replace('/guest');
+            return null;
+        }
+    } catch (error) {
+        studyStore.clearToken();
+        router.replace('/guest');
+        return null;
+    }
+    return accessToken.value;
+};
+
+// 로직 훅
 const { 
     joinRoom, 
     leaveRoom, 
@@ -51,33 +89,36 @@ const {
     messages, 
     remoteTracks,
     remoteParticipantStates,
-    remoteParticipantScores, // [추가]
+    remoteParticipantScores,
     remoteParticipantNames,
+    remoteParticipantAvatars,
+    remoteParticipantOrder,
     isDistracted,
     roomInfoUpdate,
 } = useStudyRoom();
 
-// 3.1 AI 핸들러 & 타이머 연결 ([Merge] Both)
+// 렌더링 에러 방지용: 유효한 트랙만 걸러내는 computed 생성
+const validRemoteTracks = computed(() => {
+    if (!remoteTracks.value) return [];
+    // rt가 존재하고, participantId가 확실히 있는 것만 통과
+    return remoteTracks.value.filter(rt => rt && rt.participantId);
+});
+
+// AI 핸들러 & 타이머 연결
 useAiHandler();
 const aiStore = useStudyRoomAiStore();
 const canRunFocusTimer = computed(() => isConnected.value && !isDistracted.value);
 const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 
-// 4. 상태 변수
-const chatMessage = ref('');
+// 상태 변수
 const localVideoRef = ref<HTMLVideoElement | null>(null);
-const chatListRef = ref<HTMLDivElement | null>(null);
-//[추가] 방 정보
+// 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
 const roomDetail = ref<RoomData | null>(null);
 const showEditModal = ref(false);
 const roomOwnerFlag = ref(false);
 const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.value);
-
-// 채팅창 열림/닫힘 상태
-const isChatOpen = ref(true);
-
 
 // 섬광탄 훅 초기화 
 const { 
@@ -100,6 +141,14 @@ const pipDashboardRef = ref<HTMLElement | null>(null);
 const pipSourceContainerRef = ref<HTMLElement | null>(null);
 let pipWindow: Window | null = null;
 
+const closePip = () => {
+    if (pipWindow) {
+        pipWindow.close();
+        pipWindow = null;
+    }
+    isPipActive.value = false;
+};
+
 // 코드 복사 버튼 관련 상태
 const isHoveringCopyButton = ref(false);
 const showCopyTooltip = ref(false);
@@ -109,9 +158,9 @@ const isHoveringSettingsButton = ref(false);
 // [PIP용 데이터] 팀원 정보 가공 (ID와 상태 점수를 넘김)
 // 실제 팀원 점수 데이터가 있다면 이곳에 매핑 (현재는 Mock 65점)
 const teammatesData = computed(() => {
-    return remoteTracks.value.map(rt => ({
-        id: rt.participantId,
-        score: 65 // 예시: 팀원은 보통(노랑) 상태로 가정
+    return remoteParticipantOrder.value.map((participantId) => ({
+        id: participantId,
+        score: remoteParticipantScores.value[participantId] ?? 50
     }));
 });
 
@@ -128,10 +177,12 @@ const togglePip = async () => {
 
     try {
         // 이미지 비율 고려하여 세로형 창 생성
+        const minPipWidth = 200;
+        const minPipHeight = 300;
         // @ts-ignore
         pipWindow = await window.documentPictureInPicture.requestWindow({
-            width: 200, 
-            height: 280,
+            width: minPipWidth, 
+            height: minPipHeight,
         });
 
         if (!pipWindow) return;
@@ -155,9 +206,18 @@ const togglePip = async () => {
 
         // DOM 이동
         if (pipDashboardRef.value) {
-            pipWindow.document.body.append(pipDashboardRef.value);
+            const pipRoot = pipDashboardRef.value;
+            // 기본 표시 보장 (스타일 복사 실패 시에도 화면이 안 비도록)
+            pipRoot.style.display = 'block';
+            pipRoot.style.width = '100%';
+            pipRoot.style.height = '100%';
+            pipRoot.style.background = '#FFF4D9';
+
+            pipWindow.document.body.append(pipRoot);
             // PIP 창 바디 스타일 (여백 제거)
             pipWindow.document.body.style.margin = '0';
+            pipWindow.document.body.style.padding = '0';
+            pipWindow.document.body.style.background = '#FFF4D9';
         }
 
         isPipActive.value = true;
@@ -237,7 +297,7 @@ const handleEditSuccess = async () => {
             roomOwnerFlag.value = false;
         }
 
-        // [추가] 방 정보 변경을 다른 참가자에게 전파
+        // 방 정보 변경을 다른 참가자에게 전파
         RoomManager.getInstance().sendControlMessage('ROOM_UPDATED', {
             roomId,
             title: roomTitle.value,
@@ -264,60 +324,141 @@ const checkRoomOwner = async () => {
 // 🧪 [테스트/아바타] 설정
 // =================================================================
 
-// 1) 내 아바타 설정 (백엔드 Mock Data)
-const myAvatarConfig = ref<AvatarConfig>({
-    hairFront: 'bang',                  
-    hairBack: 'hair_back_long_straight',
-    hairColor: '#3B3024',               
-    eyes: 'eyes_cat',                   
-    glasses: 'accessory_glasses',       
-    outfit: 'outfit_knit',              
-    clothesColor: '#FFD700'             
+// 내 아바타 설정 (실사용: 스토어에서 가져오기)
+const myAvatarConfig = computed<AvatarConfig>(() => {
+    return authStore.userInfo?.avatar ?? {
+        hairFront: '',
+        hairBack: '',
+        hairColor: '',
+        eyes: '',
+        glasses: '',
+        outfit: '',
+        clothesColor: ''
+    };
 });
 
-// 2) AI 상태 매핑 Helpers
+// AI 상태 매핑 Helpers
 // HEAD의 aiStore.focusStatus (FOCUS, SLEEP, PHONE, AWAY)를 Avatar Props (0/1)로 변환
 const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
 const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
 const getAiAbsent = (status: string) => (status === 'AWAY' ? 1 : 0);
 
+// 유틸리티: R값 보존을 위한 가중치 적용 음영 함수
+const shiftToVividRed = (hex: string, intensity: number) => {
+    const normalized = hex.replace('#', '');
+    if (normalized.length !== 6) return hex;
+
+    const num = parseInt(normalized, 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+
+    // RGB 색 공간에서 Red 채널의 감소폭을 줄이고(0.5배), 
+    // Green/Blue 채널의 감소폭을 키워(1.3배) 붉은 기와 채도를 동시에 확보함
+    const rFactor = 1 - (intensity * 0.8); 
+    const gbFactor = 1 - (intensity * 1.0);
+
+    const rr = Math.max(0, Math.round(r * rFactor));
+    const gg = Math.max(0, Math.round(g * gbFactor));
+    const bb = Math.max(0, Math.round(b * gbFactor));
+
+    const toHex = (c: number) => c.toString(16).padStart(2, '0');
+    return `#${toHex(rr)}${toHex(gg)}${toHex(bb)}`;
+};
+
+const getHeartStyle = (score: number) => {
+    const base = getScoreColor(score);
+    return {
+        '--heart-base': base,
+        // 기존 shadeColor 대신 vivid 로직 적용
+        // line: 강한 붉은 음영 (intensity 0.4)
+        '--heart-line': shiftToVividRed(base, 0.4), 
+        // shadow: 중간 붉은 음영 (intensity 0.25)
+        '--heart-shadow': shiftToVividRed(base, 0.25), 
+    };
+};
+
+type BgState = 'GREEN' | 'YELLOW' | 'RED';
+
+const getStateFromScore = (score: number): BgState => {
+    if (score > 79) return 'GREEN';
+    if (score > 59) return 'YELLOW';
+    return 'RED';
+};
+
+const computeAverageScore = () => {
+    const scores = [aiStore.concentrationScore];
+    Object.values(remoteParticipantScores.value).forEach((score) => {
+        if (typeof score === 'number') scores.push(score);
+    });
+    if (!scores.length) return 0;
+    return scores.reduce((acc, v) => acc + v, 0) / scores.length;
+};
+
+const teamAverageScore = ref<number>(100);
+const bgState = computed<BgState>(() => getStateFromScore(teamAverageScore.value));
+
+const bgPhotoSrc = computed(() => {
+    if (bgState.value === 'GREEN') return bgPhoto1;
+    if (bgState.value === 'YELLOW') return bgPhoto2;
+    return bgPhoto3;
+});
+
+const bgHeartStyle = computed(() => {
+    if (bgState.value === 'GREEN') return getHeartStyle(90);
+    if (bgState.value === 'YELLOW') return getHeartStyle(70);
+    return getHeartStyle(30);
+});
+
+const TEAM_AVG_INTERVAL_MS = 5000;
+let teamAverageInterval: number | undefined;
+
 // =================================================================
 // 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
 // =================================================================
 
-onMounted(() => {
-    const init = async () => {
-        // [수정] 로컬 테스트 지원: token이 없어도 userId가 URL에 있거나 로컬 환경이면 진행
-        if (!roomId) {
-            alert('잘못된 접근입니다.');
-            router.replace('/lobby');
-            return;
+onMounted(async () => {
+    if (!roomId) { alert('잘못된 접근입니다.'); router.replace('/lobby'); return; }
+
+    const validToken = getValidStudyToken();
+    if (!validToken) return;
+
+    if (!authStore.userInfo) await authStore.fetchUserInfo();
+
+    // 아바타 미생성 시 입장 차단
+    if (!authStore.userInfo?.avatar || !authStore.userInfo.avatar.hairFront) {
+        // confirm 창을 띄워 확인을 누르면 이동, 취소를 누르면 로비로 보냄
+        const shouldCreate = confirm("스터디룸에 입장하려면 아바타가 필요해요! 🎨\n지금 아바타를 만들러 가시겠어요?");
+        if (shouldCreate) {
+            router.push('/avatar/create'); // '확인' 클릭 시 아바타 생성 페이지로 이동
+        } else {
+            router.replace('/lobby'); // '취소' 클릭 시 로비로 이동
         }
-        if (!authStore.userInfo) {
-            await authStore.fetchUserInfo(); //입장시 유저 정보 로드
-        }
-        try {
-            const { data } = await lobbyAPI.getRoomDetail(roomId);
-            roomDetail.value = data;
-            roomTitle.value = data.title || roomId;
-            roomDescription.value = data.description || '방 설명이 없습니다.';
-            if (!data.owner) {
-                roomOwnerFlag.value = await checkRoomOwner();
-            }
-        } catch (detailError) {
-            console.warn('방 정보 조회 실패:', detailError);
-            roomDetail.value = null;
-            roomOwnerFlag.value = false;
-            roomTitle.value = roomId;
-            roomDescription.value = '';
-        }
-        console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
-        await joinRoom(roomId, userId, token, displayName.value);
+        return; // 중요: 아래 로직(방 입장)이 실행되지 않도록 여기서 함수 종료
+    }
+
+    try {
+        const { data } = await lobbyAPI.getRoomDetail(roomId);
+        roomDetail.value = data;
+        roomTitle.value = data.title || roomId;
+        roomDescription.value = data.description || '';
+        if (!data.owner) roomOwnerFlag.value = await checkRoomOwner();
+    } catch {
+        roomTitle.value = roomId;
+    }
+
+    await joinRoom(roomId, userId, validToken, displayName.value, myAvatarConfig.value);
+    
+
+    const updateTeamAverage = () => {
+        teamAverageScore.value = computeAverageScore();
     };
-    init();
+
+    updateTeamAverage();
+    teamAverageInterval = window.setInterval(updateTeamAverage, TEAM_AVG_INTERVAL_MS);
 });
 
-// [추가] 다른 참가자의 방 정보 업데이트 수신 처리
+// 다른 참가자의 방 정보 업데이트 수신 처리
 watch(roomInfoUpdate, (update) => {
     if (!update || update.roomId !== roomId) return;
     if (typeof update.title === 'string') {
@@ -338,24 +479,6 @@ watch(roomInfoUpdate, (update) => {
 watch(isConnected, (connected) => {
     if (connected) {
         nextTick().then(() => attachLocalVideo());
-    }
-});
-
-const scrollChatToBottom = () => {
-    nextTick(() => {
-        if (chatListRef.value) {
-            chatListRef.value.scrollTop = chatListRef.value.scrollHeight;
-        }
-    });
-};
-
-watch(() => messages.value.length, () => {
-    scrollChatToBottom();
-});
-
-watch(isChatOpen, (open) => {
-    if (open) {
-        scrollChatToBottom();
     }
 });
 
@@ -382,30 +505,114 @@ const handleLeave = () => {
         leaveRoom({
             'study-time': String(focusMinutes),
         });
+        studyStore.clearToken();
+
+        // PIP 강제 종료
+        closePip();
+
         router.replace('/lobby'); // 로비로 이동
     }
 };
 
-const handleSendChat = () => {
-    if (!chatMessage.value.trim()) return;
-    sendChat(chatMessage.value);
-    chatMessage.value = '';
-};
-
-const toggleChat = () => {
-    isChatOpen.value = !isChatOpen.value;
-};
-
 onUnmounted(() => {
+    if (teamAverageInterval) {
+        window.clearInterval(teamAverageInterval);
+        teamAverageInterval = undefined;
+    }
     const focusMinutes = Math.floor(focusSeconds.value / 60);
     leaveRoom({
         'study-time': String(focusMinutes),
     });
+    closePip();
 });
 </script>
 
 <template>
     <div class="page-container">
+        <svg class="heart-symbols" aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;">
+            <symbol id="heart-pixel-symbol" viewBox="0 0 32 24">
+            <g class="heart-line">
+            <path d="M13.3334 2.84446H16V5.51113H13.3334V2.84446Z"/>
+            <path d="M10.6667 0.177794H13.3334L13.3334 2.84446H10.6667V0.177794Z"/>
+            <path d="M8.00002 0.177794H10.6667V2.84446H8.00002V0.177794Z"/>
+            <path d="M5.33335 2.66667H8.00002V5.33333H5.33335V2.66667Z"/>
+            <path d="M2.66669 5.51113H5.33335V8.17779H2.66669V5.51113Z"/>
+            <path d="M2.66669 8H5.33335V10.6667H2.66669V8Z"/>
+            <path d="M5.33335 10.6667H8.00002V13.3333H5.33335V10.6667Z"/>
+            <path d="M8.00002 13.3333L10.6667 13.3333V16H8.00002L8.00002 13.3333Z"/>
+            <path d="M10.6667 16H13.3334V18.6667H10.6667V16Z"/>
+            <path d="M13.3334 18.6667H16V21.3333H13.3334L13.3334 18.6667Z"/>
+            <path d="M16 21.3333L18.6667 21.3333V24H16V21.3333Z"/>
+            <path d="M18.6667 18.6667H21.3334V21.3333L18.6667 21.3333L18.6667 18.6667Z"/>
+            <path d="M21.3334 16H24V18.6667H21.3334L21.3334 16Z"/>
+            <path d="M24 13.3333H26.6667V16H24V13.3333Z"/>
+            <path d="M26.6667 10.6667H29.3334V13.3333L26.6667 13.3333V10.6667Z"/>
+            <path d="M29.3334 8H32V10.6667H29.3334L29.3334 8Z"/>
+            <path d="M29.3334 5.51113H32V8.17779H29.3334V5.51113Z"/>
+            <path d="M26.6667 2.66667H29.3334V5.33333H26.6667V2.66667Z"/>
+            <path d="M24 0H26.6667V2.66667H24V0Z"/>
+            <path d="M21.3334 0H24V2.66667H21.3334V0Z"/>
+            <path d="M18.6667 2.66667H21.3334L21.3334 5.33333H18.6667V2.66667Z"/>
+            <path d="M16 5.51113H18.6667V8.17779H16V5.51113Z"/>
+            </g>
+            <g class="heart-highlight">
+            <path d="M10.6667 5.33337H13.3333V8.00004H10.6667V5.33337Z"/>
+            <path d="M8 8.00004L10.6667 8.00004L10.6667 10.6667H8V8.00004Z"/>
+            </g>
+            <g class="heart-base">
+            <path d="M26.6666 2.66663H24V5.33329H26.6666V2.66663Z"/>
+            <path d="M10.6666 13.3333H13.3333V16H10.6666V13.3333Z"/>
+            <path d="M13.3333 13.3333H16V16H13.3333V13.3333Z"/>
+            <path d="M16 13.3333H18.6666V16H16V13.3333Z"/>
+            <path d="M16 10.6666H18.6666V13.3333H16V10.6666Z"/>
+            <path d="M16 7.99996H18.6666V10.6666H16V7.99996Z"/>
+            <path d="M10.6666 2.84442H13.3333V5.51109H10.6666V2.84442Z"/>
+            <path d="M7.99998 2.84442H10.6666V5.51109H7.99998V2.84442Z"/>
+            <path d="M5.33331 5.33329H7.99998V7.99996H5.33331V5.33329Z"/>
+            <path d="M7.99998 5.33329H10.6666V7.99996H7.99998V5.33329Z"/>
+            <path d="M13.3333 5.51109H16V8.17775H13.3333L13.3333 5.51109Z"/>
+            <path d="M13.3333 7.99996H16V10.6666H13.3333V7.99996Z"/>
+            <path d="M13.3333 10.6666H16V13.3333H13.3333L13.3333 10.6666Z"/>
+            <path d="M10.6666 10.6666H13.3333L13.3333 13.3333H10.6666V10.6666Z"/>
+            <path d="M10.6666 7.99996L13.3333 7.99996V10.6666H10.6666L10.6666 7.99996Z"/>
+            <path d="M7.99998 10.6666H10.6666V13.3333L7.99998 13.3333V10.6666Z"/>
+            <path d="M5.33331 7.99996H7.99998L7.99998 10.6666H5.33331V7.99996Z"/>
+            <path d="M16 18.6666H18.6666V21.3333H16V18.6666Z"/>
+            <path d="M18.6666 16H21.3333V18.6666L18.6666 18.6666V16Z"/>
+            <path d="M16 16H18.6666V18.6666H16V16Z"/>
+            <path d="M13.3333 16H16V18.6666L13.3333 18.6666L13.3333 16Z"/>
+            <path d="M21.3333 13.3333H24V16H21.3333L21.3333 13.3333Z"/>
+            <path d="M21.3333 10.6666H24V13.3333H21.3333V10.6666Z"/>
+            <path d="M21.3333 7.99996H24V10.6666H21.3333V7.99996Z"/>
+            <path d="M18.6666 5.33329H21.3333L21.3333 7.99996H18.6666L18.6666 5.33329Z"/>
+            <path d="M18.6666 7.99996H21.3333V10.6666H18.6666V7.99996Z"/>
+            <path d="M18.6666 10.6666H21.3333V13.3333H18.6666V10.6666Z"/>
+            <path d="M18.6666 13.3333H21.3333L21.3333 16H18.6666V13.3333Z"/>
+            <path d="M21.3333 5.33329H24L24 7.99996H21.3333L21.3333 5.33329Z"/>
+            <path d="M21.3333 2.66663H24V5.33329H21.3333L21.3333 2.66663Z"/>
+            <path d="M24 2.66663H26.6666V5.33329H24V2.66663Z"/>
+            <path d="M24 5.33329H26.6666V7.99996L24 7.99996L24 5.33329Z"/>
+            <path d="M24 7.99996L26.6666 7.99996V10.6666H24V7.99996Z"/>
+            <path d="M24 10.6666H26.6666V13.3333L24 13.3333V10.6666Z"/>
+            <path d="M26.6666 5.33329H29.3333V7.99996H26.6666V5.33329Z"/>
+            <path d="M26.6666 7.99996H29.3333V10.6666H26.6666V7.99996Z"/>
+            </g>
+            <g id="heart_shadow">
+            <path d="M13.3333 21.3333H16V24H13.3333V21.3333Z"/>
+            <path d="M10.6667 18.6667H13.3333L13.3333 21.3333L10.6667 21.3333V18.6667Z"/>
+            <path d="M16 2.84446H18.6667V5.51113H16V2.84446Z"/>
+            <path d="M8 16H10.6667V18.6667H8V16Z"/>
+            <path d="M5.33333 13.3333H8V16H5.33333V13.3333Z"/>
+            <path d="M2.66667 10.6667H5.33333V13.3333L2.66667 13.3333V10.6667Z"/>
+            <path d="M0 8H2.66667V10.6667H0V8Z"/>
+            <path d="M0 5.51113H2.66667V8.17779H0V5.51113Z"/>
+            <path d="M2.66667 2.84446H5.33333V5.51113H2.66667V2.84446Z"/>
+            <path d="M5.33333 0.177794H8V2.84446H5.33333V0.177794Z"/>
+            <path d="M18.6667 0H21.3333V2.66667H18.6667V0Z"/>
+            </g>
+            </symbol>
+        </svg>
+
         <!-- 섬광탄 효과 컴포넌트 -->
         <FlashbangEffect :visible="isStunned" />
 
@@ -476,7 +683,7 @@ onUnmounted(() => {
                     </div>
 
                     <div class="room-controls-overlay">
-                        <span class="member-count">{{ remoteTracks.length + 1 }}/6명</span>
+                        <span class="member-count">{{ validRemoteTracks.length + 1 }}/6명</span>
 
                         <button
                             v-if="isRoomOwner"
@@ -518,7 +725,7 @@ onUnmounted(() => {
                     
                     <div class="frame-wrapper">
                         <img 
-                            src="@/assets/room/bg_photo_1.png" 
+                            :src="bgPhotoSrc" 
                             alt="Background Photo" 
                             class="scene-photo"
                         />
@@ -532,9 +739,15 @@ onUnmounted(() => {
                     <!-- 타이머 / PIP / 깨우기 버튼 영역 -->
                     <div class="timer-floating-widget">
                         <div class="hearts-container">
-                            <img :src="heartIcon" class="heart-img" />
-                            <img :src="heartIcon" class="heart-img" />
-                            <img :src="heartIcon" class="heart-img" />
+                            <svg class="heart-svg heart-svg--timer" :style="bgHeartStyle" viewBox="0 0 32 24">
+                                <use href="#heart-pixel-symbol" />
+                            </svg>
+                            <svg class="heart-svg heart-svg--timer" :style="bgHeartStyle" viewBox="0 0 32 24">
+                                <use href="#heart-pixel-symbol" />
+                            </svg>
+                            <svg class="heart-svg heart-svg--timer" :style="bgHeartStyle" viewBox="0 0 32 24">
+                                <use href="#heart-pixel-symbol" />
+                            </svg>
                         </div>
 
                         <div class="window-frame">
@@ -547,8 +760,8 @@ onUnmounted(() => {
                         
                         <!-- Timer Display -->
                         <div class="timer-display">
-                            <StudyTimer />
                             <FocusTimer :seconds="focusSeconds" />
+                            <StudyTimer />
                         </div>
                         
                         <div class="pip-btn-area">
@@ -582,130 +795,73 @@ onUnmounted(() => {
                             
                             <div class="user-info">
                                 <span class="user-name">{{ displayName }}</span>
-                                <img :src="heartIcon" class="heart-img" />
+                                <svg
+                                    class="heart-svg"
+                                    :style="getHeartStyle(aiStore.concentrationScore)"
+                                    aria-label="teammate-focus-heart"
+                                    viewBox="0 0 32 24"
+                                >
+                                    <use href="#heart-pixel-symbol" />
+                                </svg>
                             </div>
                         </div>
 
-                        <div v-for="rt in remoteTracks" :key="rt.participantId" class="avatar-card remote">
+                        <div v-for="rt in validRemoteTracks" :key="rt.participantId" class="avatar-card remote">
                             <video 
-                                :ref="(el) => { if(el) rt.track.attach(el as HTMLMediaElement) }"
+                                :ref="(el) => { if(el && rt?.track) rt.track.attach(el as HTMLMediaElement) }"
                                 autoplay playsinline 
                                 class="hidden-video"
                             ></video>
                             
                             <div class="avatar-display">
                                 <CharacterAvatar 
-                                    :config="myAvatarConfig"
-                                    :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
-                                    :aiPhone="getAiPhone(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
-                                    :aiAbsent="getAiAbsent(remoteParticipantStates[rt.participantId] || 'FOCUS')"
+                                    :config="remoteParticipantAvatars?.[rt?.participantId] || {
+                                        hairFront: 'none', hairBack: 'none', outfit: 'none', hairColor: '', clothesColor: '', eyes: 'default', glasses: 'none'
+                                    }"
+                                    :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt?.participantId] || 'FOCUS')" 
+                                    :aiPhone="getAiPhone(remoteParticipantStates[rt?.participantId] || 'FOCUS')" 
+                                    :aiAbsent="getAiAbsent(remoteParticipantStates[rt?.participantId] || 'FOCUS')"
                                 />
                             </div>
                             <div class="user-info">
                                 <span class="user-name">{{ remoteParticipantNames[rt.participantId] || rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
-                                <span class="heart-icon" :style="{ color: getScoreColor(remoteParticipantScores[rt.participantId] || 50) }">♥</span>
+                                <svg
+                                    class="heart-svg"
+                                    :style="getHeartStyle(remoteParticipantScores[rt.participantId] ?? 50)"
+                                    aria-label="teammate-focus-heart"
+                                    viewBox="0 0 32 24"
+                                >
+                                    <use href="#heart-pixel-symbol" />
+                                </svg>
                             </div>
                         </div>
                     </div>
                 </main>
 
-                <!-- 채팅 영역 -->
-                <aside 
-                    class="flex flex-col h-full w-80 min-w-80"
+                <button 
+                    @click="toggleChat" 
+                    class="btn-side-toggle"
+                    :class="{ 'open': isChatOpen }"
+                    :title="isChatOpen ? '채팅 닫기' : '채팅 열기'"
                 >
-                    <!-- 채팅창이 열려있을 때 -->
-                    <div 
-                        v-if="isChatOpen" 
-                        class="bg-[var(--color-choco)] h-full flex flex-col overflow-hidden"
-                    >
-                        <!-- 채팅 헤더 -->
-                        <div class="flex items-center justify-center pt-1 px-1 pb-1 shrink-0">
-                            <div class="relative w-[19.9375rem] h-[3.25rem]">
-                                <!-- Window Title 배경 (Rectangle2) -->
-                                <div class="absolute inset-0 bg-[var(--color-butter2)]"></div>
-                                <!-- 채팅 제목 -->
-                                <div class="absolute left-[0.6875rem] top-1/2 transform -translate-y-1/2">
-                                    <h3 class="text-[var(--color-choco)] text-[2rem] font-['exqt'] font-medium leading-normal">채팅</h3>
-                                </div>
-                                <!-- X 버튼 -->
-                                <button 
-                                    @click="toggleChat"
-                                    class="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="2.25rem" height="2.25rem" viewBox="0 0 36 36" fill="none">
-                                        <path d="M21 19.5H22.5V21H24V22.5H25.5V24H27V25.5H28.5V27H30V28.5H31.5V30H33V31.5H31.5V33H30V31.5H28.5V30H27V28.5H25.5V27H24V25.5H22.5V24H21V22.5H19.5V21H16.5V22.5H15V24H13.5V25.5H12V27H10.5V28.5H9V30H7.5V31.5H6V33H4.5V31.5H3V30H4.5V28.5H6V27H7.5V25.5H9V24H10.5V22.5H12V21H13.5V19.5H15V16.5H13.5V15H12V13.5H10.5V12H9V10.5H7.5V9H6V7.5H4.5V6H3V4.5H4.5V3H6V4.5H7.5V6H9V7.5H10.5V9H12V10.5H13.5V12H15V13.5H16.5V15H19.5V13.5H21V12H22.5V10.5H24V9H25.5V7.5H27V6H28.5V4.5H30V3H31.5V4.5H33V6H31.5V7.5H30V9H28.5V10.5H27V12H25.5V13.5H24V15H22.5V16.5H21V19.5Z" fill="#DFA67B"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- 구분선 -->
-                        <div class="h-px bg-[var(--color-choco)] opacity-80 shrink-0"></div>
-
-                        <!-- 메시지 목록 -->
-                        <div ref="chatListRef" class="chat-list flex-1 overflow-y-auto p-6 space-y-2.5">
-                            <div v-for="(msg, idx) in messages" :key="idx" class="flex flex-col">
-                                <div v-if="msg.type === 'CHAT'">
-                                    <!-- 내 메시지 -->
-                                    <div v-if="msg.sender === userId" class="flex justify-end">
-                                        <div class="flex flex-col items-end space-y-1.5">
-                                            <div class="bg-[var(--color-butter2)] px-4 py-1 rounded-xl max-w-64">
-                                                <p class="text-[var(--color-choco)] text-[1.3rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- 다른 사용자 메시지 -->
-                                    <div v-else class="flex flex-col space-y-1.5">
-                                        <p class="text-[var(--color-cream2)] text-[0.9375rem] font-['PfStardust30S'] leading-normal tracking-[-0.0375rem]">{{ remoteParticipantNames[msg.sender] || msg.sender }}</p>
-                                        <div class="bg-[var(--color-syrup)] px-4 py-1 rounded-xl max-w-64 w-fit">
-                                            <p class="text-[var(--color-cream2)] text-[1.3rem] font-['PfStardust30S'] leading-tight tracking-[-0.05rem]">{{ msg.data?.message || msg.message }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- 시스템 메시지 -->
-                                <div v-else class="flex justify-center">
-                                    <div class="text-[var(--color-cream)] text-sm opacity-70">🔔 {{ msg.type }} 이벤트</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 메시지 입력 박스 (Figma Frame 6 디자인) -->
-                        <div class="p-[15px] shrink-0">
-                            <div class="bg-[#fff8e5] border-2 border-[#fff2cc] rounded-[12px] flex items-center justify-between h-[50px] px-[20px] py-[10px]">
-                                <input 
-                                    v-model="chatMessage" 
-                                    @keyup.enter="handleSendChat" 
-                                    type="text" 
-                                    placeholder="Type a message"
-                                    class="flex-1 bg-transparent text-[#805143] text-[20px] font-['PfStardust30S'] leading-normal tracking-[-0.8px] placeholder:opacity-40 outline-none"
-                                />
-                                <button 
-                                    @click="handleSendChat" 
-                                    class="w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity overflow-hidden relative"
-                                >
-                                    <div class="absolute translate-y-0.5 inset-[10.68%_10.66%_10.66%_10.66%]">
-                                        <img alt="send" class="block max-w-none size-full" src="https://www.figma.com/api/mcp/asset/b9d70265-6324-4b42-bf69-7dfa3a62b17a" />
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <svg v-if="isChatOpen" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#805143" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
                     
-                    <!-- 채팅창이 닫혀있을 때 표시할 영역 (흰 배경) -->
-                    <div 
-                        v-else
-                        class="flex-1 bg-white flex items-center justify-end"
-                    >
-                        <button 
-                            @click="toggleChat"
-                            class="btn-chat-open"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                <path d="M12.5 15L7.5 10L12.5 5" stroke="#805143" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                    </div>
-                </aside>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#805143" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+
+                <div class="chat-container-wrapper" :class="{ 'open': isChatOpen }">
+                    <StudyRoomChat
+                        :messages="messages"
+                        :userId="userId"
+                        :userNames="remoteParticipantNames"
+                        :onSendMessage="sendChat"
+                        @close="isChatOpen = false"
+                    />
+                </div>
 
             </div>
         </div>
@@ -982,7 +1138,7 @@ onUnmounted(() => {
 .timer-floating-widget { 
     position: absolute; 
     top: 20%; 
-    right: 40px; 
+    right: 50px; 
     width: 323px;
     height: auto;
     z-index: 10; 
@@ -997,7 +1153,22 @@ onUnmounted(() => {
     position: relative;
     z-index: 11; /* 윈도우보다 위에 뜨도록 */
 }
-.heart-img { width: 30px; height: 30px; display: block; margin-bottom: 3px;}
+.heart-svg {
+    width: 30px;
+    height: 30px;
+    display: inline-block;
+    margin-left: 2px;
+}
+.heart-svg--timer {
+    display: block;
+    margin-left: 0;
+    margin-bottom: 3px;
+}
+.heart-line path { fill: var(--heart-line, #668128); }
+.heart-base path { fill: var(--heart-base, #B8D576); }
+.heart-highlight path { fill: #FFFFDB; }
+.heart-shadow path,
+#heart_shadow path { fill: var(--heart-shadow, var(--heart-line, #668128)); }
 
 .window-frame {
     position: relative;
@@ -1175,9 +1346,10 @@ onUnmounted(() => {
 /*아바타 이미지: 바 위로 올려서 배치 */
 .avatar-display {
     position: absolute;
-    bottom: 100px; 
-    width: 180px;
-    height: 145px;
+    bottom: -40px; 
+    width: 200px;
+    height: 200px;
+    left: 7px
 }
 
 /* 텍스트 */
@@ -1204,36 +1376,62 @@ onUnmounted(() => {
     margin-bottom: 3px;
 }
 
-.heart-icon { 
-    font-size: 1.2rem; 
-    transition: color 0.5s ease; /* 색상 변경 시 부드럽게 */
-    margin-left: 2px;
-}
 
 .hidden-video { display: none; }
 
-.btn-chat-open {
+.btn-side-toggle {
+    /* 1. 위치 잡기 (화면 기준 절대 위치) */
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 50; /* 채팅창보다 위에, 메인보다 위에 */
+    /* 2. 애니메이션 (부드럽게 이동) */
+    transition: right 0.3s ease; 
+    right: 0;
     display: flex;
     width: 1.5rem;
     height: 5rem;
     justify-content: center;
     align-items: center;
-    border-radius: 0.875rem 0 0 0.875rem;
+    border-radius: 0.875rem 0 0 0.875rem; 
+    
     border: 1px solid var(--text-stroke-choco, #805143);
-    background: var(--primary-butter, #FFD966);
-    box-shadow: 4px 4px 0 0 #805143;
+    background: var(--color-butter2, #ffeaac);
+    
+    box-shadow: 4px 4px 0 0 #805143; 
+    
     color: var(--text-stroke-choco, #805143);
-    font-family: 'PfStardust30S', sans-serif;
-    font-size: 0.875rem;
-    line-height: 1;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
     cursor: pointer;
-    transition: opacity 0.2s;
 }
 
-.btn-chat-open:hover {
-    opacity: 0.85;
+/* 열린 상태: 채팅창 너비(20rem = 320px) 만큼 왼쪽으로 이동 */
+.btn-side-toggle.open {
+    right: 20rem;
+}
+
+.btn-side-toggle:hover {
+    filter: brightness(1.05);
+}
+
+/* 채팅창 래퍼: 너비 애니메이션 적용 */
+.chat-container-wrapper {
+    width: 0;
+    overflow: hidden;
+    transition: width 0.3s ease; 
+    flex-shrink: 0; 
+}
+
+.chat-container-wrapper.open {
+    width: 20rem; /* 320px */
+}
+
+/* 부모 컨테이너가 relative여야 absolute 자식이 기준을 잡음 */
+.content-wrapper {
+    position: relative; 
+    display: flex; 
+    flex: 1; 
+    height: 100vh; 
+    overflow: hidden; 
 }
 
 /* 채팅 스크롤바 숨김 */

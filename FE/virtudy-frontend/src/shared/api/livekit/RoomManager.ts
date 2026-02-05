@@ -21,6 +21,9 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://127.0.0.1:8081/ws'
 // const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
 const AI_SOCKET_URL = import.meta.env.VITE_AI_SOCKET_URL || 'ws://127.0.0.1:8000/ws/analysis';
 
+// 3. [AI 서버] API 주소 (HTTP 요청용 -> HTTPS)
+// Nginx 설정상 /fastapi 로 들어오는 요청을 AI 서버로 보내게 되어 있다고 가정합니다.
+const AI_API_URL = import.meta.env.VITE_AI_API_URL || `https://${DOMAIN}/fastapi`;
 
 export class RoomManager {
     private static instance: RoomManager;
@@ -42,6 +45,7 @@ export class RoomManager {
     public getRoom(): Room | null {
         return this.room;
     }
+    
 
     // 1. 통합 연결 함수 (입장 API -> LiveKit 연결 -> 소켓 연결)
     async joinStudyRoom(roomId: string, userId: string, token?: string) {
@@ -67,8 +71,13 @@ export class RoomManager {
             this.connectWebSocket(accessToken);
             // [추가]1-4. 소켓 직통 연결 (집중도 데이터)
             this.connectAISocket();
+            
+            // [추가] 1-5. 봇(AI) 소환 요청 (POST)
+            // 방에 입장했으니, 이제 분석 봇을 투입시킵니다.
+            await this.requestBotJoin(finalToken);
 
             console.log(`[RoomManager] 방 ${roomId} 입장 완료`);
+            console.log(`[RoomManager] 방 ${roomId} 입장 및 AI 봇 호출 완료`);
         } catch (error) {
             console.error('[RoomManager] 방 입장 실패:', error);
             this.leaveRoom(); // 실패 시 정리
@@ -159,6 +168,39 @@ export class RoomManager {
         }
     }
 
+    // [추가] AI 봇 소환 메서드 (POST 요청)
+    private async requestBotJoin(token: string) {
+        try {
+            console.log("[Bot] AI 봇 투입 요청 중...");
+            
+            // 백엔드의 JoinRequest 모델에 맞춰 데이터 전송
+            const response = await fetch(`${AI_API_URL}/bot/join`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    url: LIVEKIT_URL, // 봇이 접속할 LiveKit 주소
+                    token: token,     // 봇이 사용할 토큰 (혹은 봇용 토큰을 따로 발급받기도 함)
+                    room_id: this.roomId
+                }),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`봇 투입 실패: ${response.status} ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log("[Bot] 봇 투입 성공:", result);
+
+        } catch (error) {
+            // 봇이 실패해도 사용자는 입장은 유지할지, 에러를 띄울지 정책 결정 필요
+            console.error("[Bot] 요청 중 에러 발생:", error);
+        }
+    }
+
     // 3. WebSocket(SockJS+Stomp) 연결 로직
 
     // private connectWebSocket() {
@@ -189,6 +231,8 @@ export class RoomManager {
 
         this.stompClient.activate();
     }
+
+
     // [추가] 1-4. AI 서버 소켓 연결 (직통)
     private connectAISocket() {
         // AI 서버에 보낼 주소 (예: 방ID와 유저ID를 경로에 포함)

@@ -76,6 +76,7 @@ public class StudySessionService {
         AccessToken token = new AccessToken(liveKitConfig.getLiveKitApiKey(), liveKitConfig.getLiveKitApiSecret());
         token.setName(member.getNickName());
         token.setIdentity(member.getMemberId());
+        token.setMetadata(newSession.getSessionId());
         token.addGrants(new RoomJoin(true), new RoomName(roomId));
 
         return new SessionMemberInfoResponse(member, token.toJwt(), roomId);

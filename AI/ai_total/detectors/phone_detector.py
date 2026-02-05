@@ -42,6 +42,10 @@ class PhoneDetector:
         # (B) Phone Only Condition: Confirmed Phone
         phone_only_condition = phone_confirmed
         
+        # [DEBUG] Internal State Print
+        if phone_candidate:
+           print(f"[DEBUG-PHONE] Conf={phone_conf:.2f} (Cand={phone_candidate}, Confirm={phone_confirmed}), HeadDown={looking_down}, Hand={hand_interaction} -> Fast={fast_condition}, Only={phone_only_condition}, State={self.state}", flush=True)
+
         now = time.time()
         
         # 3. State Machine Transition

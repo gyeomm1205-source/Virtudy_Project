@@ -10,7 +10,22 @@ export default defineConfig({
     vue(),
     tailwindcss(),
     svgLoader({
-      defaultImport: 'component' // SVG를 기본적으로 Vue 컴포넌트로 import
+      svgoConfig: {
+        plugins: [
+          // 기본 설정 유지하되, ID 제거 플러그인만 비활성화
+          {
+            name: 'preset-default',
+            params: {
+              overrides: {
+                removeTitle: false,
+                removeViewBox: false,
+                cleanupIds: false, // ID를 제거하지 않음
+              },
+            },
+          },
+          // 혹은 명시적으로 prefixIds 등을 설정할 수도 있음
+        ],
+      },
     }),
   ],
   resolve: {

@@ -2,6 +2,17 @@
   <div class="min-h-screen bg-[var(--color-syrup)] relative w-full flex flex-col">
     <GlobalNavBar />
 
+    <div
+      class="absolute left-[30rem] top-[20.3rem] z-10"
+      :style="{ width: '14rem', height: '16rem' }"
+    >
+      <CharacterAvatar
+        v-if="hasAvatarConfig"
+        :config="displayAvatar!"
+        class="w-full h-full"
+      />
+    </div>
+
     <div class="flex-1 flex flex-col pt-[4.5rem] pb-[6.5rem] w-full min-h-[calc(100vh-200px)] px-[4.75rem]">
       <div class="w-full max-w-[74rem] mx-auto relative">
         <button @click="goBack"
@@ -19,24 +30,13 @@
           </h1>
 
           <!-- 아바타와 순위 정보 -->
-          <div class="flex items-center gap-[1.5rem] translate-x-[1rem]">
-            <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)] bg-[var(--color-cream)] shadow-md ">
-              <CharacterAvatar
-                v-if="hasAvatarConfig"
-                :config="authStore.userInfo!.avatar!"
-                class="w-full h-full"
-              />
-              <img v-else-if="authStore.userInfo?.avatarImageUrl" :src="authStore.userInfo.avatarImageUrl" alt="프로필"
-                class="w-full h-full object-cover" />
-              <div v-else
-                class="w-full h-full flex items-center justify-center text-[var(--color-choco)] font-bold text-xl">
-                ME
-              </div>
-            </div>
-
+          <div class="flex items-center translate-x-[20rem]">
             <div class="flex flex-col items-start">
               <div class="flex items-end gap-[0.5rem] -mt-[5rem]">
-                <span class="text-[var(--color-choco)] text-[clamp(1.5rem,2.625rem,2.625rem)] font-['Ram'] font-medium leading-none">
+                <span
+                  class="text-[var(--color-choco)] text-[clamp(1.5rem,2.625rem,2.625rem)] font-['Ram'] font-medium leading-tight max-w-[22rem] whitespace-normal break-words"
+                  style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;"
+                >
                   {{ myRankInfo?.nickName || authStore.userInfo?.nickName || '방문자' }}
                 </span>
 
@@ -50,18 +50,16 @@
                 </span>
               </div>
 
-              <div class="text-[var(--color-butter)] font-['Xcu'] font-normal leading-none drop-shadow-md mt-[-0.5rem] translate-x-[14rem]"
-                :class="myRankInfo?.rank ? 'text-[clamp(3rem,8.125rem,8.125rem)]' : 'text-[clamp(2rem,3.5rem,3.5rem)] translate-y-[1rem]'">
+              <div class="text-[var(--color-butter)] font-['Xcu'] font-normal drop-shadow-md mt-[-0.5rem] translate-x-[14rem]">
                 <template v-if="myRankInfo?.rank">
-                  {{ myRankInfo.rank }}위
+                  <span class="leading-none text-[clamp(3rem,8.125rem,8.125rem)]">
+                    {{ myRankInfo.rank }}위
+                  </span>
                 </template>
 
                 <template v-else>
-                  <span v-if="rankType === 'private'" class="tracking-tighter">
-                    환영합니다!
-                  </span>
-                  <span v-else class="tracking-tighter">
-                    최애 스터디가 없습니다!
+                  <span class="tracking-tighter leading-none text-[clamp(2rem,3.5rem,3.5rem)] max-w-[18rem] truncate">
+                    {{ rankType === 'private' ? '환영합니다!' : '최애 스터디가 없습니다!' }}
                   </span>
                 </template>
               </div>
@@ -70,32 +68,32 @@
         </div>
 
       <!-- 탭과 검색바 -->
-        <div class="max-w-[61.375rem] w-full ml-26 mr-0 relative mb-[2rem] translate-x-[rem]">
+        <div class="max-w-[61.375rem] w-full ml-26 mr-0 relative mb-[2rem] translate-x-[0.5rem]">
 
         <div class="flex justify-between items-end mb-[-2px] relative z-10 px-[2rem]">
-          <div class="flex gap-0">
-            <button @click="changeType('private')" :class="[
-              'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
-              rankType === 'private' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
-            ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
-              <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">개인</span>
-            </button>
-            <button @click="changeType('team')" :class="[
-              'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px] ml-[-2px]',
-              rankType === 'team' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
-            ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
-              <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">팀</span>
-            </button>
+          <div class="flex items-center gap-[1rem]">
+            <div class="flex gap-0 ">
+              <button @click="changeType('private')" :class="[
+                'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
+                rankType === 'private' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
+              ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
+                <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">개인</span>
+              </button>
+              <button @click="changeType('team')" :class="[
+                'border-2 border-[var(--color-choco)] border-solid px-[32px] py-[10px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px] ml-[-2px]',
+                rankType === 'team' ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-cream)]'
+              ]" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
+                <span class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S']">팀</span>
+              </button>
+            </div>
           </div>
 
           <div
             class="w-[min(24.5625rem,40vw)] h-[2.0625rem] border-2 border-[var(--color-choco)] bg-[var(--color-cream2)] flex items-center px-[0.5rem] gap-[0.5rem] mb-[0.5rem] shadow-[4px_4px_0px_0px_var(--color-choco)]">
-            <svg viewBox="0 0 21 21" class="w-[1.25rem] h-[1.25rem]">
-              <path
-                d="M8 2C11.314 2 14 4.686 14 8C14 9.248 13.587 10.397 12.897 11.324L18.707 17.071C19.098 17.461 19.098 18.095 18.707 18.485C18.317 18.876 17.683 18.876 17.293 18.485L11.486 12.678C10.559 13.368 9.41 13.781 8.162 13.781C4.848 13.781 2.162 11.095 2.162 7.781C2.162 4.467 4.848 1.781 8.162 1.781Z"
-                fill="var(--color-choco)" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" class="w-[1.25rem] h-[1.25rem]">
+              <path d="M18 16.3637V15.5455H17.1818V14.7273H16.3636V13.9091H15.5454V13.0909H13.909V12.2727H14.7272V10.6364H15.5454V5.72728H14.7272V4.09091H13.909V3.27273H13.0909V2.45454H12.2727V1.63636H10.6363V0.818176H5.72722V1.63636H4.09085V2.45454H3.27267V3.27273H2.45448V4.09091H1.6363V5.72728H0.818115V10.6364H1.6363V12.2727H2.45448V13.0909H3.27267V13.9091H4.09085V14.7273H5.72722V15.5455H10.6363V14.7273H12.2727V13.9091H13.0909V15.5455H13.909V16.3637H14.7272V17.1818H15.5454V18H16.3636V18.8182H18V18H18.8181V16.3637H18ZM9.81813 12.2727V13.0909H6.5454V12.2727H4.90903V11.4546H4.09085V9.81819H3.27267V6.54546H4.09085V4.90909H4.90903V4.09091H6.5454V3.27273H9.81813V4.09091H11.4545V4.90909H12.2727V6.54546H13.0909V9.81819H12.2727V11.4546H11.4545V12.2727H9.81813Z" fill="#805143"/>
             </svg>
-            <input v-model="searchKeyword" @keyup.enter="handleSearch" type="text" placeholder="Search"
+            <input v-model="searchKeyword" @input="handleSearch" @paste="handleSearch" @keyup.enter="handleSearch" type="text" placeholder="Search"
               class="flex-1 bg-transparent border-none outline-none text-[var(--color-syrup)] text-[1.125rem] font-['PfStardust30S'] placeholder-[var(--color-syrup)] opacity-70" />
           </div>
         </div>
@@ -220,9 +218,10 @@ import type { RankItem } from '../types/ranking.types';
 const authStore = useAuthStore();
 const router = useRouter();
 
+const displayAvatar = computed(() => myRankInfo.value?.avatar ?? authStore.userInfo?.avatar);
 const hasAvatarConfig = computed(() => {
-  if (!authStore.userInfo?.avatar) return false;
-  return Object.values(authStore.userInfo.avatar).some((value) => Boolean(value));
+  if (!displayAvatar.value) return false;
+  return Object.values(displayAvatar.value).some((value) => Boolean(value));
 });
 
 const {
