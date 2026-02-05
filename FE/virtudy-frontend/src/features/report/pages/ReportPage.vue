@@ -1,7 +1,6 @@
 <template>
   <GlobalBackground :skyType="3">
   <div class="relative min-h-[85rem] w-full pb-[8rem] report-root">
-    <GlobalNavBar />
     
     <div class="absolute left-[4.75rem] top-[22.25rem] -translate-y-1/2">
       <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
@@ -187,7 +186,6 @@ import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useWeeklyReport } from '../logic/useWeeklyReport';
 
-import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';
 import WeeklyCalendar from '../pages/WeeklyCalendar.vue';

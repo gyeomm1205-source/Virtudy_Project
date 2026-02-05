@@ -1,8 +1,6 @@
 <template>
   <GlobalBackground :skyType="3">
   <div class="relative min-h-[85rem] w-full pb-[8rem] mypage-root">
-    <!-- Global Navigation -->
-    <GlobalNavBar />
     
     <!-- 마이페이지 제목 -->
     <div class="absolute left-[4.75rem] top-[22.25rem] -translate-y-1/2">
@@ -182,7 +180,6 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMyPage } from '../logic/useMyPage';
 import { JOB_OPTIONS } from '../types/mypage.types';
-import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import MiniReport from '@/shared/ui/MiniReport.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';  

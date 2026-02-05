@@ -1,8 +1,6 @@
 <template>
   <GlobalBackground :skyType="1" type="village">
   <div>
-    <!-- Navigation -->
-    <GlobalNavBar />
     
     <!-- Main Content -->
     <div class="absolute flex flex-col gap-[80px] h-[419px] items-center justify-center left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[844px]">
@@ -26,7 +24,6 @@
 </template>
 
 <script setup lang="ts">
-import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import logoImage from '@/assets/logo.svg?url';
 import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 
