@@ -62,6 +62,9 @@ async def root():
 # We need to store it to access it in websocket_endpoint.
 active_queues = {} 
 
+active_connections = {}  # {room_id: {member_id: WebSocket}}
+dispatch_tasks = {}  # {room_id: asyncio.Task}
+
 class JoinRequest(BaseModel):
     url: str
     token: str
@@ -126,6 +129,29 @@ async def join_room(request: JoinRequest):
     
     return {"status": "started", "pid": p.pid, "message": f"Bot joining room {bot_identity}"}
 
+async def dispatch_loop(room_id: str):
+    try:
+        while True:
+            queue = active_queues.get(room_id)
+            conns = active_connections.get(room_id, {})
+            if not conns:
+                await asyncio.sleep(0.05)
+                continue
+            if queue and not queue.empty():
+                data = queue.get()
+                participant_id = data.get("participantId")
+                if participant_id:
+                    ws = conns.get(participant_id)
+                    if ws:
+                        await ws.send_json(data)
+                else:
+                    for ws in list(conns.values()):
+                        await ws.send_json(data)
+            else:
+                await asyncio.sleep(0.01)
+    except asyncio.CancelledError:
+        return
+
 @app.websocket("/fastapi/ws/analysis/{room_id}/{member_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str):
     """
@@ -133,26 +159,32 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str)
     """
     await websocket.accept()
     logger.info(f"WebSocket connected: Room {room_id}, Member {member_id}")
-    
-    queue = active_queues.get(room_id)
-    if not queue:
-        logger.warning(f"No active AI bot found for room {room_id}. Queue Missing!")
-    else:
-        logger.info(f"Queue found for room {room_id}. Listening for data...")
-    
+
+    # Register connection
+    room_conns = active_connections.setdefault(room_id, {})
+    room_conns[member_id] = websocket
+
+    # Start dispatcher for this room if not running
+    if room_id not in dispatch_tasks:
+        dispatch_tasks[room_id] = asyncio.create_task(dispatch_loop(room_id))
+
     try:
+        # Keep the connection open; messages are pushed by dispatcher
         while True:
-            if queue and not queue.empty():
-                data = queue.get()
-                # logger.info(f"Sending data to WS: {data}") # Too noisy, uncomment if needed
-                print(f"[DEBUG] Sending to FE: {data['value']} ({data['eventType']})") # Explicit print for user
-                await websocket.send_json(data)
-            else:
-                await asyncio.sleep(0.01) # Faster polling
+            await asyncio.sleep(1.0)
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected: Room {room_id}, Member {member_id}")
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
+    finally:
+        # Cleanup connection
+        room_conns = active_connections.get(room_id, {})
+        room_conns.pop(member_id, None)
+        if not room_conns:
+            active_connections.pop(room_id, None)
+            task = dispatch_tasks.pop(room_id, None)
+            if task:
+                task.cancel()
 
 @app.get("/health")
 async def health_check():
