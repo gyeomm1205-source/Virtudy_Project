@@ -170,8 +170,8 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
 
             last_sent_time = current_time
 
-        # [KAFKA] Close Logger
-        kafka_logger.close()
+    # [KAFKA] Close Logger
+    kafka_logger.close()
 
 async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None, participant_identity: str = ""):
     
