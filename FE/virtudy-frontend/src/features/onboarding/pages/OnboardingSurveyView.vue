@@ -5,7 +5,7 @@
         학습 성향 조사
       </h1>
       <p class="mt-[0.5rem] text-[0.95rem] sm:text-[1rem] text-[var(--color-choco)] font-['PfStardust30S']">
-        카드 뉴스처럼 한 단계씩 선택해 주세요
+        한 단계씩 선택해 주세요!
       </p>
     </div>
 

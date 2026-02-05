@@ -1,9 +1,10 @@
 <template>
-  <div class="bg-[var(--color-cream)] relative min-h-[85rem] w-full pb-[8rem] report-root">
+  <GlobalBackground :skyType="3">
+  <div class="relative min-h-[85rem] w-full pb-[8rem] report-root">
     <GlobalNavBar />
     
     <div class="absolute left-[4.75rem] top-[22.25rem] -translate-y-1/2">
-      <h1 class="text-[var(--color-pancake)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
+      <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
         마이<br />페이지
       </h1>
     </div>
@@ -120,7 +121,7 @@
           </button>
 
           <div v-if="showCalendar" class="absolute top-10 right-0 shadow-xl rounded-[20px] z-40">
-             <WeeklyCalendar 
+            <WeeklyCalendar 
               :selectedDate="baseDate"
               @select-date="changeWeek"
               @close="showCalendar = false"
@@ -172,9 +173,13 @@
         </div>
       </div>
     </div>
-
-    <GlobalFooter class="absolute bottom-0 w-full left-0" />
+    
+    <!-- Global Footer -->
+    <div class="absolute bottom-0 left-0 w-full z-50">
+      <GlobalFooter />
+    </div>
   </div>
+  </GlobalBackground>
 </template>
 
 <script setup lang="ts">
@@ -188,6 +193,7 @@ import PentagonChart from '@/shared/ui/PentagonChart.vue';
 import WeeklyCalendar from '../pages/WeeklyCalendar.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import { useAuthStore } from '@/stores/authStore';
+import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 
 const router = useRouter();
 const showCalendar = ref(false);
