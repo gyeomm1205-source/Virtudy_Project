@@ -24,6 +24,7 @@ class Config:
 
     # --- Scoring ---
     # Penalty/Reward per second
+    SCORE_RATE_SCALE = 5.0     # [NEW] Scale score change rate (1x -> 5x)
     REWARD_FOCUSED = 1.0        # [NEW] Reward for focusing
     PENALTY_FOCUSED = 0.0
     PENALTY_DROWSY = 3.0

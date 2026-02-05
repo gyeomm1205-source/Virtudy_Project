@@ -57,10 +57,12 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
 
     frame_count = 0
     # Sampling controls (30 FPS 기준)
-    DROWSY_EVERY_N_FRAMES = 3   # 약 10 FPS (졸음 실시간성)
-    PHONE_EVERY_N_FRAMES = 30   # 약 2.5초 (폰 감지 지연 허용)
-    last_sent_time = 0
-    SEND_INTERVAL = 0.1 # Send data every 100ms
+    DROWSY_EVERY_N_FRAMES = 5   # 약 6 FPS (부하 완화)
+    PHONE_EVERY_N_FRAMES = 45   # 약 1.5초마다 (부하 완화)
+    last_status_sent_time = 0
+    last_score_sent_time = 0
+    STATUS_SEND_INTERVAL = 0.1 # Status every 100ms
+    SCORE_SEND_INTERVAL = 1.0  # Score every 1s
 
     async for frame in video_stream:
         start_time = time.time()
@@ -152,38 +154,38 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         kafka_logger.log_state(decision.state)
 
         # 3. Prepare & Send Data Payload (Simplified)
-        current_time = time.time()
-        if current_time - last_sent_time >= SEND_INTERVAL:
-            # STATUS MAPPING
-            # Frontend Spec: 
-            # "FOCUS" : 0
-            # "SLEEP" : 1 (Drowsy)
-            # "PHONE" : 1
-            # "AWAY" : 1 (Absent/Empty)
-            
-            raw_state = decision.state.name # FOCUSED, DROWSY, ABSENT, PHONE, UNKNOWN
-            
-            # [NEW] Hold Last Valid State
-            if raw_state != "UNKNOWN":
-                event_type = raw_state
-                if raw_state == "FOCUSED": event_type = "FOCUS"
-                elif raw_state == "DROWSY": event_type = "SLEEP"
-                elif raw_state == "ABSENT": event_type = "AWAY"
-                last_valid_event = event_type
-            else:
-                event_type = last_valid_event # Maintain previous
-            
-            # Value Logic
-            value = 0 if event_type == "FOCUS" else 1
+        # STATUS MAPPING
+        # Frontend Spec:
+        # "FOCUS" : 0
+        # "SLEEP" : 1 (Drowsy)
+        # "PHONE" : 1
+        # "AWAY" : 1 (Absent/Empty)
+        raw_state = decision.state.name # FOCUSED, DROWSY, ABSENT, PHONE, UNKNOWN
+        
+        # [NEW] Hold Last Valid State
+        if raw_state != "UNKNOWN":
+            event_type = raw_state
+            if raw_state == "FOCUSED": event_type = "FOCUS"
+            elif raw_state == "DROWSY": event_type = "SLEEP"
+            elif raw_state == "ABSENT": event_type = "AWAY"
+            last_valid_event = event_type
+        else:
+            event_type = last_valid_event # Maintain previous
+        
+        # Value Logic
+        value = 0 if event_type == "FOCUS" else 1
 
+        current_time = time.time()
+        if current_time - last_status_sent_time >= STATUS_SEND_INTERVAL:
             # Send STATUS Event (Strict JSON Spec)
             # We pass 'event_type' as category, but _send_data will now ensure it maps to 'eventType'
             await _send_data(room, event_type, value, queue, participant_identity)
-            
-            # Send SCORE Event (Separate)
-            await _send_data(room, "SCORE", int(snap.score), queue, participant_identity)
+            last_status_sent_time = current_time
 
-            last_sent_time = current_time
+        if current_time - last_score_sent_time >= SCORE_SEND_INTERVAL:
+            # Send SCORE Event (Separate, lower rate)
+            await _send_data(room, "SCORE", int(snap.score), queue, participant_identity)
+            last_score_sent_time = current_time
 
     # [KAFKA] Close Logger
     kafka_logger.close()

@@ -29,12 +29,13 @@ class FocusScorer:
         # Prevent huge dt jumps (e.g. debugging/pause)
         if dt > 1.0:
             dt = 0.1
+        rate_scale = Config.SCORE_RATE_SCALE
 
         # Accumulate time
         if state == FocusState.FOCUSED:
             self.focused_sec += dt
             # [NEW] Add reward for focusing
-            self.score += Config.REWARD_FOCUSED * dt
+            self.score += Config.REWARD_FOCUSED * dt * rate_scale
         elif state == FocusState.DROWSY:
             self.drowsy_sec += dt
         elif state == FocusState.PHONE:
@@ -44,7 +45,7 @@ class FocusScorer:
 
         # Apply penalty
         p = self.penalty.get(state, 0.0)
-        self.score -= p * dt
+        self.score -= p * dt * rate_scale
         
         # Cap score
         if self.score < 0:
