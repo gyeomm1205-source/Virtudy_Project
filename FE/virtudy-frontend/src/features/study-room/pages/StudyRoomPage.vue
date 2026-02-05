@@ -954,7 +954,7 @@ onUnmounted(() => {
 /* 방 설명: 피그마 p 디자인 정확 구현 */
 .room-description {
     margin-left: 10px;
-    font-family: "PF Stardust S";
+    font-family: "PfStardust30S";
     font-size: 24px; /* 1.5rem */
     font-style: normal;
     font-weight: 400;
@@ -988,7 +988,7 @@ onUnmounted(() => {
     cursor: pointer;
     
     /* 피그마 폰트 스타일 */
-    font-family: 'Quicksand', 'PF Stardust S', sans-serif;
+    font-family: 'PfStardust30S', sans-serif;
     font-weight: 400;
     font-size: 24px;
     line-height: normal;
@@ -1020,7 +1020,7 @@ onUnmounted(() => {
 .member-count {
     color: var(--text-stroke-choco, #805143);
     /* p */
-    font-family: "PF Stardust S";
+    font-family: "PfStardust30S";
     font-size: 1.5rem;
     font-style: normal;
     font-weight: 400;
@@ -1038,7 +1038,7 @@ onUnmounted(() => {
     border: none;
     cursor: pointer;
     padding: 0;
-    font-family: 'Quicksand', 'PF Stardust S', sans-serif;
+    font-family: 'PfStardust30S', sans-serif;
     font-weight: 400;
     font-size: 24px;
     line-height: normal;
@@ -1223,7 +1223,7 @@ onUnmounted(() => {
 }
 
 .window-title span {
-    font-family: 'exqt', sans-serif;
+    font-family: 'Xcu', sans-serif;
     font-size: 28.805px;
     color: white;
     font-weight: normal;
@@ -1262,7 +1262,7 @@ onUnmounted(() => {
     border-radius: 50px; /* 둥근 알약 모양 */
     padding: 10px;
     cursor: pointer;
-    font-family: 'PF Stardust S', sans-serif; /* 폰트 유지 */
+    font-family: 'PfStardust30S', sans-serif; /* 폰트 유지 */
     font-size: 1.5rem;
     line-height: normal;
     
@@ -1379,7 +1379,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'PF Stardust S';
+    font-family: 'PfStardust30S';
     color: #805143;
     font-size: 1.7rem;
     z-index: 11;

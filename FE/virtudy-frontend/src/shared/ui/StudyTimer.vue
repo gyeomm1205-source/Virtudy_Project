@@ -46,7 +46,7 @@ onUnmounted(() => {
 }
 
 .time {
-  font-family: 'exqt', sans-serif;
+  font-family: 'Xcu', sans-serif;
   font-size: 37.497px;
   color: #dfa67b;
   font-weight: 500;

@@ -1,5 +1,6 @@
 <template>
-  <div class="min-h-screen bg-[var(--color-syrup)] relative w-full flex flex-col">
+  <GlobalBackground :skyType="3">
+  <div class="min-h-screen relative w-full flex flex-col">
     <GlobalNavBar />
 
     <div
@@ -25,7 +26,7 @@
 
         <div class="flex items-end justify-start gap-[3.5rem] mt-[4.5rem] mb-[1rem]">
           <!-- 랭킹 제목 -->
-          <h1 class="text-[var(--color-pancake)] text-[clamp(4rem,9.75rem,9.75rem)] font-['Ram'] font-medium leading-none tracking-[-1.17rem] mt-[6.5rem] -ml-[4rem]">
+          <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[clamp(4rem,9.75rem,9.75rem)] font-['Ram'] font-medium leading-none tracking-[-1.17rem] mt-[6.5rem] -ml-[4rem]">
             랭킹
           </h1>
 
@@ -50,9 +51,9 @@
                 </span>
               </div>
 
-              <div class="text-[var(--color-butter)] font-['Xcu'] font-normal drop-shadow-md mt-[-0.5rem] translate-x-[14rem]">
+              <div class="text-[var(--color-butter)] [-webkit-text-stroke:3px_var(--color-syrup)] font-['Xcu'] font-normal drop-shadow-md mt-[-0.5rem] translate-x-[14rem]">
                 <template v-if="myRankInfo?.rank">
-                  <span class="leading-none text-[clamp(3rem,8.125rem,8.125rem)]">
+                  <span class="leading-none  text-[clamp(3rem,8.125rem,8.125rem)]">
                     {{ myRankInfo.rank }}위
                   </span>
                 </template>
@@ -203,6 +204,7 @@
 
     <GlobalFooter />
   </div>
+  </GlobalBackground>
 </template>
 
 <script setup lang="ts">
@@ -213,6 +215,7 @@ import { useRanking } from '../logic/useRanking';
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 
 // [중요] RankItem 인터페이스 임포트 (Ranking.types.ts에 정의된 것)
 import type { RankItem } from '../types/ranking.types';

@@ -1,11 +1,12 @@
 <template>
-  <div class="bg-[var(--color-cream)] relative min-h-[85rem] w-full pb-[8rem] mypage-root">
+  <GlobalBackground :skyType="3">
+  <div class="relative min-h-[85rem] w-full pb-[8rem] mypage-root">
     <!-- Global Navigation -->
     <GlobalNavBar />
     
     <!-- 마이페이지 제목 -->
     <div class="absolute left-[4.75rem] top-[22.25rem] -translate-y-1/2">
-      <h1 class="text-[var(--color-pancake)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
+      <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
         마이<br />페이지
       </h1>
     </div>
@@ -156,7 +157,9 @@
     </button>
 
     <!-- Global Footer -->
-    <GlobalFooter class="absolute bottom-0 w-full left-0" />
+    <div class="absolute bottom-0 left-0 w-full z-50">
+      <GlobalFooter />
+    </div>
     
     <!-- 프로필 수정 모달 -->
     <ProfileEditModal 
@@ -171,6 +174,7 @@
       @submit="submitEdit"
     />
   </div>
+  </GlobalBackground>
 </template>
 
 <script setup lang="ts">
@@ -187,6 +191,7 @@ import ProfileEditModal from '../ui/ProfileEditModal.vue';
 import { useWeeklyReport } from  '@/features/report/logic/useWeeklyReport';
 import { authAPI } from '@/features/auth/api/authAPI';
 import { useAuthStore } from '@/stores/authStore';
+import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
