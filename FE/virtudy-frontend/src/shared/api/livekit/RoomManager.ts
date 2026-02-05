@@ -140,7 +140,15 @@ export class RoomManager {
             try {
                 const data = JSON.parse(strData);
                 console.log(`[LiveKit] ?°ì´???˜ì‹  (${participant?.identity}):`, data);
+                // [Fix] Filter AI bot broadcast by participantId
+                if (data && data.category) {
+                    const targetId = data.participantId;
+                    if (!targetId || targetId !== this.userId) {
+                        return;
+                    }
+                }
 // ê¸°ì¡´ ë©”ì‹œì§€ ë¦¬ìŠ¤?ˆì—ê²??„ë‹¬ (useAiHandler ?±ì—??ì²˜ë¦¬)
+
                 // [?˜ì •] sender ?•ë³´(participant.identity)ë¥??¨ê»˜ ?„ë‹¬
                 this.messageListeners.forEach(listener => listener(data, participant?.identity));
             } catch (e) {
