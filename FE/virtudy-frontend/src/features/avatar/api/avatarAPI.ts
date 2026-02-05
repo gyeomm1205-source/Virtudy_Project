@@ -34,7 +34,7 @@ export const avatarAPI = {
     // 메인 백엔드 주소 대신 AI_BASE_URL 사용
     // Content-Type은 axios가 FormData를 보고 알아서 설정
     const response = await api.post<AiAvatarResponse>(
-      `${AI_BASE_URL}/fastapi/avatar`, 
+      `${AI_BASE_URL}/avatar`, 
       formData, 
       {
         baseURL: '', // baseURL 비활성화 (api 자동으로 붙이지 않음)
@@ -45,12 +45,16 @@ export const avatarAPI = {
 
     const rawData = response.data;
 
+    // 특정 색상 코드(#2B2B2B)가 들어오면 #7a7069로 변환하여 매핑
+    const targetColor = '#2B2B2B';
+    const replaceColor = '#7a7069';
+
     // 매핑
     // (AI 서버의 snake_case + clothes key 값을 FE의 camelCase + clothes를 outfit으로)
     const mappedData: AvatarConfig = {
       hairFront: rawData.hair_front,
       hairBack: rawData.hair_back,
-      hairColor: rawData.hair_color,
+      hairColor: rawData.hair_color === targetColor ? replaceColor : rawData.hair_color,
       eyes: rawData.eyes,
       glasses: rawData.glasses,
       outfit: rawData.clothes, 

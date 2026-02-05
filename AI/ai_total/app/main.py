@@ -2,10 +2,12 @@ from fastapi import FastAPI
 from .routers import avatar
 from .database import Base, engine
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+import livekit.api as livekit_api  # 추가
 from pydantic import BaseModel
 import asyncio
 import multiprocessing
 import uvicorn
+import os
 import logging
 from run_livekit import run_bot
 import json
@@ -26,6 +28,14 @@ origins = [
     "https://i14a703.p.ssafy.io",
 ]
 
+# Initialize Logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
 # 2. 미들웨어 추가
 app.add_middleware(
     CORSMiddleware,
@@ -34,28 +44,6 @@ app.add_middleware(
     allow_methods=["*"],         # 허용할 HTTP 메서드 (GET, POST, PUT, DELETE 등)
     allow_headers=["*"],         # 허용할 HTTP 헤더
 )
-
-# [DEBUG] Middleware to print headers
-class HeaderPrinterMiddleware:
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] == "websocket":
-            headers = dict(scope.get("headers", []))
-            print(f"\n[DEBUG] WebSocket Connection Attempt: {scope['path']}")
-            print("[DEBUG] Received Headers:")
-            for k, v in headers.items():
-                try:
-                    key = k.decode()
-                    value = v.decode()
-                    print(f"  {key}: {value}")
-                except:
-                    print(f"  {k}: {v}")
-            print("-" * 30)
-        await self.app(scope, receive, send)
-
-app.add_middleware(HeaderPrinterMiddleware)
 
 # 3. 라우터 등록
 # 이제 /makeAvatar 같은 API 주소를 사용할 수 있게 됩니다.
@@ -90,23 +78,53 @@ def bot_process(url: str, token: str, queue: multiprocessing.Queue):
         print(f"[ERROR] Bot Process Crashed: {e}", flush=True)
         logger.error(f"Bot execution failed: {e}")
 
-@app.post("/bot/join")
+@app.post("/fastapi/bot/join")
 async def join_room(request: JoinRequest):
     """
     Triggers a new AI bot instance to join a LiveKit room.
     """
     logger.info(f"Received request to join room: {request.room_id}")
+
+    # ---------------------------------------------------------
+    # [수정] 프론트엔드 토큰 대신, 백엔드에서 봇 전용 토큰 생성
+    # ---------------------------------------------------------
     
+    # 1. 환경 변수에서 키 가져오기 (이미 도커 환경변수에 설정되어 있다고 가정)
+    API_KEY = os.getenv("LIVEKIT_API_KEY") 
+    API_SECRET = os.getenv("LIVEKIT_API_SECRET")
+
+    # (혹시 환경변수 키 이름이 다르면 아래에 직접 입력해서 테스트해보세요)
+    # API_KEY = "devkey" 
+    # API_SECRET = "secret"
+
+    if not API_KEY or not API_SECRET:
+        logger.error("LiveKit API Key/Secret not found in env variables!")
+        return {"status": "error", "message": "Server API Key missing"}
+
+    # 2. 봇 전용 Identity 생성 (유저와 겹치지 않게 "bot_" 접두사 붙임)
+    bot_identity = f"bot_{request.room_id}" 
+
+    # 3. 토큰 발급
+    grant = livekit_api.VideoGrants(room_join=True, room=request.room_id)
+    bot_token = livekit_api.AccessToken(API_KEY, API_SECRET) \
+        .with_identity(bot_identity) \
+        .with_name("AI Analysis Bot") \
+        .with_grants(grant) \
+        .to_jwt()
+
+    # ---------------------------------------------------------
+    
+    # logger.info(f"REQUEST : ROOM ID : {request.room_id}, QUEUE: {queue}")
     # Create a shared queue for this room using standard multiprocessing.Queue
     # (Since we are forking/spawning from this process, it works)
     queue = multiprocessing.Queue()
     active_queues[request.room_id] = queue
 
     # Spawn a new process for the bot so it doesn't block the API server
-    p = multiprocessing.Process(target=bot_process, args=(request.url, request.token, queue))
+    p = multiprocessing.Process(target=bot_process, args=(request.url, bot_token, queue))
     p.start()
     
-    return {"status": "started", "pid": p.pid, "message": f"Bot joining room {request.room_id}"}
+    return {"status": "started", "pid": p.pid, "message": f"Bot joining room {bot_identity}"}
 
 @app.websocket("/fastapi/ws/analysis/{room_id}/{member_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str):

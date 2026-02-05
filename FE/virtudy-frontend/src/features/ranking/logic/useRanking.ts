@@ -1,6 +1,6 @@
 // features/ranking/logic/useRanking.ts
 import { ref, computed, onMounted } from 'vue';
-import { getMyRank, getRankList, searchRank } from '../api/rankingApi';
+import { getMyRank, getRankList } from '../api/rankingApi';
 import type { RankItem, RankType, MyRankInfo } from '../types/ranking.types';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -8,7 +8,7 @@ export const useRanking = () => {
   // --- 상태 (State) ---
   const rankType = ref<RankType>('private');
   const searchKeyword = ref('');
-  const rankList = ref<RankItem[]>([]);
+  const rawRankList = ref<RankItem[]>([]);
   const myRankInfo = ref<MyRankInfo | null>(null);
   const isLoading = ref(false);
   
@@ -33,11 +33,7 @@ export const useRanking = () => {
   const fetchList = async () => {
     isLoading.value = true;
     try {
-      if (searchKeyword.value) {
-        rankList.value = await searchRank(searchKeyword.value, rankType.value);
-      } else {
-        rankList.value = await getRankList(currentPage.value, rankType.value);
-      }
+      rawRankList.value = await getRankList(currentPage.value, rankType.value);
     } catch (e) {
       console.error(e);
     } finally {
@@ -61,8 +57,15 @@ export const useRanking = () => {
 
   const handleSearch = () => {
     currentPage.value = 0;
-    fetchList();
   };
+
+  const rankList = computed(() => {
+    const query = searchKeyword.value.trim().toLowerCase();
+    if (!query) return rawRankList.value;
+    return rawRankList.value.filter((item) =>
+      item.nickName.toLowerCase().includes(query)
+    );
+  });
 
   // --- 계산된 속성 (Computed) ---
   const visiblePages = computed(() => {

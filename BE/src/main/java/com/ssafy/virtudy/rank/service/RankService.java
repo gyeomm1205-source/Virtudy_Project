@@ -303,14 +303,12 @@ public class RankService {
     }
 
     // 기본값 (3회) 재시도
-    @Retry(value = 100)
     public void refreshUserScore(String memberId, double newTotalScore) {
         redisTemplate.opsForZSet().add(RANK_PRIVATE_KEY, memberId, newTotalScore);
         log.info("User Rank Updated: id={}, score={}", memberId, newTotalScore);
     }
 
     // 기본값 (3회) 재시도
-    @Retry(value = 100)
     public void refreshTeamScore(String teamId, double newTotalScore) {
         redisTemplate.opsForZSet().add(RANK_TEAM_KEY, teamId, newTotalScore);
         log.info("Team Rank Updated: id={}, score={}", teamId, newTotalScore);

@@ -16,8 +16,10 @@ class FeatureExtractor:
             max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5
         )
         try:
-            self.yolo = YOLO("yolov8n.pt")
+            self.yolo = YOLO("bestv7.pt")
             self.yolo_names = self.yolo.names
+            print(f"내 모델 클래스 목록: {self.yolo.names}")
+            # 출력 예시: {0: 'phone'} -> 이러면 0번이 맞음!
         except Exception as e:
             print(f"[WARN] YOLO Load Failed: {e}")
             self.yolo = None
@@ -42,7 +44,7 @@ class FeatureExtractor:
         denom = (chin_y - eye_mid_y)
         return (nose_y - eye_mid_y) / denom if denom > 1e-6 else 0.0
 
-    def process(self, frame):
+    def process(self, frame, detect_hands: bool = True, detect_phone: bool = True):
         h, w, _ = frame.shape
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         face_res = self.face.process(rgb)
@@ -62,17 +64,18 @@ class FeatureExtractor:
                 face_detected = False
                 # We interpret this as "No Face" (Absent) rather than "Sleep"
             
-        hand_res = self.hands.process(rgb)
         hand_centers = []
-        if hand_res.multi_hand_landmarks:
-            for hand in hand_res.multi_hand_landmarks:
-                sx, sy = sum([l.x for l in hand.landmark]) / 21, sum([l.y for l in hand.landmark]) / 21
-                hand_centers.append((int(sx*w), int(sy*h)))
+        if detect_hands:
+            hand_res = self.hands.process(rgb)
+            if hand_res.multi_hand_landmarks:
+                for hand in hand_res.multi_hand_landmarks:
+                    sx, sy = sum([l.x for l in hand.landmark]) / 21, sum([l.y for l in hand.landmark]) / 21
+                    hand_centers.append((int(sx*w), int(sy*h)))
 
         phone_conf, phone_box = 0.0, None
-        if self.yolo:
+        if detect_phone and self.yolo:
             # [Fix] Revert to Phone Only (Round 6)
-            results = self.yolo(frame, verbose=False, classes=[67], conf=0.05)
+            results = self.yolo(frame, verbose=False, classes=[0], conf=0.4)
             for r in results:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
@@ -80,7 +83,7 @@ class FeatureExtractor:
                     # [DEBUG_INTERNAL] Print what YOLO sees locally
                     # print(f"[DEBUG_INTERNAL] YOLO saw class {cls_id} with conf {conf:.3f}")
                     
-                    if cls_id == 67: # Cell phone
+                    if cls_id == 0: # Cell phone
                         if conf > phone_conf:
                             phone_conf = conf
                             phone_box = list(map(int, box.xyxy[0]))
@@ -112,7 +115,7 @@ class FeatureExtractor:
             self.prev_face_center = None
 
         hand_interaction = False
-        if phone_box and hand_centers:
+        if detect_phone and phone_box and hand_centers:
             px, py = (phone_box[0] + phone_box[2]) // 2, (phone_box[1] + phone_box[3]) // 2
             thresh = (w**2 + h**2)**0.5 * 0.3
             for hx, hy in hand_centers:
