@@ -1,3 +1,5 @@
+import os
+
 # core/config.py
 class Config:
     # --- Absence ---
@@ -30,7 +32,8 @@ class Config:
     PENALTY_UNKNOWN = 0.5
 
     # --- Kafka ---
-    KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092'] # Localhost execution
+    # KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092'] # Localhost execution
+    KAFKA_BOOTSTRAP_SERVERS = [os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')]
     KAFKA_TOPIC = 'study-log-topic'
     LOG_COOLDOWN = 60.0  # Seconds
 
