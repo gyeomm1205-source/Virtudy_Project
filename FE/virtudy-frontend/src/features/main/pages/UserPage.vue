@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-[var(--color-cream2)] relative w-full flex flex-col">
-    <GlobalNavBar />
+
     
     <div class="flex-1 flex justify-center items-start pt-[8rem] pb-[8rem] px-[1rem] user-page-main">
       

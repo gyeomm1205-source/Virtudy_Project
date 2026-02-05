@@ -1,31 +1,38 @@
 <template>
   <div class="user-profile-card shadow-[4px_4px_0px_0px_var(--color-choco)]">
     <div class="profile-main">
-      <div class="profile-image-wrapper" @click="handleProfileClick">
+      
+      <div class="profile-image-container" @click="handleProfileClick">
+        
         <template v-if="avatarCreateLimitReached">
-          <div style="color: red; font-weight: bold; text-align: center; margin-bottom: 8px;">
-            아바타 생성 기회를 모두 사용하셨습니다.
+          <div class="absolute -top-6 left-0 w-full text-center text-red-500 font-bold text-sm">
+            오늘 생성 기회 소진!
           </div>
         </template>
-        <div class="relative w-[9rem] h-[7.5rem] mb-[0.5rem]">
-          <div class="w-[10.5rem] h-[13rem]">
-            <CharacterAvatar 
-              v-if="hasAvatarConfig" 
-              :config="avatar!" 
-              :offset-x="avatarOffsetX"
-              :offset-y="avatarOffsetY"
-              class="w-full h-full"
-            />
-            <img 
-              v-else-if="avatarImageUrl" 
-              :src="avatarImageUrl" 
-              alt="프로필 이미지"
-              class="w-full h-full object-cover"
-            />
-            <div v-else class="w-[9rem] h-[9rem] mx-auto translate-x-[9.5rem] translate-y-[0.7rem] rounded-full bg-[var(--color-butter)] flex items-center justify-center text-[1.25rem] font-bold text-[var(--color-choco)] text-center font-['Xcu']">
-              아바타 생성하기
-            </div>
+
+        <div class="w-[9rem] h-[9rem] rounded-full bg-[var(--color-butter)] relative overflow-hidden shadow-md mx-auto mt-[1.5rem] transform-gpu">
+          
+          <CharacterAvatar 
+            v-if="hasAvatarConfig" 
+            :config="avatar!" 
+            :offset-x="avatarOffsetX"
+            :offset-y="avatarOffsetY"
+            class="absolute inset-0 w-full h-full object-cover scale-[1.45] origin-center translate-y-[5%]"
+          />
+          
+          <img 
+            v-else-if="avatarImageUrl" 
+            :src="avatarImageUrl" 
+            alt="프로필 이미지"
+            class="absolute inset-0 w-full h-full object-cover scale-110 origin-center"
+          />
+          
+          <div v-else class="w-full h-full flex flex-col items-center justify-center hover:bg-[#FFE08C] transition-colors cursor-pointer group">
+            <span class="text-[var(--color-choco)] font-bold text-[1.1rem] font-['Xcu'] leading-tight text-center">
+              아바타<br>생성하기
+            </span>
           </div>
+
         </div>
       </div>
       
@@ -129,8 +136,8 @@ const props = withDefaults(defineProps<UserProfileProps>(), {
   pureStudyTime: 0,
   focusDepth: 0,
   avatarImageUrl: "",
-  avatarOffsetX: '75%',
-  avatarOffsetY: '-20%'
+  avatarOffsetX: '-6%',
+  avatarOffsetY: '-3%'
 });
 
 const avatarOffsetX = computed(() => props.avatarOffsetX || '-15%');
@@ -163,23 +170,25 @@ const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
   width: 100%;
 }
 
-/* 클릭 가능한 영역 스타일 */
-.profile-image-wrapper { cursor: pointer; }
-.profile-image-wrapper:hover { transform: scale(1.05); transition: transform 0.2s ease; }
+.profile-image-container {
+  position: relative;
+  width: 100%;
+  /* 아바타 컨테이너 위치 잡기 */
+}
 
-.nickname-area { position: absolute; top: 160px; width: 100%; text-align: center; }
+.nickname-area { position: absolute; top: 150px; width: 100%; text-align: center; }
 .nickname-text { color: var(--color-choco); font-size: 28px; font-weight: bold; font-family: 'Xcu', sans-serif; }
 
-.score-tier-area { position: absolute; top: 196px; width: 100%; display: flex; justify-content: center; gap: 20px; }
+.score-tier-area { position: absolute; top: 187px; width: 100%; display: flex; justify-content: center; gap: 20px; }
 .info-text { color: var(--color-pancake); font-size: 24px; font-family: 'PfStardust30S', sans-serif; }
 
-.fav-study-area { position: absolute; top: 218px; width: 100%; text-align: center; }
+.fav-study-area { position: absolute; top: 210px; width: 100%; text-align: center; }
 .fav-text { color: var(--color-choco); font-size: 24px; font-family: 'PfStardust30S', sans-serif; }
 
 /* MiniReport 위치 및 스타일 오버라이딩 */
 .stats-area {
   position: absolute;
-  top: 260px; /* 기존 디자인 위치 */
+  top: 276px; /* 기존 디자인 위치 */
   left: 13px;
   width: 447px;
   height: 133px;
