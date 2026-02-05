@@ -69,7 +69,7 @@ const reset = () => {
   border: 2px solid red;
   z-index: 10000; /* 최상단 */
   color: white;
-  font-family: sans-serif;
+  font-family: 'PfStardust30S';
   width: 250px;
 }
 h3 { margin: 0 0 10px 0; font-size: 14px; color: #ff5555; }

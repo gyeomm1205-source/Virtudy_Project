@@ -1,5 +1,6 @@
 <template>
-  <div class="bg-[var(--color-syrup)] w-full min-h-screen flex flex-col relative">
+  <GlobalBackground :skyType="2">
+  <div class="w-full min-h-screen flex flex-col relative">
     
     <div class="flex-none z-50">
       <GlobalNavBar />
@@ -14,7 +15,7 @@
       </div>
       
       <div class="absolute left-[58px] top-[324px] transform -translate-y-1/2">
-        <h1 class="text-[var(--color-pancake)] text-[156px] font-['Ram'] font-medium leading-none tracking-[-18.72px]">
+        <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[156px] font-['Ram'] font-medium leading-none tracking-[-18.72px]">
           방목록
         </h1>
       </div>
@@ -91,6 +92,7 @@
   />
 
   </div>
+  </GlobalBackground>
 </template>
 
 <script setup lang="ts">
@@ -112,6 +114,9 @@ import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import MatchingModal from '@/shared/ui/MatchingModal.vue';
 
 import { maxMembers } from '@/shared/config/constants'; // 상수 import
+
+import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
+
 
 const router = useRouter();
 

@@ -1,6 +1,7 @@
 <template>
-  <div class="min-h-screen bg-[var(--color-cream2)] relative w-full flex flex-col">
-
+  <GlobalBackground :skyType="1">
+  <div class="min-h-screen relative w-full flex flex-col">
+    <GlobalNavBar />
     
     <div class="flex-1 flex justify-center items-start pt-[8rem] pb-[8rem] px-[1rem] user-page-main">
       
@@ -8,6 +9,7 @@
         
         <div class="w-[29.5rem] flex flex-col gap-[1rem] user-left">
           <UserProfile 
+            class="aEffect_flipInX"
             :nick-name="userInfo.nickName"
             :tier-score="userInfo.tierScore"
             :tier="userInfo.tier"
@@ -20,6 +22,7 @@
           />
           
           <StudyMenu 
+            class="animate-fade-in [animation-delay:0.3s]"
             @random-match="handleRandomMatch"
             @create-room="handleCreateRoom"
             @show-room-list="handleShowRoomList"
@@ -28,6 +31,7 @@
         
         <div class="w-[29.5rem] user-right">
           <RankingSectionMini 
+            class="animate-fade-in [animation-delay:0.3s]"
             :private-top5="privateTop5"
             :team-top5="teamTop5"
             :is-loading="isLoading"
@@ -38,6 +42,7 @@
     
     <GlobalFooter />
   </div>
+  </GlobalBackground>
 
   <MatchingModal
     v-if="isMatchingModalOpen"
@@ -69,6 +74,7 @@ import StudyMenu from '@/shared/ui/StudyMenu.vue';
 import RankingSectionMini from '@/shared/ui/RankingSectionMini.vue';
 import MatchingModal from '@/shared/ui/MatchingModal.vue';
 import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
+import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -198,12 +204,12 @@ const fetchUserData = async () => {
     
     // AuthStore 동기화 (필요시)
     if (authStore.userInfo) {
-       authStore.setUserInfo({
-         ...authStore.userInfo,
-         nickName: data.nickName,
-         avatar: mergedAvatar,
-         avatarImageUrl: data.avatarImageUrl ?? authStore.userInfo.avatarImageUrl,
-       });
+      authStore.setUserInfo({
+        ...authStore.userInfo,
+        nickName: data.nickName,
+        avatar: mergedAvatar,
+        avatarImageUrl: data.avatarImageUrl ?? authStore.userInfo.avatarImageUrl,
+      });
     }
   } catch (error) {
     console.error("프로필 로딩 실패:", error);
@@ -238,5 +244,58 @@ onActivated(() => {
   .user-right {
     width: min(95vw, 29.5rem);
   }
+}
+
+/* 애니메이션 */
+@keyframes flipInX {
+  from {
+    transform: perspective(400px) rotate3d(1, 0, 0, 90deg);
+    animation-timing-function: ease-in;
+    opacity: 0;
+  }
+
+  40% {
+    transform: perspective(400px) rotate3d(1, 0, 0, -20deg);
+    animation-timing-function: ease-in;
+  }
+
+  60% {
+    transform: perspective(400px) rotate3d(1, 0, 0, 10deg);
+    opacity: 1;
+  }
+
+  80% {
+    transform: perspective(400px) rotate3d(1, 0, 0, -5deg);
+  }
+
+  to {
+    transform: perspective(400px);
+  }
+}
+
+/* 애니메이션 클래스 정의 */
+.aEffect_flipInX {
+  -webkit-backface-visibility: visible !important;
+  backface-visibility: visible !important;
+  animation-name: flipInX;
+  animation-duration: 1s; /* 속도 (1초) */
+  animation-fill-mode: both; /* 끝나고 상태 유지 */
+}
+
+/* 부드럽게 나타나는 페이드인 애니메이션 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px); /* 아래에서 10px 정도 내려간 상태 */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0); /* 제자리로 */
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.8s ease-out forwards; /* 0.5초 동안 부드럽게 */
+  opacity: 0; /* 시작 전엔 안 보이게 설정 */
 }
 </style>
