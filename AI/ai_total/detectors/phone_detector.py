@@ -72,9 +72,8 @@ class PhoneDetector:
                 
         else: # State is ON
             # [NEW] Fast Focus (Recovery):
-            # If I look UP (not looking down) AND there is no strong phone signal -> Immediate OFF
-            # This fixes the "slow recovery" issue.
-            if (not looking_down) and (not phone_confirmed):
+            # If no phone candidate signal, drop to OFF immediately.
+            if not phone_candidate:
                  self.state = "OFF"
                  self._reset_timers()
                  return PhoneSignal(
@@ -87,7 +86,8 @@ class PhoneDetector:
             # ---> Try to turn OFF
             # OFF Condition: Phone candidate gone OR (No hand interaction AND No looking down)
             # If even the weak candidate is gone, then it's definitely OFF.
-            off_condition = (not phone_candidate) or (not (hand_interaction or looking_down))
+            # Keep ON as long as we have any phone signal, even if hand/looking_down flickers.
+            off_condition = (not phone_candidate) or (not (hand_interaction or looking_down or phone_confirmed))
             
             if off_condition:
                 if self.off_start is None: self.off_start = now
