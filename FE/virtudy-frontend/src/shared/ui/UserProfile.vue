@@ -1,21 +1,30 @@
 <template>
   <div class="user-profile-card shadow-[4px_4px_0px_0px_var(--color-choco)]">
     <div class="profile-main">
-      <div class="profile-image-wrapper">
-        <div class="image-container" @click="emit('clickProfile')">
-          <CharacterAvatar 
-            v-if="hasAvatarConfig" 
-            :config="avatar!" 
-            class="user-avatar"
-          />
-          <img 
-            v-else-if="avatarImageUrl" 
-            :src="avatarImageUrl" 
-            alt="프로필 이미지"
-            class="user-img"
-          />
-          <div v-else class="avatar-empty">
-            아바타 생성하기
+      <div class="profile-image-wrapper" @click="handleProfileClick">
+        <template v-if="avatarCreateLimitReached">
+          <div style="color: red; font-weight: bold; text-align: center; margin-bottom: 8px;">
+            아바타 생성 기회를 모두 사용하셨습니다.
+          </div>
+        </template>
+        <div class="relative w-[9rem] h-[7.5rem] mb-[0.5rem]">
+          <div class="w-[10.5rem] h-[13rem]">
+            <CharacterAvatar 
+              v-if="hasAvatarConfig" 
+              :config="avatar!" 
+              :offset-x="avatarOffsetX"
+              :offset-y="avatarOffsetY"
+              class="w-full h-full"
+            />
+            <img 
+              v-else-if="avatarImageUrl" 
+              :src="avatarImageUrl" 
+              alt="프로필 이미지"
+              class="w-full h-full object-cover"
+            />
+            <div v-else class="w-[9rem] h-[9rem] mx-auto translate-x-[9.5rem] translate-y-[0.7rem] rounded-full bg-[var(--color-butter)] flex items-center justify-center text-[1.25rem] font-bold text-[var(--color-choco)] text-center font-['Xcu']">
+              아바타 생성하기
+            </div>
           </div>
         </div>
       </div>
@@ -62,10 +71,40 @@ import MiniReport from '@/shared/ui/MiniReport.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
 
+
 // 클릭 이벤트
 const emit = defineEmits<{
   (e: 'clickProfile'): void
 }>();
+
+
+// 하루 3번 제한 (날짜별 카운트)
+import { ref } from 'vue';
+const AVATAR_CREATE_LIMIT = 3;
+const AVATAR_CREATE_KEY = 'avatarCreateCountByDate';
+const avatarCreateLimitReached = ref(false);
+
+function getTodayKey() {
+  const today = new Date();
+  return today.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+function getAvatarCreateCount() {
+  const data = JSON.parse(localStorage.getItem(AVATAR_CREATE_KEY) || '{}');
+  const todayKey = getTodayKey();
+  return data[todayKey] || 0;
+}
+
+function handleProfileClick() {
+  const count = getAvatarCreateCount();
+  const remain = AVATAR_CREATE_LIMIT - count;
+  if (remain <= 0) {
+    avatarCreateLimitReached.value = true;
+    return;
+  }
+  avatarCreateLimitReached.value = false;
+  emit('clickProfile');
+}
 
 interface UserProfileProps {
   nickName?: string;
@@ -77,6 +116,8 @@ interface UserProfileProps {
   focusDepth?: number;      // concentration -> focusDepth (퍼센트 숫자) 
   avatarImageUrl?: string;  // userProfileImage -> avatarImageUrl
   avatar?: AvatarConfig;    // 백엔드 avatar 설정 값
+  avatarOffsetX?: string;   // 아바타 X 오프셋
+  avatarOffsetY?: string;   // 아바타 Y 오프셋
 }
 
 // 기본값 설정 (데이터가 없을 때 보여줄 값)
@@ -87,8 +128,13 @@ const props = withDefaults(defineProps<UserProfileProps>(), {
   favoriteRoomTitle: "",
   pureStudyTime: 0,
   focusDepth: 0,
-  avatarImageUrl: ""
+  avatarImageUrl: "",
+  avatarOffsetX: '75%',
+  avatarOffsetY: '-20%'
 });
+
+const avatarOffsetX = computed(() => props.avatarOffsetX || '-15%');
+const avatarOffsetY = computed(() => props.avatarOffsetY || '-30%');
 
 const hasAvatarConfig = computed(() => {
   if (!props.avatar) return false;
@@ -118,39 +164,13 @@ const defaultProfileImage = "/vite.svg"; // [수정] 임시 플레이스홀더
 }
 
 /* 클릭 가능한 영역 스타일 */
-.image-container { 
-  position: relative; 
-  width: 146px; 
-  height: 146px; 
-  margin: 0 auto; 
-  top: 10px; 
-  border-radius: 50%; 
-  background: var(--color-cream); 
-  border: 4px solid var(--color-choco); 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  box-sizing: border-box;
-  overflow: hidden; /* 원형 마스크 유지 */
-  
-  /* 마우스 커서 변경 및 호버 효과 */
-  cursor: pointer; 
-  transition: transform 0.2s ease; 
-}
+.profile-image-wrapper { cursor: pointer; }
+.profile-image-wrapper:hover { transform: scale(1.05); transition: transform 0.2s ease; }
 
-/* 마우스 올렸을 때 살짝 커지게 */
-.image-container:hover {
-  transform: scale(1.05);
-}
-
-.user-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-.user-avatar { width: 100%; height: 100%; transform: none; }
-.avatar-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--color-choco); font-size: 16px; font-family: 'PfStardust30S', sans-serif; padding: 8px; }
-
-.nickname-area { position: absolute; top: 158px; width: 100%; text-align: center; }
+.nickname-area { position: absolute; top: 160px; width: 100%; text-align: center; }
 .nickname-text { color: var(--color-choco); font-size: 28px; font-weight: bold; font-family: 'Xcu', sans-serif; }
 
-.score-tier-area { position: absolute; top: 190px; width: 100%; display: flex; justify-content: center; gap: 20px; }
+.score-tier-area { position: absolute; top: 196px; width: 100%; display: flex; justify-content: center; gap: 20px; }
 .info-text { color: var(--color-pancake); font-size: 24px; font-family: 'PfStardust30S', sans-serif; }
 
 .fav-study-area { position: absolute; top: 218px; width: 100%; text-align: center; }

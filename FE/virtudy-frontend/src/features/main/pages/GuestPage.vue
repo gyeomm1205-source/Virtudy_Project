@@ -1,5 +1,8 @@
 <template>
-  <div class="bg-[var(--color-cream2)] relative w-full h-screen">
+  <div 
+    class="relative w-full h-screen bg-cover bg-center bg-no-repeat"
+    :style="{ backgroundImage: `url(${backgroundImage})` }"
+  >
     <!-- Navigation -->
     <GlobalNavBar />
     
@@ -7,15 +10,7 @@
     <div class="absolute flex flex-col gap-[80px] h-[419px] items-center justify-center left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[844px]">
       <!-- Page Title -->
       <div class="flex flex-col gap-[24px] items-center justify-center text-center w-full">
-        <h1 
-          class="text-[var(--color-butter)] text-[128px] font-['Ram'] font-medium leading-[48px] tracking-[-2.56px] w-[658px] h-[108px] relative"
-          style="text-shadow: 4px 4px 0px var(--color-choco);"
-        >
-          Virtudy
-        </h1>
-        <p class="text-[var(--color-cream2)] text-[28px] font-['Xcu'] font-medium leading-none">
-          아바타 캠스터디
-        </p>
+        <img :src="logoImage" alt="아바타 캠스터디" class="h-[90%]" />
       </div>
       
       <!-- Login Button -->
@@ -29,12 +24,14 @@
       </button>
     </div>
   </div>
-  <GlobalFooter class="absolute bottom-0 w-full left-0" />
+  <!-- <GlobalFooter class="absolute bottom-0 w-full left-0" /> -->
 </template>
 
 <script setup lang="ts">
 import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
-import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
+// import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
+import backgroundImage from '@/assets/room/bg_photo_1.png';
+import logoImage from '@/assets/logo.svg?url';
 
 const kakaoLogin = () => {
   const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID;

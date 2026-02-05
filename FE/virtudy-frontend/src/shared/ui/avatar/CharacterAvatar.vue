@@ -15,7 +15,25 @@ const props = defineProps<{
   aiDrowsy?: number;  // 1: 졸음/잠, 0: 깸
   aiAbsent?: number;  // 1: 자리 비움, 0: 있음
   aiPhone?: number;   // 1: 핸드폰 사용, 0: 안 함
+
+  // 페이지별 위치 보정 (기본값은 현재 사용 중인 보정값)
+  offsetX?: string;   // 예: '-16%'
+  offsetY?: string;   // 예: '-40%'
 }>();
+
+// 색상 보정 로직 추가
+// 들어오는 색상이 #2B2B2B라면 무조건 #7a7069로 변경, 아니면 원래 색 사용
+// 대소문자 무시, 공백 제거 처리 포함
+const displayHairColor = computed(() => {
+  const origin = props.config.hairColor;
+  if (!origin) return origin;
+  
+  // 공백제거 및 대문자 변환 후 비교
+  if (origin.trim().toUpperCase() === '#2B2B2B') {
+    return '#7a7069';
+  }
+  return origin;
+});
 
 // ----------------------------------------------------------------------
 // 내부 애니메이션 상태 (Auto Animation State)
@@ -106,7 +124,7 @@ const removePrefix = (value: string, prefix: string) => {
 // 백엔드 값 매핑
 const safeHairFront = computed(() => {
   const val = props.config.hairFront;
-  if (val === 'hair_front_none') return 'none';
+  if (val === 'hair_front_none') return 'basic';
   if (val === 'bang') return 'bangs';
   return removePrefix(val, 'hair_front_');
 });
@@ -154,7 +172,11 @@ const currentMouth = computed(() => {
 
 // [투명도] 자리 비움(aiAbsent === 1)일 때만 반투명
 const containerStyle = computed(() => ({
-  opacity: props.aiAbsent === 1 ? 0.5 : 1
+  opacity: props.aiAbsent === 1 ? 0.5 : 1,
+  '--avatar-offset-x': props.offsetX ?? '-16%',
+  '--avatar-offset-y': props.offsetY ?? '-40%',
+  transform: 'translate(var(--avatar-offset-x, 0), var(--avatar-offset-y, 0))',
+  transformOrigin: 'center bottom'
 }));
 
 // 고정값
@@ -168,7 +190,7 @@ const SKIN_COLOR = '#ffe0bd';
     
     <AvatarPart 
       class="z-1" category="hair_back" 
-      :option="safeHairBack" :color="config.hairColor" 
+      :option="safeHairBack" :color="displayHairColor" 
     />
     <AvatarPart 
       class="z-2" category="outfit" 
@@ -176,7 +198,7 @@ const SKIN_COLOR = '#ffe0bd';
     />
     <AvatarPart 
       class="z-3" category="face_shape" 
-      :option="FIXED_FACE" :color="SKIN_COLOR" 
+      :option="FIXED_FACE" 
     />
     <AvatarPart 
       class="z-4" category="mouth" 
@@ -192,7 +214,7 @@ const SKIN_COLOR = '#ffe0bd';
     />
     <AvatarPart 
       class="z-7" category="hair_front" 
-      :option="safeHairFront" :color="config.hairColor" 
+      :option="safeHairFront" :color="displayHairColor" 
     />
 
     <AvatarPart 
@@ -210,7 +232,7 @@ const SKIN_COLOR = '#ffe0bd';
 </template>
 
 <style scoped>
-.avatar-stage { position: relative; width: 100%; height: 100%; transition: opacity 0.3s; }
+.avatar-stage { position: relative; width: 117%; height: 100%; transition: opacity 0.3s; }
 .full-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 .z-1 { z-index: 1; }
 .z-2 { z-index: 2; }
