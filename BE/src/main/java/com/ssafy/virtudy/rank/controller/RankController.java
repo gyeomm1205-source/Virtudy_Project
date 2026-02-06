@@ -52,7 +52,6 @@ public class RankController {
      * @return
      * GET /api/ranks/me
      */
-    @RateLimit(time = 2)
     @GetMapping("/me")
     @Operation(summary = "자신의 랭킹", description = "자신의 랭킹 혹은 최애 팀 랭킹을 검색합니다.")
     public RankDTO.Response getUserRank(@AuthenticationPrincipal UserDetails user, @RequestParam String type) {
