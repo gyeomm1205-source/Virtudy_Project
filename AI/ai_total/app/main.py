@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from .routers import avatar
 from .database import Base, engine
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import livekit.api as livekit_api  # 추가
 from pydantic import BaseModel
 import asyncio
@@ -9,6 +9,7 @@ import multiprocessing
 import uvicorn
 import os
 import logging
+from queue import Empty
 from run_livekit import run_bot
 import json
 
@@ -60,10 +61,11 @@ async def root():
 # but for simplicity with uvicorn workers, we need a way to share.
 # However, since we spawn Process from here, we can pass the queue directly.
 # We need to store it to access it in websocket_endpoint.
-active_queues = {} 
-
+active_queues = {}
+active_bots = {}  # {room_id: multiprocessing.Process}
 active_connections = {}  # {room_id: {member_id: WebSocket}}
 dispatch_tasks = {}  # {room_id: asyncio.Task}
+last_ai_payloads = {}  # {room_id: {member_id: {"status": payload, "score": payload}}}
 
 class JoinRequest(BaseModel):
     url: str
@@ -117,6 +119,15 @@ async def join_room(request: JoinRequest):
 
     # ---------------------------------------------------------
     
+    existing_bot = active_bots.get(request.room_id)
+    if existing_bot and existing_bot.is_alive():
+        return {"status": "already_running", "pid": existing_bot.pid, "message": f"Bot already running for room {bot_identity}"}
+
+    if existing_bot:
+        active_bots.pop(request.room_id, None)
+        active_queues.pop(request.room_id, None)
+        last_ai_payloads.pop(request.room_id, None)
+
     # logger.info(f"REQUEST : ROOM ID : {request.room_id}, QUEUE: {queue}")
     # Create a shared queue for this room using standard multiprocessing.Queue
     # (Since we are forking/spawning from this process, it works)
@@ -126,6 +137,8 @@ async def join_room(request: JoinRequest):
     # Spawn a new process for the bot so it doesn't block the API server
     p = multiprocessing.Process(target=bot_process, args=(request.url, bot_token, queue))
     p.start()
+    active_bots[request.room_id] = p
+    last_ai_payloads.setdefault(request.room_id, {})
     
     return {"status": "started", "pid": p.pid, "message": f"Bot joining room {bot_identity}"}
 
@@ -134,19 +147,33 @@ async def dispatch_loop(room_id: str):
         while True:
             queue = active_queues.get(room_id)
             conns = active_connections.get(room_id, {})
-            if not conns:
-                await asyncio.sleep(0.05)
-                continue
-            if queue and not queue.empty():
-                data = queue.get()
+            if queue:
+                try:
+                    data = queue.get_nowait()
+                except Empty:
+                    await asyncio.sleep(0.01)
+                    continue
                 participant_id = data.get("participantId")
+                event_type = data.get("eventType") or data.get("status")
+                if participant_id and event_type:
+                    room_cache = last_ai_payloads.setdefault(room_id, {})
+                    member_cache = room_cache.setdefault(participant_id, {})
+                    if event_type == "SCORE" or "score" in data:
+                        member_cache["score"] = data
+                    else:
+                        member_cache["status"] = data
                 if participant_id:
-                    ws = conns.get(participant_id)
-                    if ws:
-                        await ws.send_json(data)
+                    targets = [(participant_id, conns.get(participant_id))]
                 else:
-                    for ws in list(conns.values()):
+                    targets = list(conns.items())
+                for pid, ws in targets:
+                    if not ws:
+                        continue
+                    try:
                         await ws.send_json(data)
+                    except Exception as e:
+                        logger.warning(f"WS send failed (room={room_id}, member={pid}): {e}")
+                        conns.pop(pid, None)
             else:
                 await asyncio.sleep(0.01)
     except asyncio.CancelledError:
@@ -163,6 +190,17 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str)
     # Register connection
     room_conns = active_connections.setdefault(room_id, {})
     room_conns[member_id] = websocket
+
+    # Send last cached status/score to restore UI state on refresh
+    member_cache = last_ai_payloads.get(room_id, {}).get(member_id)
+    if member_cache:
+        for key in ("status", "score"):
+            payload = member_cache.get(key)
+            if payload:
+                try:
+                    await websocket.send_json(payload)
+                except Exception as e:
+                    logger.warning(f"WS send cached failed (room={room_id}, member={member_id}): {e}")
 
     # Start dispatcher for this room if not running
     if room_id not in dispatch_tasks:
