@@ -90,9 +90,9 @@ def main():
             frame = cv2.flip(frame, 1) # [수정] 거울 모드 적용
             
             feats = extractor.process(frame)
-            sig_abs = abs_det.process(feats["face_detected"])
             sig_drowsy = drowsy_det.process(feats["face_detected"], feats["ear"], feats["pitch"])
             sig_phone = phone_det.process(feats["phone_conf"], feats["face_detected"], feats["pitch"], feats["hand_interaction"])
+            sig_abs = abs_det.process(feats["face_present"], sig_phone.phone_present)
             
             signals = FrameSignals(drowsy=sig_drowsy, absent=sig_abs, phone=sig_phone)
             decision = fuser.decide(signals)

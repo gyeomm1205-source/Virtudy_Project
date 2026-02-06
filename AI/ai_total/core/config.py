@@ -5,6 +5,7 @@ class Config:
     # --- Absence ---
     ABSENT_WINDOW = 15          # Frame window size
     ABSENT_TRUE_RATIO = 0.8     # Ratio of frames to confirm absence
+    ABSENT_GRACE_SEC = 3.0      # [TUNED] Grace period before absence triggers
 
     # --- Drowsy ---
     EAR_DROWSY_TH = 0.18        # Threshold for Eye Aspect Ratio (Adjusted for user)

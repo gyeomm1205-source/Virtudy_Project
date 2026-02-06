@@ -11,6 +11,10 @@ class FeatureExtractor:
             max_num_faces=1, refine_landmarks=True,
             min_detection_confidence=0.85, min_tracking_confidence=0.85
         )
+        self.mp_face_detection = mp.solutions.face_detection
+        self.face_detection = self.mp_face_detection.FaceDetection(
+            min_detection_confidence=0.5
+        )
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
             max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5
@@ -49,6 +53,8 @@ class FeatureExtractor:
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         face_res = self.face.process(rgb)
         face_detected, ear, pitch, face_pixel_center = False, None, None, None
+        face_present = False
+        ghost_filtered = False
         
         if face_res.multi_face_landmarks:
             face_detected = True
@@ -62,6 +68,7 @@ class FeatureExtractor:
             # (User feedback: 0.05 was too high and filtered real sleep)
             if ear < 0.02:
                 face_detected = False
+                ghost_filtered = True
                 # We interpret this as "No Face" (Absent) rather than "Sleep"
             
         hand_centers = []
@@ -110,9 +117,17 @@ class FeatureExtractor:
             if self.static_frames > 100:
                 face_detected = False # Treat as Ghost (Inanimate object)
                 ear, pitch = None, None
+                ghost_filtered = True
         else:
             self.static_frames = 0
             self.prev_face_center = None
+
+        if face_detected:
+            face_present = True
+        elif not ghost_filtered:
+            det_res = self.face_detection.process(rgb)
+            if det_res.detections:
+                face_present = True
 
         hand_interaction = False
         if detect_phone and phone_box and hand_centers:
@@ -123,7 +138,8 @@ class FeatureExtractor:
                     hand_interaction = True; break
 
         return {
-            "face_detected": face_detected, "ear": ear, "pitch": pitch,
+            "face_detected": face_detected, "face_present": face_present,
+            "ear": ear, "pitch": pitch,
             "phone_conf": phone_conf, "hand_interaction": hand_interaction,
             "debug": {"face_center": face_pixel_center, "phone_box": phone_box, "hand_centers": hand_centers}
         }

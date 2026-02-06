@@ -39,8 +39,11 @@ class PhoneDetector:
         looking_down = (head_pitch is not None and head_pitch > Config.PITCH_PHONE_USE_TH)
         
         # 2. Logic Conditions
+        face_missing = not face_detected
         # (A) Fast Condition: Candidate + (Hand or Head Down)
         fast_condition = phone_candidate and (hand_interaction or looking_down)
+        # (B) Face Occlusion: Confirmed phone with missing face
+        occlusion_condition = face_missing and phone_confirmed
         
         # (B) Phone Only Condition: Confirmed Phone
         phone_only_condition = phone_confirmed
@@ -60,7 +63,7 @@ class PhoneDetector:
             # ---> Try to turn ON
             
             # (A) Fast ON
-            if fast_condition:
+            if fast_condition or occlusion_condition:
                 if self.fast_on_start is None: self.fast_on_start = now
                 if now - self.fast_on_start >= self.fast_on_hold_sec:
                     self.state = "ON"

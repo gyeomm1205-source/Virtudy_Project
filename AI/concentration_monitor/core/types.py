@@ -34,7 +34,6 @@ class DrowsinessSignal:
     ear: Optional[float] = None
     head_pitch: Optional[float] = None   # +ve means looking down
     drowsy_score: float = 0.0            # 0.0 ~ 1.0
-    current_threshold: float = 0.18      # [NEW] To see adaptive threshold during debug
 
 @dataclass
 class AbsenceSignal:
@@ -45,7 +44,6 @@ class AbsenceSignal:
 @dataclass
 class PhoneSignal:
     phone_present: bool
-    is_cell_phone: bool = False          # [NEW] True only if class 67
     phone_conf: float = 0.0
     phone_in_use_score: float = 0.0      # 0.0 ~ 1.0 (phone + behavior score)
     phone_in_use: bool = False           # True if phone usage condition met

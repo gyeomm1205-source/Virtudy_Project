@@ -25,15 +25,15 @@ class StateFuser:
         self.focus_streak = 0
 
     def _raw_decide(self, sig: FrameSignals) -> FocusDecision:
-        # Priority: ABSENT > DROWSY > PHONE > FOCUSED
-        
-        # 1) ABSENT
-        if sig.absent.absent:
-            return FocusDecision(FocusState.ABSENT, 1.0, "Face missing")
+        # Priority: PHONE > ABSENT > DROWSY > FOCUSED
 
-        # 2) PHONE (Prioritize over Drowsy because looking down + phone = Phone Use)
+        # 1) PHONE (Prioritize over Drowsy because looking down + phone = Phone Use)
         if sig.phone.phone_in_use:
             return FocusDecision(FocusState.PHONE, sig.phone.phone_in_use_score, "Phone use detected")
+
+        # 2) ABSENT
+        if sig.absent.absent:
+            return FocusDecision(FocusState.ABSENT, 1.0, "Face missing")
 
         # 3) DROWSY
         if sig.drowsy.drowsy_score >= 0.9:

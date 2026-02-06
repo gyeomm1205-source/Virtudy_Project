@@ -11,7 +11,8 @@ class KafkaLogger:
         self.topic = Config.KAFKA_TOPIC
         self.cooldown = Config.LOG_COOLDOWN
         self.last_sent_time = 0
-        self.last_event_type = "FOCUS"
+        # self.last_event_type = "FOCUS"
+        self.last_event_type = None # [MODIFIED] None so initial state is always sent
         self.producer = None
         
         # Mapping internally used FocusState to Backend Protocol Strings
@@ -40,19 +41,25 @@ class KafkaLogger:
 
     def log_state(self, current_state: FocusState):
         if not self.producer:
+            print(f"[DEBUG] Logger skipped: No Producer (State: {current_state})", flush=True)
             return
 
         current_event = self.state_map.get(current_state, "FOCUS")
         current_time = time.time()
         should_send = False
 
+        # [DEBUG] Check input
+        # print(f"[DEBUG-KAFKA] Input: {current_state} -> {current_event}, Last: {self.last_event_type}", flush=True)
+
         # (A) State Changed
         if current_event != self.last_event_type:
             should_send = True
+            print(f"[DEBUG-KAFKA] State Change Detected: {self.last_event_type} -> {current_event}", flush=True)
         
         # (B) State Persisted (Heartbeat for non-FOCUS states)
         elif current_event != "FOCUS" and (current_time - self.last_sent_time > self.cooldown):
             should_send = True
+            print(f"[DEBUG-KAFKA] Heartbeat Timer Reached for {current_event}", flush=True)
             
         if should_send:
             self._send(current_event)
