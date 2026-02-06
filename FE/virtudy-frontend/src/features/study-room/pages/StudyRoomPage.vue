@@ -685,9 +685,9 @@ onUnmounted(() => {
                         <h2 class="room-title flex items-center gap-2">
                             {{ roomDetail?.title || roomTitle }}
                             <span v-if="roomDetail?.type === 'PRIVATE'" class="ml-2 flex items-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M20 12V11H19V6H18V4H17V3H16V2H14V1H10V2H8V3H7V4H6V6H5V11H4V12H3V22H4V23H20V22H21V12H20ZM8 6H9V5H10V4H14V5H15V6H16V11H8V6Z" fill="#805143"/>
-                              </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 12V11H19V6H18V4H17V3H16V2H14V1H10V2H8V3H7V4H6V6H5V11H4V12H3V22H4V23H20V22H21V12H20ZM8 6H9V5H10V4H14V5H15V6H16V11H8V6Z" fill="#805143"/>
+                                </svg>
                             </span>
                         </h2>
                         <p v-if="roomDescription" class="room-description">{{ roomDescription }}</p>
@@ -763,7 +763,7 @@ onUnmounted(() => {
                         <div class="window-frame">
                             <div class="window-framing">
                                 <div class="window-title">
-                                    <span>Title</span>
+                                    <span>집중/전체 타이머</span>
                                 </div>
                             </div>
                         </div>
@@ -1181,7 +1181,7 @@ onUnmounted(() => {
 
 .window-title span {
     font-family: 'Xcu', sans-serif;
-    font-size: 28.805px;
+    font-size: 23px;
     color: white;
     font-weight: normal;
 }

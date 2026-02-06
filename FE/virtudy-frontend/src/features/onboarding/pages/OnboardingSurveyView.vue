@@ -28,7 +28,7 @@
                 {{ currentStep }}단계
               </span>
               <span class="text-[0.9rem] text-[var(--color-choco)]/50 font-['PfStardust30S']">
-                / 5단계
+                / 6단계
               </span>
             </div>
 
@@ -43,6 +43,7 @@
               <span>3단계</span>
               <span>4단계</span>
               <span>5단계</span>
+              <span>6단계</span>
             </div>
           </div>
         </div>
@@ -149,6 +150,34 @@
                   </div>
                   <div class="mt-auto pt-[1.25rem] flex justify-end"><button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button></div>
                 </section>
+
+                <section v-else-if="currentStep === 6" key="step-6" class="flex flex-col min-h-[18rem] items-center justify-center text-center">
+                  <p class="text-[1.5rem] sm:text-[1.75rem] mb-[2rem] text-[#ff4444] font-['PfStardust30S'] font-bold drop-shadow-[1px_1px_0px_rgba(0,0,0,0.1)]">
+                    주의사항
+                  </p>
+                  
+                  <div class="bg-[var(--color-cream)] border border-[var(--color-choco)] rounded-[0.5rem] p-[1.5rem] mb-[2.5rem] w-full max-w-[24rem]">
+                    <p class="text-[1.1rem] text-[var(--color-choco)] font-['PfStardust30S'] leading-relaxed break-keep">
+                      해당 플랫폼의 일부 기능<span class="text-[var(--color-syrup)]">(섬광탄)</span>은<br>
+                      <span class="text-[#ff4444] font-bold">광과민성 반응</span>을 유발할 수 있습니다.
+                    </p>
+                  </div>
+
+                  <button 
+                    type="button" 
+                    class="bg-[var(--color-butter)] border-2 border-[var(--color-choco)] rounded-[0.5rem] px-[2rem] py-[0.75rem] shadow-[4px_4px_0px_0px_var(--color-choco)] active:shadow-[2px_2px_0px_0px_var(--color-choco)] active:translate-y-[2px] transition-all"
+                    @click="submitSurvey"
+                  >
+                    <span class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.2rem] font-bold">
+                      확인했습니다
+                    </span>
+                  </button>
+                  
+                  <div class="mt-auto pt-[1.25rem] w-full flex justify-end">
+                    <button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button>
+                  </div>
+                </section>
+
             </Transition>
         </form>
       </div>
@@ -212,12 +241,14 @@ const surveyData = ref<SurveyData>({
 });
 
 const currentStep = ref(1);
-const progressWidth = computed(() => `${Math.min(currentStep.value, 5) * (100 / 5)}%`);
+// 6단계 기준으로 퍼센트 계산
+const progressWidth = computed(() => `${Math.min(currentStep.value, 6) * (100 / 6)}%`);
 const isSubmitting = ref(false);
 const isSubmitted = ref(false);
 
 const goToStep = (step: number) => {
-  currentStep.value = Math.min(Math.max(step, 1), 5);
+  // 최대 6단계
+  currentStep.value = Math.min(Math.max(step, 1), 6);
 };
 
 // 뒤로가기 로직
@@ -246,9 +277,10 @@ const goNextFromStyle = () => {
   if (surveyData.value.studyStyle) goToStep(5);
 };
 
+// 수정: 직업 선택 시 바로 제출하지 않고 6단계(주의사항)로 이동
 const goNextFromJob = () => {
-  if (!surveyData.value.occupation || isSubmitting.value) return;
-  submitSurvey();
+  if (!surveyData.value.occupation) return;
+  goToStep(6);
 };
 
 const submitSurvey = async () => {
