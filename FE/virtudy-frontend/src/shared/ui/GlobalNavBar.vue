@@ -1,31 +1,22 @@
 <template>
-  <!-- 모바일 메뉴 버튼 (완전 분리) -->
-<button
-  @click="toggleMenu"
-  class="xl:hidden fixed top-6 right-6 z-[999] w-10 h-10 flex items-center justify-center bg-transparent border-none"
-  :aria-label="isMenuOpen ? '메뉴 닫기' : '메뉴 열기'"
->
-  <!-- X -->
-  <svg
-    v-if="isMenuOpen"
-    width="40"
-    height="40"
-    viewBox="0 0 32 32"
-    fill="none"
+  <button
+    @click="toggleMenu"
+    class="xl:hidden fixed top-6 right-6 z-[999] w-10 h-10 flex items-center justify-center bg-transparent border-none"
+    :aria-label="isMenuOpen ? '메뉴 닫기' : '메뉴 열기'"
   >
-    <line x1="8" y1="8" x2="24" y2="24" stroke="#805143" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="24" y1="8" x2="8" y2="24" stroke="#805143" stroke-width="2.5" stroke-linecap="round"/>
-  </svg>
+    <svg v-if="isMenuOpen" width="40" height="40" viewBox="0 0 32 32" fill="none">
+      <line x1="8" y1="8" x2="24" y2="24" stroke="#805143" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="24" y1="8" x2="8" y2="24" stroke="#805143" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
 
-  <!-- 햄버거 -->
-  <div v-else class="flex flex-col gap-1.5">
-    <div class="w-8 h-1 bg-[var(--color-choco)] rounded-full"></div>
-    <div class="w-8 h-1 bg-[var(--color-choco)] rounded-full"></div>
-    <div class="w-8 h-1 bg-[var(--color-choco)] rounded-full"></div>
-  </div>
-</button>
+    <div v-else class="flex flex-col gap-1.5">
+      <div class="w-8 h-1 bg-[var(--color-choco)] rounded-full"></div>
+      <div class="w-8 h-1 bg-[var(--color-choco)] rounded-full"></div>
+      <div class="w-8 h-1 bg-[var(--color-choco)] rounded-full"></div>
+    </div>
+  </button>
 
-  <nav class="h-[75px] absolute top-3 left-0 right-0 flex items-center justify-between px-[20px] xl:px-[78px] py-[28px] z-50 navbar">
+  <nav class="h-[87px] fixed top-0 left-0 w-full flex items-center justify-between px-[20px] xl:px-[78px] py-[28px] z-50 navbar backdrop-blur-[4px] transition-colors duration-300">
     
     <div class="flex items-center gap-[var(--spacing-m)] navbar-links">
       <router-link 
@@ -113,13 +104,11 @@
 
     <div 
       v-if="isMenuOpen" 
-      class="absolute top-[75px] left-0 w-full
-            bg-transparent backdrop-blur-md
+      class="absolute top-[87px] left-0 w-full
+            bg-white/80 backdrop-blur-md
             flex flex-col items-center gap-4 py-8
-            xl:hidden shadow-lg"
+            xl:hidden shadow-lg border-t border-[var(--color-choco)]/10"
     >
-
-
       <router-link 
         to="/introduction" 
         @click="isMenuOpen = false"
@@ -186,27 +175,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'; // ref, watch 추가
-import { useRouter, useRoute } from 'vue-router'; // useRoute 추가
+import { ref, computed, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import LogoIcon from '@/assets/logo.svg?component';
 import IntroButtonBg from '@/assets/icons/IntroButtonBg.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
-const route = useRoute(); // 라우트 변경 감지용
+const route = useRoute();
 
 const isLoggedIn = computed(() => authStore.isLoggedIn);
 const logoLink = computed(() => (isLoggedIn.value ? '/user' : '/'));
 
-// --- 모바일 메뉴 관련 로직 ---
 const isMenuOpen = ref(false);
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
 };
 
-// 라우트가 변경되면(페이지 이동 시) 메뉴 닫기
 watch(route, () => {
   isMenuOpen.value = false;
 });
@@ -219,7 +206,7 @@ const kakaoLogin = () => {
 };
 
 const handleLogout = () => {
-  isMenuOpen.value = false; // 모바일 메뉴 닫기
+  isMenuOpen.value = false;
   logout();
 };
 
@@ -228,6 +215,3 @@ const logout = () => {
   router.push('/guest');
 };
 </script>
-
-
-
