@@ -66,7 +66,7 @@ async def ai_process_loop(
     frame_count = 0
     # Sampling controls (30 FPS 기준)
     DROWSY_EVERY_N_FRAMES = 5   # 약 6 FPS (부하 완화)
-    PHONE_EVERY_N_FRAMES = 45   # 약 1.5초마다 (부하 완화)
+    PHONE_EVERY_N_FRAMES = 150  # 약 5초마다 (부하 완화)
     last_status_sent_time = 0
     last_score_sent_time = 0
     STATUS_SEND_INTERVAL = 0.1 # Status every 100ms
