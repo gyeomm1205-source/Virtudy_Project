@@ -80,6 +80,13 @@
     @success="fetchAllRooms" 
   />
 
+  <PasswordModal
+    v-if="showPasswordModal"
+    :error="passwordError"
+    @close="showPasswordModal = false"
+    @submit="handlePasswordSubmit"
+  />
+
   <MatchingModal
     v-if="isEntering"
     title-text="입장 중..."
@@ -107,6 +114,7 @@ import RoomList from '@/shared/ui/RoomList.vue';
 import CreateRoomModal from '../ui/CreateRoomModal.vue'; // 새로 만든 모달
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import MatchingModal from '@/shared/ui/MatchingModal.vue';
+import PasswordModal from '../ui/PasswordModal.vue';
 
 import { maxMembers } from '@/shared/config/constants'; // 상수 import
 
@@ -138,6 +146,9 @@ const {
 // UI 상태 관리
 const showModal = ref(false); // 모달 표시 여부
 const selectedRoom = ref<RoomData | null>(null);
+const showPasswordModal = ref(false); // 비밀번호 입력 모달
+const passwordRoom = ref<RoomData | null>(null); // 비밀번호 입력 대상 방
+const passwordError = ref('');
 const currentFilter = ref<string>('all'); // 'all' | 'my'
 const searchQuery = ref<string>('');
 const showFavoriteToast = ref(false);
@@ -195,14 +206,36 @@ const handleRandomMatch = async () => {
 // 방 클릭 (입장 로직)
 const handleRoomClick = async (room: any) => {
   if (isEntering.value) return;
-  isEntering.value = true;
-  try {
-    // RoomList에서 넘어오는 room 객체의 ID 사용
-    const success = await joinRoom(room.roomId);
-    if (!success) {
+  // 내 방(방장)은 바로 입장, 공개방도 바로 입장
+  if (room.owner || room.type !== 'PRIVATE') {
+    isEntering.value = true;
+    try {
+      const success = await joinRoom(room.roomId);
+      if (!success) {
+        isEntering.value = false;
+      }
+    } catch {
       isEntering.value = false;
     }
-  } catch {
+    return;
+  }
+  // 비공개방 + 내 방이 아니면 비밀번호 입력 모달
+  passwordRoom.value = room;
+  showPasswordModal.value = true;
+  passwordError.value = '';
+};
+
+const handlePasswordSubmit = async (password: string) => {
+  if (!passwordRoom.value || !userId.value) return;
+  isEntering.value = true;
+  passwordError.value = '';
+  try {
+    // joinRoom이 아니라 직접 lobbyAPI.enterRoom 사용 (비밀번호 필요)
+    const data = await lobbyAPI.enterRoom(userId.value, passwordRoom.value.roomId, password);
+    showPasswordModal.value = false;
+    router.push(`/study/${data.roomId}?token=${data.liveKitToken}`);
+  } catch (e: any) {
+    passwordError.value = e?.response?.data?.message || '비밀번호가 올바르지 않습니다.';
     isEntering.value = false;
   }
 };
@@ -277,7 +310,8 @@ const displayedRooms = computed(() => {
     owner: room.owner || false, 
     description: room.description,
     type: room.type,
-    favorite: room.favorite || false // ✅ favorite 속성 추가
+    favorite: room.favorite || false, // ✅ favorite 속성 추가
+    lockIcon: room.type === 'PRIVATE' // 비공개방이면 true
   }));
 });
 

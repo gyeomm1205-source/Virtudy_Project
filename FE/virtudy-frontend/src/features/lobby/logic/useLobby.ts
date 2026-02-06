@@ -104,27 +104,25 @@ export function useLobby() {
   const joinRoom = async (roomId: string, password?: string): Promise<boolean> => {
     if (!userId.value) {
       alert('로그인이 필요한 서비스입니다.');
-      return;
+      return false;
     }
     try {
       // 입장 API 호출
       const sessionData = await lobbyAPI.enterRoom(userId.value, roomId, password);
-      
       // 테스트를 위해 콘솔에 토큰 출력
       console.log('✅ 입장 성공! 토큰:', sessionData.liveKitToken);
-
       // 토큰을 sessionStorage에 저장 (탭 내 새로고침 대응)
       studyStore.setToken(sessionData.liveKitToken, roomId);
-
       // 토큰 없이 스터디 룸 페이지로 이동
       router.push({ 
         name: 'StudyRoom', 
         params: { roomId },
         query: { from: 'lobby' }
       });
-
+      return true;
     } catch (e: any) {
       handleApiError(e);
+      return false;
     }
   };
 
