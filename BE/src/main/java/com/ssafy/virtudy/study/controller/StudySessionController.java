@@ -38,9 +38,10 @@ public class StudySessionController {
     @PostMapping("/enter/{roomId}")
     public ResponseEntity<SessionMemberInfoResponse> enterRoom(
             @Parameter(hidden = true) @CurrentMember Member member,
-            @Parameter(description = "스터디방 고유 코드(UUID)", required = true) @PathVariable String roomId
+            @Parameter(description = "스터디방 고유 코드(UUID)", required = true) @PathVariable String roomId,
+            @Parameter(description = "비밀번호 (비공개 방일 경우 필수)", required = false) @RequestParam(required = false) String password
     ) {
-        SessionMemberInfoResponse response = studySessionService.enterRoom(member, roomId);
+        SessionMemberInfoResponse response = studySessionService.enterRoom(member, roomId, password);
         return ResponseEntity.ok(response);
     }
 
