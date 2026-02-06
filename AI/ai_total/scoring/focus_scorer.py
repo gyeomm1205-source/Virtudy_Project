@@ -28,7 +28,7 @@ class FocusScorer:
         
         # Prevent huge dt jumps (e.g. debugging/pause)
         if dt > 1.0:
-            dt = 0.1
+            dt = 1.0
         rate_scale = Config.SCORE_RATE_SCALE
 
         # Accumulate time

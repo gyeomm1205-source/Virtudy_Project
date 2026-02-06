@@ -110,7 +110,6 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         )
 
         # 2. Detectors
-        sig_abs = abs_det.process(feats["face_detected"])
         sig_drowsy = drowsy_det.process(feats["face_detected"], feats["ear"], feats["pitch"])
         if do_phone:
             sig_phone = phone_det.process(
@@ -122,6 +121,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
             last_phone_signal = sig_phone
         else:
             sig_phone = last_phone_signal
+        sig_abs = abs_det.process(feats["face_present"], sig_phone.phone_present)
         
         # [DEBUG] Print raw values to debug detection failure
         # [DEBUG] Print raw values to debug detection failure
