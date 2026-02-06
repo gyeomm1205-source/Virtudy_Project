@@ -119,6 +119,7 @@ const cloudStyle = computed(() => ({
 
 .cloud {
   z-index: 2;
+  filter: blur(5px);
 }
 
 /* 팬케이크 스타일을 마을에도 똑같이 적용 */

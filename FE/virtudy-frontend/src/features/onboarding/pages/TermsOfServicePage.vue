@@ -1,35 +1,39 @@
 <template>
-  <div class="min-h-screen bg-[var(--color-cream2)]">
-    
-    <div class="text-center pt-[6rem] pb-[2rem]">
-      <h1 class="text-[var(--color-syrup)] text-[2.625rem] font-['Ram'] leading-[3rem] font-medium tracking-[-0.0525rem]">
-        약관동의
-      </h1>
-    </div>
+  <div 
+    class="min-h-screen"
+    :style="{ 
+      backgroundImage: `url(${bgBrick})`,
+      backgroundRepeat: 'repeat' 
+    }"
+  >
 
-    <div class="flex justify-center items-center mb-[2rem]">
-      <label class="flex items-center gap-[0.75rem] cursor-pointer select-none">
-        <div class="w-[2rem] flex items-center justify-center">
-          <input
-            id="agree-all"
-            type="checkbox"
-            v-model="allAgreed"
-            class="w-[1.5rem] h-[1.5rem] accent-[var(--color-choco)] cursor-pointer"
-          >
+    <div class="flex flex-col items-center pt-[7rem] pb-[4rem] px-[1rem]">
+      <div class="max-w-[50rem] w-full mx-[2rem] bg-white border-2 border-[var(--color-choco)] rounded-[0.75rem] p-[1.5rem] sm:p-[2rem] shadow-[6px_6px_0px_0px_var(--color-choco)]">
+            <div class="text-center pt-[2rem] pb-[2rem]">
+              <h1 class="text-[var(--color-syrup)] text-[2.625rem] font-['Ram'] leading-[3rem] font-medium tracking-[-0.0525rem]">
+                약관동의
+              </h1>
+            </div>
+        <div class="flex justify-center items-center mb-[2rem] pb-[1.5rem] border-b-2 border-dashed border-[var(--color-choco)]/20">
+          <label class="flex items-center gap-[0.75rem] cursor-pointer select-none">
+            <div class="w-[2rem] flex items-center justify-center">
+              <input
+                id="agree-all"
+                type="checkbox"
+                v-model="allAgreed"
+                class="w-[1.5rem] h-[1.5rem] accent-[var(--color-choco)] cursor-pointer"
+              >
+            </div>
+            <span class="text-[var(--color-choco)] text-[1.75rem] font-['PfStardust30S'] font-normal">
+              약관에 모두 동의합니다.
+            </span>
+          </label>
         </div>
-        <span class="text-[var(--color-choco)] text-[1.75rem] font-['PfStardust30S'] font-normal">
-          약관에 모두 동의합니다.
-        </span>
-      </label>
-    </div>
 
-    <div class="flex flex-col items-center pb-[4rem]">
-      <div class="max-w-[50rem] w-full px-[2rem]">
-        
         <div class="text-[var(--color-choco)] font-['PfStardust30S'] leading-normal mb-[2rem]">
-          <p class="text-[1.75rem] mb-[1rem] font-normal">[ Virtudy 서비스 이용 약관 ]</p>
+          <p class="text-[1.5rem] mb-[0.5rem] font-normal">[ Virtudy 서비스 이용 약관 ]</p>
           
-          <div class="terms-scroll text-[1.125rem] text-[var(--color-syrup)] h-[12rem] overflow-y-auto border border-[var(--color-choco)] rounded p-[1.5rem] mb-[1rem] bg-white">
+          <div class="terms-scroll text-[1.125rem] text-[var(--color-syrup)] h-[12rem] overflow-y-auto border border-[var(--color-choco)] rounded p-[1.5rem] mb-[0.75rem] bg-white">
             <div class="space-y-[1rem]">
               <div>
                 <strong class="block mb-2">제 1 조 (목적)</strong>
@@ -81,9 +85,9 @@
         </div>
 
         <div class="text-[var(--color-choco)] font-['PfStardust30S'] leading-normal mb-[2rem]">
-          <p class="text-[1.75rem] mb-[1rem] font-normal">[ 영상정보 수집 및 이용 동의 ]</p>
+          <p class="text-[1.5rem] mb-[0.5rem] font-normal">[ 영상정보 수집 및 이용 동의 ]</p>
           
-          <div class="terms-scroll text-[1.125rem] text-[var(--color-syrup)] h-[12rem] overflow-y-auto border border-[var(--color-choco)] rounded p-[1.5rem] mb-[1rem] bg-white">
+          <div class="terms-scroll text-[1.125rem] text-[var(--color-syrup)] h-[12rem] overflow-y-auto border border-[var(--color-choco)] rounded p-[1.5rem] mb-[0.75rem] bg-white">
             <div class="space-y-[1rem]">
               <div>
                 <strong class="block mb-2">제 1 조 (수집 및 이용 목적)</strong>
@@ -132,9 +136,9 @@
         </div>
 
         <div class="text-[var(--color-choco)] font-['PfStardust30S'] leading-normal mb-[3rem]">
-          <p class="text-[1.75rem] mb-[1rem] font-normal">[ 개인정보 제3자 제공 동의 ]</p>
+          <p class="text-[1.5rem] mb-[0.5rem] font-normal">[ 개인정보 제3자 제공 동의 ]</p>
           
-          <div class="terms-scroll text-[1.125rem] text-[var(--color-syrup)] h-[12rem] overflow-y-auto border border-[var(--color-choco)] rounded p-[1.5rem] mb-[1rem] bg-white">
+          <div class="terms-scroll text-[1.125rem] text-[var(--color-syrup)] h-[12rem] overflow-y-auto border border-[var(--color-choco)] rounded p-[1.5rem] mb-[0.75rem] bg-white">
             <div class="space-y-[1rem]">
               <div>
                 <strong class="block mb-2">제 1 조 (제공받는 자)</strong>
@@ -181,7 +185,7 @@
           </label>
         </div>
 
-        <div class="flex justify-center pt-[2rem]">
+        <div class="flex justify-center pt-[1rem]">
           <button 
             @click="goToNext" 
             :disabled="!canProceed"
@@ -203,6 +207,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import bgBrick from '@/assets/bg_brick.png'; // 이미지 import
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -265,7 +270,7 @@ const goToNext = () => {
 </style>
 
 <style scoped>
-/* 스크롤바 숨기기 유틸리티 (필요시 추가) */
+/* 스크롤바 숨기기 유틸리티 */
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
