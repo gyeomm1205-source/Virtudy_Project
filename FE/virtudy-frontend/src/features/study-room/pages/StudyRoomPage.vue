@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { jwtDecode } from 'jwt-decode';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
@@ -32,6 +32,7 @@ import type { RoomData } from '@/features/lobby/types/lobby.types';
 
 // HEAD Imports
 import { useAiHandler } from '../logic/useAiHandler';
+import { useLocalAiRunner } from '../logic/useLocalAiRunner';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 import { getScoreColor } from '../logic/scoreUtils'; 
 import { useFlashbang } from '../logic/useFlashbang';
@@ -105,6 +106,7 @@ const validRemoteTracks = computed(() => {
 
 // AI 핸들러 & 타이머 연결
 useAiHandler();
+const { startLocalAi, stopLocalAi } = useLocalAiRunner();
 const aiStore = useStudyRoomAiStore();
 const canRunFocusTimer = computed(() => isConnected.value && !isDistracted.value);
 const { focusSeconds } = useFocusTimer(canRunFocusTimer);
@@ -409,7 +411,7 @@ const computeAverageScore = () => {
     return scores.reduce((acc, v) => acc + v, 0) / scores.length;
 };
 
-const teamAverageScore = ref<number>(100);
+const teamAverageScore = computed<number>(() => computeAverageScore());
 const bgState = computed<BgState>(() => getStateFromScore(teamAverageScore.value));
 
 const bgHeartStyle = computed(() => {
@@ -418,13 +420,11 @@ const bgHeartStyle = computed(() => {
     return getHeartStyle(30);
 });
 
-const TEAM_AVG_INTERVAL_MS = 5000;
-let teamAverageInterval: number | undefined;
-
 // ==========================================================// 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
 // ==========================================================
 onMounted(async () => {
     if (!roomId) { alert('잘못된 접근입니다.'); router.replace('/lobby'); return; }
+    aiStore.setRoomId(roomId);
 
     const validToken = getValidStudyToken();
     if (!validToken) return;
@@ -456,12 +456,11 @@ onMounted(async () => {
     await joinRoom(roomId, userId, validToken, displayName.value, myAvatarConfig.value);
     
 
-    const updateTeamAverage = () => {
-        teamAverageScore.value = computeAverageScore();
-    };
+});
 
-    updateTeamAverage();
-    teamAverageInterval = window.setInterval(updateTeamAverage, TEAM_AVG_INTERVAL_MS);
+onBeforeRouteLeave(() => {
+    aiStore.clearRoomSession();
+    aiStore.reset();
 });
 
 // 다른 참가자의 방 정보 업데이트 수신 처리
@@ -485,6 +484,8 @@ watch(roomInfoUpdate, (update) => {
 watch(isConnected, (connected) => {
     if (connected) {
         nextTick().then(() => attachLocalVideo());
+    } else {
+        stopLocalAi();
     }
 });
 
@@ -496,6 +497,16 @@ const attachLocalVideo = () => {
         const publication = room.localParticipant.getTrackPublication(Track.Source.Camera);
         if (publication && publication.track) {
             publication.track.attach(localVideoRef.value);
+            localVideoRef.value.width = 640;
+            localVideoRef.value.height = 480;
+            localVideoRef.value.play?.().catch(() => {});
+            const start = () => startLocalAi(localVideoRef.value);
+            const scheduleStart = () => setTimeout(start, 1500);
+            if ('requestIdleCallback' in window) {
+                window.requestIdleCallback(() => scheduleStart(), { timeout: 2000 });
+            } else {
+                scheduleStart();
+            }
             console.log('✅ 내 카메라 연결됨 (화면에는 숨김 처리)');
         }
     }
@@ -511,6 +522,9 @@ const handleLeave = () => {
         leaveRoom({
             'study-time': String(focusMinutes),
         });
+        aiStore.clearRoomSession();
+        aiStore.reset();
+        stopLocalAi();
         studyStore.clearToken();
 
         // PIP 강제 종료
@@ -521,11 +535,8 @@ const handleLeave = () => {
 };
 
 onUnmounted(() => {
-    if (teamAverageInterval) {
-        window.clearInterval(teamAverageInterval);
-        teamAverageInterval = undefined;
-    }
     const focusMinutes = Math.floor(focusSeconds.value / 60);
+    stopLocalAi();
     leaveRoom({
         'study-time': String(focusMinutes),
     });
@@ -1349,7 +1360,16 @@ onUnmounted(() => {
 }
 
 
-.hidden-video { display: none; }
+.hidden-video {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 160px;
+    height: 120px;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+}
 
 .btn-side-toggle {
     /* 1. 위치 잡기 (화면 기준 절대 위치) */

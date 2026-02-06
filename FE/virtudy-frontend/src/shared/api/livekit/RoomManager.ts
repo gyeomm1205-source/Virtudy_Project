@@ -19,6 +19,7 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://127.0.0.1:8081/ws'
 
 // [추�?] AI ?�버 ?�소�?주소 (FastAPI ??AI ?�버???�소�??�드?�인??
 // const AI_SOCKET_URL = 'ws://127.0.0.1:8000/ws/analysis';
+const AI_SERVER_ENABLED = import.meta.env.VITE_AI_SERVER_ENABLED === 'true';
 const AI_SOCKET_URL = import.meta.env.VITE_AI_SOCKET_URL || 'ws://127.0.0.1:8000/ws/analysis';
 
 // 3. [AI 서버] API 주소 (HTTP 요청용 -> HTTPS)
@@ -69,15 +70,15 @@ export class RoomManager {
 
             // 1-3. WebSocket ?�결 (컨트�??�레??
             this.connectWebSocket(accessToken);
-            // [추�?]1-4. ?�켓 직통 ?�결 (집중???�이??
-            this.connectAISocket();
-            
-            // [추가] 1-5. 봇(AI) 소환 요청 (POST)
-            // 방에 입장했으니, 이제 분석 봇을 투입시킵니다.
-            await this.requestBotJoin(finalToken);
+            if (AI_SERVER_ENABLED) {
+                this.connectAISocket();
+                await this.requestBotJoin(finalToken);
+            }
 
             console.log(`[RoomManager] 방 ${roomId} 입장 완료`);
-            console.log(`[RoomManager] 방 ${roomId} 입장 및 AI 봇 호출 완료`);
+            if (AI_SERVER_ENABLED) {
+                console.log(`[RoomManager] 방 ${roomId} 입장 및 AI 봇 호출 완료`);
+            }
         } catch (error) {
             console.error('[RoomManager] �??�장 ?�패:', error);
             this.leaveRoom(); // ?�패 ???�리
@@ -334,6 +335,11 @@ export class RoomManager {
     // 메시지 ?�신 ?�벤???�록
     onMessage(callback: (payload: any, senderId?: string) => void) {
         this.messageListeners.push(callback);
+    }
+
+    // Local AI -> FE internal dispatch (no LiveKit)
+    emitLocalMessage(payload: any) {
+        this.messageListeners.forEach(listener => listener(payload, undefined));
     }
 
     // ?�랙 ?�신 ?�벤???�록
