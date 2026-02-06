@@ -49,6 +49,7 @@ const incrementAvatarCreateCount = () => {
   remainingChances.value = AVATAR_CREATE_LIMIT - avatarCreateCount.value;
 };
 
+// decrement는 유지하되 로직상 현재는 사용 빈도가 낮음
 const decrementAvatarCreateCount = () => {
   const data = JSON.parse(localStorage.getItem(AVATAR_CREATE_KEY) || '{}');
   const todayKey = getTodayKey();
@@ -61,8 +62,7 @@ const decrementAvatarCreateCount = () => {
 };
 
 const getChanceMessage = () => {
-  if (remainingChances.value > 0) return `아바타 생성 기회가 ${remainingChances.value}번 남아있습니다.`;
-  return '아바타 생성 기회를 모두 사용하셨습니다.';
+  return `오늘의 아바타 생성 횟수 ${3 - remainingChances.value}/3`;
 };
 
 // 1. 마운트 시 카메라 켜기
@@ -83,6 +83,10 @@ const handleCapture = async () => {
     await uiStore.openAlert(getChanceMessage(), '알림');
     return;
   }
+
+  // 촬영 버튼을 누르는 순간 횟수 차감
+  incrementAvatarCreateCount(); 
+  
   isCapturing.value = true;
   window.setTimeout(() => {
     isCapturing.value = false;
@@ -135,64 +139,110 @@ const handleCapture = async () => {
     } else {
       await uiStore.openAlert("아바타 생성 중 오류가 발생했습니다.", "오류");
     }
-  }
-};
-
-
-
-const showChanceAfterSave = ref(false);
-
-
-const handleRetry = () => {
-  // result 상태에서 다시 찍기를 누르면, 이전에 저장하지 않은 경우만 카운트 복구
-  if (step.value === 'result' && hasSavedCurrentAvatar.value) {
-    decrementAvatarCreateCount();
-  }
-  generatedAvatar.value = null;
-  step.value = 'camera';
-  showChanceAfterSave.value = false;
-  hasSavedCurrentAvatar.value = false;
-  loadAvatarCreateCount();
-  if (remainingChances.value > 0) {
+    // 에러나면 다시 카메라 화면으로
+    step.value = 'camera';
     startCamera();
   }
 };
 
 
+// 다시 찍기 확인 모달 상태
+const showRetryConfirmModal = ref(false);
 
+const handleRetryClick = () => {
+  // 바로 리셋하지 않고 확인 모달 띄우기
+  showRetryConfirmModal.value = true;
+};
+
+const handleRetryConfirm = () => {
+  // 모달에서 '네'를 눌렀을 때 실행되는 실제 리셋 로직
+  generatedAvatar.value = null;
+  step.value = 'camera';
+  showRetryConfirmModal.value = false;
+  hasSavedCurrentAvatar.value = false;
+  
+  loadAvatarCreateCount(); // 횟수 정보 갱신
+  if (remainingChances.value > 0) {
+    startCamera();
+  }
+};
+
+const handleRetryCancel = () => {
+  showRetryConfirmModal.value = false;
+};
+
+
+// 저장 진행 모달 상태
+const saveModalState = ref({
+  visible: false,
+  title: '',
+  subtitle: ''
+});
 
 const handleConfirm = () => {
-  if (generatedAvatar.value) {
-    authStore.setAvatarConfig(generatedAvatar.value);
-    if (!hasSavedCurrentAvatar.value) {
-      incrementAvatarCreateCount(); // 저장할 때 카운트 증가 (중복 방지)
-      loadAvatarCreateCount();
-      hasSavedCurrentAvatar.value = true;
-    }
-    showChanceAfterSave.value = true;
-    // 저장 후 1.5초간 남은 기회 메시지 보여주고 로비로 이동
-    setTimeout(() => {
-      showChanceAfterSave.value = false;
-      router.push('/lobby');
-    }, 1500);
+  if (!generatedAvatar.value) {
+    router.push('/lobby');
     return;
   }
-  router.push('/lobby'); // 로비나 마이페이지로 이동
+
+  // 1. 저장 시작 (모달 표시)
+  saveModalState.value = {
+    visible: true,
+    title: '저장 중...',
+    subtitle: '잠시만 기다려주세요.'
+  };
+
+  // 실제 데이터 저장
+  authStore.setAvatarConfig(generatedAvatar.value);
+  hasSavedCurrentAvatar.value = true;
+
+  // 2. 1초 뒤 '저장 완료' 메시지로 변경
+  setTimeout(() => {
+    saveModalState.value = {
+      visible: true, // 유지
+      title: '저장 완료!',
+      subtitle: '이전에 있던 페이지로 돌아갑니다.'
+    };
+
+    // 3. 다시 1초 뒤 페이지 이동
+    setTimeout(() => {
+      saveModalState.value.visible = false;
+      router.push('/lobby'); // 이전에 있던 페이지(로비 등)로 이동
+    }, 1000);
+
+  }, 1000);
 };
+
 </script>
 
 <template>
-  <div class="page-container bg-[var(--color-cream2)]">
-    <div v-if="step === 'camera'" class="camera-view bg-[var(--color-cream)]">
+  <div class="page-container">
+    <div v-if="step === 'camera'" class="camera-view">
       <h2 class="title">나만의 아바타 만들기</h2>
-      <p class="guide-text">정면을 바라보고 촬영 버튼을 눌러주세요!</p>
-      <p v-if="remainingChances < AVATAR_CREATE_LIMIT" class="guide-text" style="color: #b85c00; font-size: 20px; margin-bottom: 0;">
-        {{ getChanceMessage() }}
-      </p>
-      <div class="video-wrapper" :class="{ 'is-capturing': isCapturing }">
-        <div class="flash-overlay" :class="{ 'is-capturing': isCapturing }"></div>
-        <video ref="videoRef" autoplay playsinline muted v-show="remainingChances > 0"></video>
-      </div>
+      
+      <template v-if="remainingChances > 0">
+        <p class="guide-text">정면을 바라보고 촬영 버튼을 눌러주세요!</p>
+        <p v-if="remainingChances < AVATAR_CREATE_LIMIT" class="guide-text" style="color: #b85c00; font-size: 20px; margin-bottom: 0;">
+          {{ getChanceMessage() }}
+        </p>
+
+        <div class="video-wrapper polaroid-frame" :class="{ 'is-capturing': isCapturing }">
+          <div class="flash-overlay" :class="{ 'is-capturing': isCapturing }"></div>
+          <video ref="videoRef" autoplay playsinline muted></video>
+        </div>
+
+        <button class="capture-btn butter-btn" @click="handleCapture">
+          <span class="butter-btn-text">촬영</span>
+        </button>
+      </template>
+
+      <template v-else>
+        <p class="guide-text" style="color: #b85c00; font-size: 24px; line-height: 1.5; margin-top: 10px;">
+          오늘의 아바타 생성 횟수가 모두 소진되었어요!<br>
+          내일 다시 찾아주세요!
+        </p>
+      </template>
+
       <button class="capture-btn butter-btn" @click="handleCapture" :disabled="remainingChances <= 0">
         <span class="butter-btn-text">촬영</span>
       </button>
@@ -209,14 +259,13 @@ const handleConfirm = () => {
 
     <div v-else-if="step === 'result'" class="result-view">
       <h2 class="title">🎉짜잔🎉<br>완성되었어요!</h2>
-      <p v-if="showChanceAfterSave" class="guide-text" style="color: #b85c00; font-size: 20px; margin-bottom: 0;">
+      
+      <p class="guide-text" style="color: #b85c00; font-size: 20px; margin-bottom: 0;">
         {{ getChanceMessage() }}
       </p>
-      <div class="avatar-preview">
-        <div
-          class="avatar-preview-inner"
-          :style="{ transform: 'translate(34.5px, 56px)' }"
-        >
+      
+      <div class="avatar-preview polaroid-frame">
+        <div class="avatar-preview-inner">
           <CharacterAvatar 
             v-if="generatedAvatar"
             :config="generatedAvatar"
@@ -226,7 +275,7 @@ const handleConfirm = () => {
       </div>
 
       <div class="btn-group">
-        <button class="retry-btn" @click="handleRetry" :disabled="remainingChances <= 0">
+        <button class="retry-btn" @click="handleRetryClick" :disabled="remainingChances <= 0">
           다시 찍기
         </button>
         <button class="confirm-btn" @click="handleConfirm">
@@ -234,11 +283,41 @@ const handleConfirm = () => {
         </button>
       </div>
     </div>
+
+    <div v-if="showRetryConfirmModal" class="fixed inset-0 bg-[rgba(255,253,245,0.65)] backdrop-blur-md flex items-center justify-center z-50">
+      <div class="bg-[var(--color-cream2)] p-[2.5rem] rounded-[0.75rem] shadow-[4px_4px_0px_0px_var(--color-choco)] relative max-w-[26rem] w-full mx-[1rem] flex flex-col items-center gap-[1.5rem] text-center">
+        <div>
+          <div class="text-[var(--color-choco)] text-[2rem] font-['Xcu'] font-medium leading-none mb-2">
+            다시 찍으시겠어요?
+          </div>
+          <div class="text-[var(--color-syrup)] text-[1.125rem] font-['PfStardust30S'] leading-snug">
+            촬영 횟수가 차감돼요!
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <button @click="handleRetryConfirm" class="px-6 py-2 border-2 border-[var(--color-choco)] bg-[var(--color-butter)] text-[var(--color-choco)] font-['PfStardust30S'] text-xl rounded shadow-[2px_2px_0px_0px_var(--color-choco)] active:translate-y-1 active:shadow-none transition-all">
+            네
+          </button>
+          <button @click="handleRetryCancel" class="px-6 py-2 border-2 border-[var(--color-choco)] bg-white text-[var(--color-choco)] font-['PfStardust30S'] text-xl rounded shadow-[2px_2px_0px_0px_var(--color-choco)] active:translate-y-1 active:shadow-none transition-all">
+            아니오
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="saveModalState.visible" class="fixed inset-0 z-[9999]">
+      <div class="avatar-loading-overlay"></div>
+      <MatchingModal
+        :titleText="saveModalState.title"
+        :subtitleText="saveModalState.subtitle"
+        @close="saveModalState.visible = false" 
+      />
+    </div>
+
   </div>
 </template>
 
 <style scoped>
-/* 간단한 스타일 */
 .page-container {
   display: flex;
   flex-direction: column;
@@ -248,7 +327,13 @@ const handleConfirm = () => {
   height: auto;
   padding: 96px 20px 40px;
   box-sizing: border-box;
-  background-color: transparent; /* 테마 컬러 */
+  
+  /* 배경 설정 */
+  background-image: url('@/assets/bg_brick.png');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  
   text-align: center;
 }
 
@@ -262,6 +347,84 @@ const handleConfirm = () => {
   padding: 20px 16px 28px;
   box-sizing: border-box;
   border-radius: 16px;
+  background-color: transparent;
+}
+
+/* 폴라로이드 공통 스타일 */
+.polaroid-frame {
+  width: min(300px, 75vw);
+  height: auto;
+  background-color: white;
+  
+  /* 폴라로이드 여백 */
+  padding: 12px 12px 60px 12px; 
+  
+  /* 그림자 */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 6px 20px rgba(0,0,0,0.19);
+  border-radius: 2px;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 15px 0;
+  
+  transition: transform 120ms ease;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.video-wrapper {
+  overflow: hidden;
+}
+
+video {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  transform: scaleX(-1);
+  background: black;
+  display: block;
+}
+
+.avatar-preview {
+  overflow: hidden;
+}
+
+/* 아바타 내부 컨테이너 설정 */
+.avatar-preview-inner {
+  width: 100%;
+  aspect-ratio: 1/1;
+  display: flex;
+  
+  /* 아바타 하단 중앙 정렬 */
+  align-items: flex-end; 
+  justify-content: center;
+  
+  /* 배경 이미지 설정 */
+  background-image: url('@/assets/bg_sky_1.png');
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+
+  box-sizing: border-box;
+
+  /* 아바타 컴포넌트 강제 오프셋 초기화 */
+  --avatar-offset-x: 0% !important;
+  --avatar-offset-y: 0% !important;
+}
+
+.flash-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: screen;
+}
+
+.flash-overlay.is-capturing {
+  animation: flash 160ms ease-out;
 }
 
 .title {
@@ -280,17 +443,6 @@ const handleConfirm = () => {
   color: #805143;
 }
 
-.loading-view h3 {
-  font-size: clamp(27px, 4vw, 35px);
-  line-height: 1.3;
-  font-weight: 700;
-}
-
-.loading-view p {
-  font-size: clamp(16px, 3.2vw, 20px);
-}
-
-
 .result-view {
   display: flex;
   flex-direction: column;
@@ -299,28 +451,6 @@ const handleConfirm = () => {
   width: 100%;
   max-width: 520px;
 }
-
-.avatar-preview {
-  width: min(260px, 70vw);
-  height: min(260px, 70vw);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 3px solid var(--color-choco);
-}
-
-.avatar-preview-inner {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 120ms ease;
-}
-
 
 .btn-group {
   display: flex;
@@ -374,42 +504,6 @@ const handleConfirm = () => {
   font-weight: 700;
 }
 
-.video-wrapper {
-  width: min(320px, 80vw);
-  height: min(320px, 80vw);
-  border-radius: 50%;
-  overflow: hidden;
-  border: 5px solid var(--color-primary);
-  margin: 15px 0;
-  background: black;
-  position: relative;
-  transition: transform 120ms ease;
-}
-
-.flash-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.9);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 2;
-  mix-blend-mode: screen;
-}
-
-.flash-overlay.is-capturing {
-  animation: flash 160ms ease-out;
-}
-
-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1); /* 거울 모드 */
-  position: relative;
-  z-index: 1;
-}
-
-/* 로딩 스피너 애니메이션 */
 .spinner {
   width: 80px;
   height: 80px;
@@ -440,12 +534,10 @@ video {
   100% { transform: rotate(0deg); }
 }
 
-</style>
-<style scoped>
 .avatar-loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(255, 253, 245, 0.82); /* 더 높은 투명도 */
+  background: rgba(255, 253, 245, 0.32);
   backdrop-filter: blur(4px);
   z-index: 999;
 }
