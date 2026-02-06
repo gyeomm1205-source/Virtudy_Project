@@ -770,7 +770,7 @@ onUnmounted(() => {
                         
                         <div class="timer-display">
                             <FocusTimer :seconds="focusSeconds" />
-                            <StudyTimer />
+                            <StudyTimer :seconds="focusSeconds"/>
                         </div>
                         
                         <div class="pip-btn-area">

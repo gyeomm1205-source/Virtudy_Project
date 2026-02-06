@@ -1,34 +1,24 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { computed } from 'vue';
 
-// 공부 시간(초 단위) 상태
-const totalSeconds = ref(0);
-let timerInterval: ReturnType<typeof setInterval> | null = null;
+interface Props {
+  seconds: number;
+}
 
-// 초 -> HH:MM:SS 형식으로 변환하는 계산 속성
+const props = defineProps<Props>();
+
+// 초 -> HH:MM:SS 형식으로 변환
 const formattedTime = computed(() => {
-  const h = Math.floor(totalSeconds.value / 3600);
-  const m = Math.floor((totalSeconds.value % 3600) / 60);
-  const s = totalSeconds.value % 60;
+  // [수정] totalSeconds.value 대신 props.seconds 사용
+  const h = Math.floor(props.seconds / 3600);
+  const m = Math.floor((props.seconds % 3600) / 60);
+  const s = props.seconds % 60;
 
-  // 01:05:09 처럼 두 자리수 맞추기
   const pad = (num: number) => String(num).padStart(2, '0');
   
-  // 항상 HH:MM:SS 형식으로 표시
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 });
 
-// 컴포넌트가 켜지면 타이머 시작
-onMounted(() => {
-  timerInterval = setInterval(() => {
-    totalSeconds.value++;
-  }, 1000);
-});
-
-// 컴포넌트가 꺼지면(방 나가기 등) 타이머 정지 (메모리 누수 방지)
-onUnmounted(() => {
-  if (timerInterval) clearInterval(timerInterval);
-});
 </script>
 
 <template>

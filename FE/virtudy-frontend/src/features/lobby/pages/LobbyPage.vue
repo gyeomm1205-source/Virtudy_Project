@@ -94,6 +94,13 @@
     @close="isEntering = false"
   />
 
+  <MatchingModal
+    v-if="isMatchingModalOpen"
+    title-text="매칭 중..."
+    subtitle-text="잠시만 기다려주세요..."
+    @close="cancelRandomMatch"
+  />
+
   </div>
   </GlobalBackground>
 </template>
@@ -105,6 +112,7 @@ import { storeToRefs } from 'pinia';
 
 // ✅ FSD 모듈 import
 import { useAuthStore } from '@/stores/authStore';
+import { useStudyStore } from '@/stores/studyStore'; 
 import { useUiStore } from '@/stores/uiStore'; // UI 스토어
 import { useLobby } from '@/features/lobby/logic/useLobby';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI'; // 랜덤매칭용
@@ -126,6 +134,7 @@ const router = useRouter();
 
 // 1. Store & Hook 연결
 const authStore = useAuthStore();
+const studyStore = useStudyStore();
 const uiStore = useUiStore(); // UI 스토어
 const { userId } = storeToRefs(authStore);
 
@@ -137,7 +146,6 @@ const hasAvatarConfig = computed(() => {
 const { 
   publicRooms, 
   myRooms, 
-  // isLoading, // 로딩바 필요하면 사용
   fetchAllRooms, 
   joinRoom,
   deleteRoom,
@@ -157,6 +165,10 @@ const showFavoriteToast = ref(false);
 const favoriteToastMessage = ref('');
 let favoriteToastTimer: ReturnType<typeof setTimeout> | null = null;
 const isEntering = ref(false);
+
+
+const isMatchingModalOpen = ref(false);
+const matchingAbortController = ref<AbortController | null>(null);
 
 // Methods
 const goBack = () => router.back();
@@ -189,19 +201,69 @@ const handleDeleteRoom = async (roomId: string) => {
     await deleteRoom(roomId);
 };
 
-// 랜덤 매칭
+// [추가] 딜레이 헬퍼 함수
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// [추가] 에러 체크 헬퍼
+const isCanceledError = (error: unknown) => {
+  const err = error as { code?: string; name?: string } | null;
+  return err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError';
+};
+
+// [추가] 매칭 취소 핸들러
+const cancelRandomMatch = () => {
+  if (matchingAbortController.value) {
+    matchingAbortController.value.abort();
+    matchingAbortController.value = null;
+  }
+  isMatchingModalOpen.value = false;
+};
+
+// [수정] 랜덤 매칭 핸들러 (UserPage 로직 이식)
 const handleRandomMatch = async () => {
+  if (isMatchingModalOpen.value) return;
   if (!userId.value) {
     await uiStore.openAlert('로그인이 필요합니다.', '알림');
     return;
   }
+
+  isMatchingModalOpen.value = true;
+  const startedAt = Date.now();
+  // AbortController 생성 (취소 가능하도록)
+  const controller = new AbortController();
+  matchingAbortController.value = controller;
+
   try {
-    const  data  = await lobbyAPI.enterRandomRoom(userId.value);
-    // 입장 성공 -> 스터디룸으로 이동 (roomId를 사용)
-    router.push(`/study/${data.roomId}?token=${data.liveKitToken}`);
-  } catch (e) {
-    console.error(e);
+    // API 호출 시 signal 전달
+    const data = await lobbyAPI.enterRandomRoom(userId.value, controller.signal);
+    
+    if (controller.signal.aborted) return;
+
+    // 최소 3초 딜레이 (UX용)
+    const elapsed = Date.now() - startedAt;
+    await delay(Math.max(0, 3000 - elapsed));
+
+    if (controller.signal.aborted) return;
+
+    // 스토어에 토큰 설정 후 이동
+    studyStore.setToken(data.liveKitToken, data.roomId);
+    router.push({ name: 'StudyRoom', params: { roomId: data.roomId }, query: { from: 'lobby' } });
+
+  } catch (error) {
+    if (controller.signal.aborted || isCanceledError(error)) {
+      return;
+    }
+    console.error('랜덤 매칭 실패:', error);
+    
+    // 에러 발생 시에도 약간의 딜레이 후 알림
+    const elapsed = Date.now() - startedAt;
+    await delay(Math.max(0, 3000 - elapsed));
+    
+    if (controller.signal.aborted) return;
     await uiStore.openAlert('입장 가능한 방이 없습니다.', '알림');
+  } finally {
+    isMatchingModalOpen.value = false;
+    matchingAbortController.value = null;
   }
 };
 
