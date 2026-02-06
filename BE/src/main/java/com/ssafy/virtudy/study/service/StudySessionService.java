@@ -49,17 +49,22 @@ public class StudySessionService {
         StudyRoom room = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));
 
-        // 비밀번호 검증 로직 추가
-        if (password != null && !password.isEmpty()) {
-            if (room.getType() != RoomType.PRIVATE) {
-                throw new BaseException(BaseErrorCode.ROOM_PUBLIC_FILLED_PASSWORD_ERROR);
-            }
-            if (!room.getPassword().equals(password)) {
-                throw new BaseException(BaseErrorCode.ROOM_PASSWORD_MISMATCH_ERROR);
-            }
-        } else {
-            if (room.getType() == RoomType.PRIVATE) {
-                throw new BaseException(BaseErrorCode.ROOM_PRIVATE_EMPTY_PASSWORD_ERROR);
+        // 방장 여부 확인
+        boolean isOwner = room.getOwner().getMemberId().equals(member.getMemberId());
+
+        // 비밀번호 검증 로직 추가 (방장이 아닌 경우에만 검증)
+        if (!isOwner) {
+            if (password != null && !password.isEmpty()) {
+                if (room.getType() != RoomType.PRIVATE) {
+                    throw new BaseException(BaseErrorCode.ROOM_PUBLIC_FILLED_PASSWORD_ERROR);
+                }
+                if (!room.getPassword().equals(password)) {
+                    throw new BaseException(BaseErrorCode.ROOM_PASSWORD_MISMATCH_ERROR);
+                }
+            } else {
+                if (room.getType() == RoomType.PRIVATE) {
+                    throw new BaseException(BaseErrorCode.ROOM_PRIVATE_EMPTY_PASSWORD_ERROR);
+                }
             }
         }
 
