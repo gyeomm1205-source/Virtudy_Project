@@ -207,7 +207,7 @@ const handleRandomMatch = async () => {
 const handleRoomClick = async (room: any) => {
   if (isEntering.value) return;
   // 내 방(방장)은 바로 입장, 공개방도 바로 입장
-  if (room.owner || room.type !== 'PRIVATE') {
+  if (room.owner || !room.lockIcon) {
     isEntering.value = true;
     try {
       const success = await joinRoom(room.roomId);
