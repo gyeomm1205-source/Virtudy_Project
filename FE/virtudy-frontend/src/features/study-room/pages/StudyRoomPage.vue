@@ -7,8 +7,9 @@ import { useStudyRoom } from '../logic/useStudyRoom';
 import { useFocusTimer } from '../logic/useFocusTimer';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
-import { useAuthStore } from '@/stores/authStore'; // 피나이아 스토어
+import { useAuthStore } from '@/stores/authStore'; // 피니아 스토어
 import { useStudyStore } from '@/stores/studyStore';
+import { useUiStore } from '@/stores/uiStore'; // UI 스토어
 
 // 스터디룸 UI 컴포넌트 임포트
 import StudyTimer from '@/shared/ui/StudyTimer.vue';
@@ -43,6 +44,7 @@ const entryFrom = computed(() => route.query.from);
 const router = useRouter();
 const authStore = useAuthStore();
 const studyStore = useStudyStore();
+const uiStore = useUiStore(); // 스토어 사용
 const { accessToken, currentRoomId } = storeToRefs(studyStore);
 
 // URL에서 정보 추출
@@ -59,21 +61,21 @@ const toggleChat = () => {
 
 const getValidStudyToken = (): string | null => {
     if (!accessToken.value || !currentRoomId.value || currentRoomId.value !== roomId) {
+    studyStore.clearToken();
+    router.replace('/guest');
+    return null;
+    }
+    try {
+    const decoded = jwtDecode<{ exp?: number }>(accessToken.value);
+    if (decoded?.exp && Date.now() / 1000 >= decoded.exp) {
         studyStore.clearToken();
         router.replace('/guest');
         return null;
     }
-    try {
-        const decoded = jwtDecode<{ exp?: number }>(accessToken.value);
-        if (decoded?.exp && Date.now() / 1000 >= decoded.exp) {
-            studyStore.clearToken();
-            router.replace('/guest');
-            return null;
-        }
     } catch (error) {
-        studyStore.clearToken();
-        router.replace('/guest');
-        return null;
+    studyStore.clearToken();
+    router.replace('/guest');
+    return null;
     }
     return accessToken.value;
 };
@@ -126,9 +128,9 @@ watch(isConnected, async (val) => {
     if (val) {
         await nextTick();
         requestAnimationFrame(() => {
-            setTimeout(() => {
-                isRoomReady.value = true;
-            }, 50);
+        setTimeout(() => {
+            isRoomReady.value = true;
+        }, 50);
         });
     } else {
         isRoomReady.value = false;
@@ -187,7 +189,7 @@ const togglePip = async () => {
     }
 
     if (!('documentPictureInPicture' in window)) {
-        alert('이 기능은 Chrome/Edge 최신 버전에서만 지원됩니다.');
+        await uiStore.openAlert('이 기능은 Chrome/Edge 최신 버전에서만 지원됩니다.', '알림');
         return;
     }
 
@@ -197,55 +199,55 @@ const togglePip = async () => {
         const minPipHeight = 300;
         // @ts-ignore
         pipWindow = await window.documentPictureInPicture.requestWindow({
-            width: minPipWidth, 
-            height: minPipHeight,
+        width: minPipWidth, 
+        height: minPipHeight,
         });
 
-        if (!pipWindow) return;
+    if (!pipWindow) return;
 
-        // 스타일 복사
-        [...document.styleSheets].forEach((styleSheet) => {
-            try {
-                const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
-                const style = document.createElement('style');
-                style.textContent = cssRules;
-                pipWindow!.document.head.appendChild(style);
-            } catch (e) {
-                if (styleSheet.href) {
-                    const link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.href = styleSheet.href;
-                    pipWindow!.document.head.appendChild(link);
-                }
+    // 스타일 복사
+    [...document.styleSheets].forEach((styleSheet) => {
+        try {
+            const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+            const style = document.createElement('style');
+            style.textContent = cssRules;
+            pipWindow!.document.head.appendChild(style);
+        } catch (e) {
+            if (styleSheet.href) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = styleSheet.href;
+            pipWindow!.document.head.appendChild(link);
             }
-        });
+        }
+    });
 
-        // DOM 이동
-        if (pipDashboardRef.value) {
-            const pipRoot = pipDashboardRef.value;
-            // 기본 표시 보장 (스타일 복사 실패 시에도 화면이 안 비도록)
-            pipRoot.style.display = 'block';
-            pipRoot.style.width = '100%';
-            pipRoot.style.height = '100%';
-            pipRoot.style.background = '#FFF4D9';
+    // DOM 이동
+    if (pipDashboardRef.value) {
+        const pipRoot = pipDashboardRef.value;
+        // 기본 표시 보장 (스타일 복사 실패 시에도 화면이 안 비도록)
+        pipRoot.style.display = 'block';
+        pipRoot.style.width = '100%';
+        pipRoot.style.height = '100%';
+        pipRoot.style.background = '#FFF4D9';
 
-            pipWindow.document.body.append(pipRoot);
-            // PIP 창 바디 스타일 (여백 제거)
-            pipWindow.document.body.style.margin = '0';
-            pipWindow.document.body.style.padding = '0';
-            pipWindow.document.body.style.background = '#FFF4D9';
+        pipWindow.document.body.append(pipRoot);
+        // PIP 창 바디 스타일 (여백 제거)
+        pipWindow.document.body.style.margin = '0';
+        pipWindow.document.body.style.padding = '0';
+        pipWindow.document.body.style.background = '#FFF4D9';
         }
 
-        isPipActive.value = true;
+    isPipActive.value = true;
 
-        // PIP 종료 시 원복
-        pipWindow.addEventListener('pagehide', () => {
-            if (pipDashboardRef.value && pipSourceContainerRef.value) {
-                pipSourceContainerRef.value.append(pipDashboardRef.value);
-            }
-            isPipActive.value = false;
-            pipWindow = null;
-        });
+    // PIP 종료 시 원복
+    pipWindow.addEventListener('pagehide', () => {
+        if (pipDashboardRef.value && pipSourceContainerRef.value) {
+            pipSourceContainerRef.value.append(pipDashboardRef.value);
+        }
+        isPipActive.value = false;
+        pipWindow = null;
+    });
 
     } catch (err) {
         console.error('PIP Error:', err);
@@ -260,16 +262,16 @@ const handleCopyCode = async () => {
         showCopyTooltip.value = true;
         
         setTimeout(() => {
-            showCopyTooltip.value = false;
-            tooltipMessage.value = '코드 복사';
+        showCopyTooltip.value = false;
+        tooltipMessage.value = '코드 복사';
         }, 2000);
     } catch (err) {
         console.error('복사 실패:', err);
         tooltipMessage.value = '복사 실패';
         showCopyTooltip.value = true;
         setTimeout(() => {
-            showCopyTooltip.value = false;
-            tooltipMessage.value = '코드 복사';
+        showCopyTooltip.value = false;
+        tooltipMessage.value = '코드 복사';
         }, 2000);
     }
 };
@@ -307,20 +309,20 @@ const handleEditSuccess = async () => {
         roomDetail.value = data;
         roomTitle.value = data.title || roomId;
         roomDescription.value = data.description || '방 설명이 없습니다.';
-        if (!data.owner) {
-            roomOwnerFlag.value = await checkRoomOwner();
-        } else {
-            roomOwnerFlag.value = false;
-        }
+    if (!data.owner) {
+        roomOwnerFlag.value = await checkRoomOwner();
+    } else {
+        roomOwnerFlag.value = false;
+    }
 
-        // 방 정보 변경을 다른 참가자에게 전파
-        RoomManager.getInstance().sendControlMessage('ROOM_UPDATED', {
-            roomId,
-            title: roomTitle.value,
-            description: roomDescription.value,
-        });
+    // 방 정보 변경을 다른 참가자에게 전파
+    RoomManager.getInstance().sendControlMessage('ROOM_UPDATED', {
+        roomId,
+        title: roomTitle.value,
+        description: roomDescription.value,
+    });
     } catch (err) {
-        console.error('방 정보 갱신 실패:', err);
+    console.error('방 정보 갱신 실패:', err);
     }
 };
 
@@ -341,13 +343,13 @@ const checkRoomOwner = async () => {
 // 내 아바타 설정 (실사용: 스토어에서 가져오기)
 const myAvatarConfig = computed<AvatarConfig>(() => {
     return authStore.userInfo?.avatar ?? {
-        hairFront: '',
-        hairBack: '',
-        hairColor: '',
-        eyes: '',
-        glasses: '',
-        outfit: '',
-        clothesColor: ''
+    hairFront: '',
+    hairBack: '',
+    hairColor: '',
+    eyes: '',
+    glasses: '',
+    outfit: '',
+    clothesColor: ''
     };
 });
 
@@ -367,14 +369,14 @@ const shiftToVividRed = (hex: string, intensity: number) => {
     const g = (num >> 8) & 255;
     const b = num & 255;
 
-    // RGB 색 공간에서 Red 채널의 감소폭을 줄이고(0.5배), 
-    // Green/Blue 채널의 감소폭을 키워(1.3배) 붉은 기와 채도를 동시에 확보함
-    const rFactor = 1 - (intensity * 0.8); 
-    const gbFactor = 1 - (intensity * 1.0);
+  // RGB 색 공간에서 Red 채널의 감소폭을 줄이고(0.5배), 
+  // Green/Blue 채널의 감소폭을 키워(1.3배) 붉은 기와 채도를 동시에 확보함
+  const rFactor = 1 - (intensity * 0.8); 
+  const gbFactor = 1 - (intensity * 1.0);
 
-    const rr = Math.max(0, Math.round(r * rFactor));
-    const gg = Math.max(0, Math.round(g * gbFactor));
-    const bb = Math.max(0, Math.round(b * gbFactor));
+  const rr = Math.max(0, Math.round(r * rFactor));
+  const gg = Math.max(0, Math.round(g * gbFactor));
+  const bb = Math.max(0, Math.round(b * gbFactor));
 
     const toHex = (c: number) => c.toString(16).padStart(2, '0');
     return `#${toHex(rr)}${toHex(gg)}${toHex(bb)}`;
@@ -421,26 +423,33 @@ const bgHeartStyle = computed(() => {
 const TEAM_AVG_INTERVAL_MS = 5000;
 let teamAverageInterval: number | undefined;
 
-// ==========================================================// 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
+// ==========================================================// 
+// 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
 // ==========================================================
 onMounted(async () => {
-    if (!roomId) { alert('잘못된 접근입니다.'); router.replace('/lobby'); return; }
+    if (!roomId) { 
+        await uiStore.openAlert('잘못된 접근입니다.', '오류'); 
+        router.replace('/lobby'); 
+        return; 
+    }
 
     const validToken = getValidStudyToken();
     if (!validToken) return;
 
     if (!authStore.userInfo) await authStore.fetchUserInfo();
 
-    // 아바타 미생성 시 입장 차단
+  // 아바타 미생성 시 입장 차단
     if (!authStore.userInfo?.avatar || !authStore.userInfo.avatar.hairFront) {
-        // confirm 창을 띄워 확인을 누르면 이동, 취소를 누르면 로비로 보냄
-        const shouldCreate = confirm("스터디룸에 입장하려면 아바타가 필요해요! 🎨\n지금 아바타를 만들러 가시겠어요?");
-        if (shouldCreate) {
-            router.push('/avatar/create'); // '확인' 클릭 시 아바타 생성 페이지로 이동
-        } else {
-            router.replace('/lobby'); // '취소' 클릭 시 로비로 이동
-        }
-        return; // 중요: 아래 로직(방 입장)이 실행되지 않도록 여기서 함수 종료
+        const shouldCreate = await uiStore.openAlert(
+        "스터디룸에 입장하려면 아바타가 필요해요! 🎨\n지금 아바타를 만들러 가시겠어요?", 
+        "아바타 생성"
+    );
+    if (shouldCreate) {
+      router.push('/avatar/create'); // '확인' 클릭 시 아바타 생성 페이지로 이동
+    } else {
+      router.replace('/lobby'); // '취소' 클릭 시 로비로 이동
+    }
+    return; // 중요: 아래 로직(방 입장)이 실행되지 않도록 여기서 함수 종료
     }
 
     try {
@@ -462,10 +471,10 @@ onMounted(async () => {
 
     updateTeamAverage();
     teamAverageInterval = window.setInterval(updateTeamAverage, TEAM_AVG_INTERVAL_MS);
-});
+    });
 
-// 다른 참가자의 방 정보 업데이트 수신 처리
-watch(roomInfoUpdate, (update) => {
+    // 다른 참가자의 방 정보 업데이트 수신 처리
+    watch(roomInfoUpdate, (update) => {
     if (!update || update.roomId !== roomId) return;
     if (typeof update.title === 'string') {
         roomTitle.value = update.title || roomId;
@@ -475,41 +484,42 @@ watch(roomInfoUpdate, (update) => {
     }
     if (roomDetail.value) {
         roomDetail.value = {
-            ...roomDetail.value,
-            title: roomTitle.value,
-            description: roomDescription.value,
+        ...roomDetail.value,
+        title: roomTitle.value,
+        description: roomDescription.value,
         };
     }
-});
+    });
 
-watch(isConnected, (connected) => {
+    watch(isConnected, (connected) => {
     if (connected) {
         nextTick().then(() => attachLocalVideo());
     }
-});
+    });
 
-const attachLocalVideo = () => {
+    const attachLocalVideo = () => {
     const roomManager = RoomManager.getInstance();
     const room = roomManager.getRoom();
 
     if (room && room.localParticipant && localVideoRef.value) {
         const publication = room.localParticipant.getTrackPublication(Track.Source.Camera);
         if (publication && publication.track) {
-            publication.track.attach(localVideoRef.value);
-            console.log('✅ 내 카메라 연결됨 (화면에는 숨김 처리)');
+        publication.track.attach(localVideoRef.value);
+        console.log('✅ 내 카메라 연결됨 (화면에는 숨김 처리)');
         }
     }
-};
+    };
 
 // ------------------------------------------------------------------
 // 👋 퇴장 및 채팅 로직
 // ------------------------------------------------------------------
 
-const handleLeave = () => {
-    if (confirm('정말 나가시겠습니까?')) {
+    const handleLeave = async () => {
+    const confirmed = await uiStore.openAlert('정말 나가시겠습니까?', '퇴장 확인');
+    if (confirmed) {
         const focusMinutes = Math.floor(focusSeconds.value / 60);
         leaveRoom({
-            'study-time': String(focusMinutes),
+        'study-time': String(focusMinutes),
         });
         studyStore.clearToken();
 
@@ -518,7 +528,7 @@ const handleLeave = () => {
 
         router.replace('/lobby'); // 로비로 이동
     }
-};
+    };
 
 onUnmounted(() => {
     if (teamAverageInterval) {
@@ -530,7 +540,7 @@ onUnmounted(() => {
         'study-time': String(focusMinutes),
     });
     closePip();
-});
+    });
 </script>
 
 <template>
@@ -619,7 +629,6 @@ onUnmounted(() => {
             </symbol>
         </svg>
 
-        <!-- 섬광탄 효과 컴포넌트 -->
         <FlashbangEffect :visible="isStunned" />
 
         <div v-if="showSentFeedback" class="feedback-toast">
@@ -633,7 +642,6 @@ onUnmounted(() => {
             @send="sendFlashbang"
         />
 
-        <!-- pip 로직 추가 -->
         <div ref="pipSourceContainerRef" style="display: none;">
             <div ref="pipDashboardRef" class="pip-content-root">
                 <PipDashboard 
@@ -713,7 +721,6 @@ onUnmounted(() => {
                             설정
                         </button>
                         
-                        <!-- Pixel/Solid/Copy 버튼 -->
                         <div class="copy-button-container">
                             <button 
                                 @click="handleCopyCode"
@@ -722,7 +729,6 @@ onUnmounted(() => {
                                 class="btn-copy-pixel"
                                 :class="{ 'hover': isHoveringCopyButton }"
                             >
-                                <!-- 새로운 Pixel/Solid/Copy SVG 디자인 -->
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                                     <path d="M16 20V22H15V23H3V22H2V6H3V5H6V20H16Z" :fill="isHoveringCopyButton ? '#805143' : '#FFF2CC'"/>
                                     <path d="M22 7V18H21V19H8V18H7V2H8V1H16V7H22Z" :fill="isHoveringCopyButton ? '#805143' : '#FFF2CC'"/>
@@ -730,7 +736,6 @@ onUnmounted(() => {
                                 </svg>
                             </button>
                             
-                            <!-- 툴팁 -->
                             <div v-if="showCopyTooltip" class="copy-tooltip">
                                 {{ tooltipMessage }}
                                 <div class="tooltip-arrow"></div>
@@ -742,7 +747,6 @@ onUnmounted(() => {
                     
                     <RoomBackgroundFrame :bgState="bgState" />
                     
-                    <!-- 타이머 / PIP / 깨우기 버튼 영역 -->
                     <div class="timer-floating-widget">
                         <div class="hearts-container">
                             <svg class="heart-svg heart-svg--timer" :style="bgHeartStyle" viewBox="0 0 32 24">
@@ -764,7 +768,6 @@ onUnmounted(() => {
                             </div>
                         </div>
                         
-                        <!-- Timer Display -->
                         <div class="timer-display">
                             <FocusTimer :seconds="focusSeconds" />
                             <StudyTimer />

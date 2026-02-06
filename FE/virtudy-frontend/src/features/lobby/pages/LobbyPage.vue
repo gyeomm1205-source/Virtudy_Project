@@ -105,13 +105,14 @@ import { storeToRefs } from 'pinia';
 
 // ✅ FSD 모듈 import
 import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore'; // UI 스토어
 import { useLobby } from '@/features/lobby/logic/useLobby';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI'; // 랜덤매칭용
 import type { RoomData } from '@/features/lobby/types/lobby.types'; // 방 데이터 타입
 // ✅ UI 컴포넌트 import
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RoomList from '@/shared/ui/RoomList.vue';
-import CreateRoomModal from '../ui/CreateRoomModal.vue'; // 새로 만든 모달
+import CreateRoomModal from '../ui/CreateRoomModal.vue'; 
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import MatchingModal from '@/shared/ui/MatchingModal.vue';
 import PasswordModal from '../ui/PasswordModal.vue';
@@ -125,6 +126,7 @@ const router = useRouter();
 
 // 1. Store & Hook 연결
 const authStore = useAuthStore();
+const uiStore = useUiStore(); // UI 스토어
 const { userId } = storeToRefs(authStore);
 
 const hasAvatarConfig = computed(() => {
@@ -160,9 +162,9 @@ const isEntering = ref(false);
 const goBack = () => router.back();
 
 // 방 만들기 버튼 클릭 (모달 열기)
-const openCreateModal = () => {
+const openCreateModal = async () => {
   if (!userId.value) {
-    alert('로그인이 필요한 서비스입니다.');
+    await uiStore.openAlert('로그인이 필요한 서비스입니다.', '알림');
     return;
   }
   selectedRoom.value = null; // 생성 모드이므로 데이터 비우기
@@ -177,7 +179,7 @@ const handleEditRoom = async (room: any) => {
     showModal.value = true;
   } catch (error) {
     console.error('방 상세 조회 실패:', error);
-    alert('방 정보를 불러오지 못했습니다.');
+    await uiStore.openAlert('방 정보를 불러오지 못했습니다.', '오류');
   }
 };
 
@@ -190,7 +192,7 @@ const handleDeleteRoom = async (roomId: string) => {
 // 랜덤 매칭
 const handleRandomMatch = async () => {
   if (!userId.value) {
-    alert('로그인이 필요합니다.');
+    await uiStore.openAlert('로그인이 필요합니다.', '알림');
     return;
   }
   try {
@@ -199,7 +201,7 @@ const handleRandomMatch = async () => {
     router.push(`/study/${data.roomId}?token=${data.liveKitToken}`);
   } catch (e) {
     console.error(e);
-    alert('입장 가능한 방이 없습니다.');
+    await uiStore.openAlert('입장 가능한 방이 없습니다.', '알림');
   }
 };
 
@@ -277,7 +279,7 @@ const filteredRooms = computed(() => {
   return filtered;
 });
 
-// ✅ [NEW] 하트 클릭 핸들러
+// ✅ 하트 클릭 핸들러
 const handleToggleFavorite = async (roomId: string) => {
   const targetRoom = myRooms.value.find(room => room.roomId === roomId);
   await toggleFavoriteRoom(roomId);
