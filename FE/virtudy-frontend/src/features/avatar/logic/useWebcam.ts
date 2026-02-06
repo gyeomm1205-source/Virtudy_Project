@@ -1,9 +1,11 @@
 import { ref, onUnmounted } from 'vue';
+import { useUiStore } from '@/stores/uiStore'; // [추가] UI 스토어 import
 
 export function useWebcam() {
   const videoRef = ref<HTMLVideoElement | null>(null);
   const stream = ref<MediaStream | null>(null);
   const isCameraOn = ref(false);
+  const uiStore = useUiStore();
 
   // 카메라 켜기
   const startCamera = async () => {
@@ -17,7 +19,7 @@ export function useWebcam() {
       }
     } catch (err) {
       console.error('카메라 접근 실패:', err);
-      alert('카메라 권한을 허용해주세요! 📷');
+      await uiStore.openAlert('카메라 권한을 허용해주세요! 📷', '권한 오류');
     }
   };
 

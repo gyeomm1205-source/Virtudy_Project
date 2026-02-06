@@ -57,10 +57,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onActivated } from 'vue'; // [추가] onActivated
+import { ref, onMounted, onActivated } from 'vue'; 
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useStudyStore } from '@/stores/studyStore'; 
+import { useUiStore } from '@/stores/uiStore'; // UI 스토어
 import { useMainRanking } from '@/features/ranking/logic/useMainRanking';
 import { getMyProfile } from '@/features/mypage/api/mypageApi';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
@@ -76,6 +77,7 @@ import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 const router = useRouter();
 const authStore = useAuthStore();
 const studyStore = useStudyStore();
+const uiStore = useUiStore(); // 스토어 사용
 
 const userInfo = ref<UserProfileResponse>({
   userId: "",
@@ -123,7 +125,7 @@ const cancelRandomMatch = () => {
 const handleRandomMatch = async () => {
   if (isMatchingModalOpen.value) return;
   if (!authStore.userId) {
-    alert('로그인이 필요합니다.');
+    await uiStore.openAlert('로그인이 필요합니다.', '알림');
     return;
   }
 
@@ -148,32 +150,39 @@ const handleRandomMatch = async () => {
     const elapsed = Date.now() - startedAt;
     await delay(Math.max(0, 3000 - elapsed));
     if (controller.signal.aborted) return;
-    alert('입장 가능한 방이 없습니다.');
+    
+    await uiStore.openAlert('입장 가능한 방이 없습니다.', '알림');
   } finally {
     isMatchingModalOpen.value = false;
     matchingAbortController.value = null;
   }
 };
-const handleCreateRoom = () => {
+
+const handleCreateRoom = async () => {
   if (!authStore.userId) {
-    alert('로그인이 필요합니다.');
+    await uiStore.openAlert('로그인이 필요합니다.', '알림');
     return;
   }
   isCreateRoomModalOpen.value = true;
 };
+
 const handleShowRoomList = () => {
   router.push('/lobby');
 };
 
-// 아바타 클릭 핸들러
-const handleProfileClick = () => {
+// 아바타 클릭 핸들러 (async 변경)
+const handleProfileClick = async () => {
   // 아바타 데이터가 비어있는지 확인
   // (필수 파츠인 hairFront가 없으면 아바타가 없는 것으로 간주)
   const hasAvatar = userInfo.value.avatar && userInfo.value.avatar.hairFront;
 
   if (!hasAvatar) {
-    // 아바타가 없으면 생성 페이지로 이동
-    if (confirm("아직 아바타가 없습니다. 나만의 아바타를 만드시겠습니까? 🎨")) {
+    const confirmed = await uiStore.openAlert(
+      "아직 아바타가 없습니다.\n나만의 아바타를 만드시겠습니까? 🎨", 
+      "아바타 생성"
+    );
+    
+    if (confirmed) {
         router.push('/avatar/create');
     }
   } else {
@@ -184,14 +193,14 @@ const handleProfileClick = () => {
 
 // 데이터 불러오는 함수 분리
 const fetchUserData = async () => {
-  // [추가] 랭킹 정보도 같이 갱신
+  // 랭킹 정보도 같이 갱신
   fetchTopRanks();
   
   try {
     const data = await getMyProfile();
     const hasAvatarConfig = data.avatar && Object.values(data.avatar).some((value) => Boolean(value));
     const mergedAvatar = hasAvatarConfig ? data.avatar : authStore.userInfo?.avatar;
-    // [중요] 받아온 데이터로 userInfo 덮어쓰기
+    // 받아온 데이터로 userInfo 덮어쓰기
     // favoriteRoomTitle이 null이면 빈 문자열로 처리
     userInfo.value = {
       ...data,
@@ -218,7 +227,7 @@ onMounted(() => {
   fetchUserData();
 });
 
-// [추가] 페이지가 캐시되어 있다가 다시 활성화될 때도 데이터 갱신 (KeepAlive 사용 시 필수)
+// 페이지가 캐시되어 있다가 다시 활성화될 때도 데이터 갱신 (KeepAlive 사용 시 필수)
 onActivated(() => {
   fetchUserData();
 });

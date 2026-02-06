@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { useWebcam } from '../logic/useWebcam';
 import { avatarAPI } from '../api/avatarAPI';
 import { useAuthStore } from '@/stores/authStore'; // 내 정보 스토어
+import { useUiStore } from '@/stores/uiStore'; // UI 스토어
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue'; // 아바타 컴포넌트
 import MatchingModal from '@/shared/ui/MatchingModal.vue';
 
@@ -11,6 +12,7 @@ import MatchingModal from '@/shared/ui/MatchingModal.vue';
 const step = ref<'camera' | 'loading' | 'result'>('camera');
 const { videoRef, startCamera, stopCamera, captureImage } = useWebcam();
 const authStore = useAuthStore();
+const uiStore = useUiStore(); // 스토어 사용
 const router = useRouter();
 
 
@@ -78,7 +80,7 @@ const hasSavedCurrentAvatar = ref(false);
 
 const handleCapture = async () => {
   if (remainingChances.value <= 0) {
-    alert(getChanceMessage());
+    await uiStore.openAlert(getChanceMessage(), '알림');
     return;
   }
   isCapturing.value = true;
@@ -101,7 +103,7 @@ const handleCapture = async () => {
     if (!authStore.userInfo) {
       // 로그인이 안 되었다면 걸러낸다
       if (!authStore.accessToken) {
-        alert("로그인 정보가 만료되었습니다. 다시 로그인해주세요.");
+        await uiStore.openAlert("로그인 정보가 만료되었습니다.\n다시 로그인해주세요.", "인증 만료");
         router.push('/guest'); // 로그인 페이지로 쫓아내기
         return;
       }
@@ -129,9 +131,9 @@ const handleCapture = async () => {
   } catch (error) {
     console.error('아바타 생성 실패:', error);
     if (error instanceof Error && error.message.includes("유저 정보")) {
-      alert("내 정보를 불러오는데 실패했습니다. 새로고침 후 다시 시도해주세요. 😥");
+      await uiStore.openAlert("내 정보를 불러오는데 실패했습니다.\n새로고침 후 다시 시도해주세요. 😥", "오류");
     } else {
-      alert("아바타 생성 중 오류가 발생했습니다.");
+      await uiStore.openAlert("아바타 생성 중 오류가 발생했습니다.", "오류");
     }
   }
 };
@@ -236,7 +238,7 @@ const handleConfirm = () => {
 </template>
 
 <style scoped>
-/* 간단한 스타일 예시 */
+/* 간단한 스타일 */
 .page-container {
   display: flex;
   flex-direction: column;
@@ -438,8 +440,6 @@ video {
   100% { transform: rotate(0deg); }
 }
 
-
-/* 버튼 스타일 생략... */
 </style>
 <style scoped>
 .avatar-loading-overlay {

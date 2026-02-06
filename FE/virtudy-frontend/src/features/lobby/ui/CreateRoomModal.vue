@@ -1,61 +1,72 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, reactive } from 'vue'; // reactive 추가
 import { useLobby } from '../logic/useLobby';
 import type { CreateRoomReq, RoomData } from '../types/lobby.types';
 
-// Props 정의 (수정 시 데이터를 받기 위해 initialData 추가)
 const props = defineProps<{
-  initialData?: RoomData | null; // null이면 생성 모드, 값이 있으면 수정 모드
+  initialData?: RoomData | null;
 }>();
 
-// 부모에게 보낼 이벤트
 const emit = defineEmits(['close', 'success']);
 
-// 로직 연결 (updateRoom 추가 가져오기)
 const { createRoom, updateRoom, isLoading } = useLobby();
 
-// 수정 모드인지 판별하는 Computed
 const isEditMode = computed(() => !!props.initialData);
 
-// 입력 폼 상태 초기화
-// initialData가 있으면 그 값으로 채우고, 없으면 빈 값으로 시작
 const form = ref<CreateRoomReq>({
   title: props.initialData?.title || '',
   description: props.initialData?.description || '',
   type: props.initialData?.type || 'PUBLIC',
-  password: '' // 비밀번호는 보안상 불러오지 않고, 수정 시에만 새로 입력받음
+  password: '' 
 });
 
-// 폼 제출 핸들러 (분기 처리 핵심 로직!)
+// 에러 상태 관리
+const errors = reactive({
+  title: '',
+  password: ''
+});
+
+// 입력 시 에러 초기화 함수
+const clearError = (field: 'title' | 'password') => {
+  errors[field] = '';
+};
+
 const handleSubmit = async () => {
-  // A. 유효성 검사
+  // 0. 에러 초기화
+  errors.title = '';
+  errors.password = '';
+  let hasError = false;
+
+  // A. 유효성 검사 (Alert 대신 에러 상태 업데이트)
   if (!form.value.title.trim()) {
-    return alert('방 제목을 입력해주세요! 📝');
-  }
-  if (form.value.title.length > 20) {
-    return alert('방 제목은 20자 이내로 입력해주세요!');
+    errors.title = '방 제목을 입력해주세요!';
+    hasError = true;
+  } else if (form.value.title.length > 20) {
+    errors.title = '방 제목은 20자 이내로 입력해주세요!';
+    hasError = true;
   }
 
-  // 비공개 방 생성 시 비밀번호 필수
   if (!isEditMode.value && form.value.type === 'PRIVATE' && !form.value.password?.trim()) {
-    return alert('비공개 방은 비밀번호가 꼭 필요해요! 🔒');
+    errors.password = '비밀번호를 입력해주세요.';
+    hasError = true;
   }
+
+  // 에러가 하나라도 있으면 중단
+  if (hasError) return;
 
   let success = false;
 
-  // B. 분기 처리 (Create vs Update)
+  // B. 분기 처리
   if (isEditMode.value && props.initialData?.roomId) {
-    // ✏️ 수정 모드
     success = await updateRoom(props.initialData.roomId, form.value);
   } else {
-    // ➕ 생성 모드
     success = await createRoom(form.value);
   }
   
   // C. 성공 시 처리
   if (success) {
-    emit('success'); // 목록 새로고침 요청
-    emit('close');   // 모달 닫기
+    emit('success'); 
+    emit('close');   
   }
 };
 </script>
@@ -71,14 +82,11 @@ const handleSubmit = async () => {
         aria-label="닫기"
       >
         <div class="w-[1.5rem] h-[1.5rem] relative">
-          <!-- 마름모 점선 X 패턴 - 중심 기준 대칭 -->
-          <!-- 왼쪽 위에서 오른쪽 아래 대각선 -->
           <div class="absolute top-[4px] left-[4px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
           <div class="absolute top-[8px] left-[8px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
           <div class="absolute top-[11px] left-[11px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
           <div class="absolute top-[14px] left-[14px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
           <div class="absolute top-[18px] left-[18px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
-          <!-- 오른쪽 위에서 왼쪽 아래 대각선 -->
           <div class="absolute top-[4px] left-[18px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
           <div class="absolute top-[8px] left-[14px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
           <div class="absolute top-[11px] left-[11px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
@@ -99,11 +107,15 @@ const handleSubmit = async () => {
             type="text" 
             placeholder="예) 알고리즘 뿌시기" 
             class="input-box"
+            :class="{ '!border-[var(--color-jam)] focus:!bg-[var(--color-jam)]/10': errors.title }" 
             maxlength="20"
             autofocus
+            @input="clearError('title')"
           />
-          <div class="flex justify-between items-center mt-[-0.25rem] px-1">
-            <span class="text-xs text-[var(--color-syrup)]">최대 20자까지 입력할 수 있어요.</span>
+          <div class="flex justify-between items-center mt-[-0.25rem] px-1 h-[1rem]">
+            <span v-if="errors.title" class="text-xs text-[var(--color-jam)] font-['PfStardust30S'] animate-pulse">{{ errors.title }}</span>
+            <span v-else class="text-xs text-[var(--color-syrup)]">최대 20자까지 입력할 수 있어요.</span>
+            
             <span class="text-xs text-[var(--color-choco)]">{{ form.title.length }}/20</span>
           </div>
         </div>
@@ -141,7 +153,12 @@ const handleSubmit = async () => {
               type="password" 
               placeholder="비밀번호 4자리 이상" 
               class="input-box"
+              :class="{ '!border-[var(--color-jam)] focus:!bg-[var(--color-jam)]/10': errors.password }"
+              @input="clearError('password')"
             />
+            <div class="h-[1rem] mt-[-0.25rem] px-1">
+              <span v-if="errors.password" class="text-xs text-[var(--color-jam)] font-['PfStardust30S'] animate-pulse">{{ errors.password }}</span>
+            </div>
           </div>
         </transition>
 
@@ -203,6 +220,6 @@ const handleSubmit = async () => {
   opacity: 0;
 }
 .butter-btn-text {
- font-size: 21px;
+  font-size: 21px;
 }
 </style>

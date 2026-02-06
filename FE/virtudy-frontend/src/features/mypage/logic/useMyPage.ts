@@ -1,10 +1,12 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore'; // UI 스토어 import
 import { getMyProfile, updateMyProfile } from '../api/mypageApi';
 import type { UserProfileResponse } from '../types/mypage.types';
 
 export const useMyPage = () => {
   const authStore = useAuthStore();
+  const uiStore = useUiStore(); // 스토어 사용
 
   // 상태
   const userInfo = ref<UserProfileResponse | null>(null);
@@ -67,12 +69,14 @@ export const useMyPage = () => {
         nickName: editForm.nickName,
         jobType: editForm.jobType,
       });
-      alert('회원정보가 수정되었습니다.');
+      
+      await uiStore.openAlert('회원정보가 수정되었습니다.', '성공');
+      
       await fetchProfile(); // 최신 정보 다시 로드
       closeEditModal();
     } catch (error) {
       console.error('수정 실패:', error);
-      alert('정보 수정에 실패했습니다.');
+      await uiStore.openAlert('정보 수정에 실패했습니다.', '오류');
     }
   };
 
