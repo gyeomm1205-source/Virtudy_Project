@@ -25,7 +25,7 @@
 
         <div class="flex items-end justify-start gap-[3.5rem] mt-[4.5rem] mb-[1rem]">
           <!-- 랭킹 제목 -->
-          <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[clamp(4rem,9.75rem,9.75rem)] font-['Ram'] font-medium leading-none tracking-[-1.17rem] mt-[6.5rem] -ml-[4rem]">
+          <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[clamp(4rem,9.75rem,9.75rem)] font-['Ram'] font-medium leading-none tracking-[-1.17rem] mt-[6.5rem] -ml-[4rem] whitespace-nowrap">
             랭킹
           </h1>
 
@@ -89,7 +89,7 @@
           </div>
 
           <div
-            class="w-[min(24.5625rem,40vw)] h-[2.0625rem] border-2 border-[var(--color-choco)] bg-[var(--color-cream2)] flex items-center px-[0.5rem] gap-[0.5rem] mb-[0.5rem] shadow-[4px_4px_0px_0px_var(--color-choco)] rank-search">
+            class="w-[min(24.5625rem,40vw)] h-[2.0625rem] border-2 border-[var(--color-choco)] bg-[var(--color-cream2)] flex items-center px-[0.5rem] gap-[0.5rem] mb-[0.5rem] shadow-[4px_4px_0px_0px_var(--color-choco)] translate-y-[-0.9rem] translate-x-[1rem] rank-search">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none" class="w-[1.25rem] h-[1.25rem]">
               <path d="M17.1819 15.5455V14.7273H16.3637V13.9091H15.5455V13.0909H14.7273V12.2728H13.0909V11.4546H13.9091V9.8182H14.7273V4.9091H13.9091V3.27273H13.0909V2.45455H12.2728V1.63637H11.4546V0.818183H9.8182V0H4.9091V0.818183H3.27273V1.63637H2.45455V2.45455H1.63637V3.27273H0.818183V4.9091H0V9.8182H0.818183V11.4546H1.63637V12.2728H2.45455V13.0909H3.27273V13.9091H4.9091V14.7273H9.8182V13.9091H11.4546V13.0909H12.2728V14.7273H13.0909V15.5455H13.9091V16.3637H14.7273V17.1819H15.5455V18H17.1819V17.1819H18V15.5455H17.1819ZM9.00002 11.4546V12.2728H5.72728V11.4546H4.09092V10.6364H3.27273V9.00002H2.45455V5.72728H3.27273V4.09092H4.09092V3.27273H5.72728V2.45455H9.00002V3.27273H10.6364V4.09092H11.4546V5.72728H12.2728V9.00002H11.4546V10.6364H10.6364V11.4546H9.00002Z" fill="#805143"/>
             </svg>
@@ -109,7 +109,7 @@
         </div>
 
         <div
-          class="mt-[-3px] border-2 border-[var(--color-choco)] w-full h-[37.5rem] rounded-[1.25rem] overflow-hidden bg-[var(--color-cream)] flex flex-col relative z-10 shadow-[4px_4px_0px_0px_var(--color-choco)] rank-table">
+          class="mt-[-3.8px] border-2 border-[var(--color-choco)] w-full h-[37.5rem] rounded-[1.25rem] overflow-hidden bg-[var(--color-cream)] flex flex-col relative z-10 shadow-[4px_4px_0px_0px_var(--color-choco)] rank-table">
 
           <div v-if="isLoading"
             class="flex-1 flex items-center justify-center text-[1.5rem] font-['PfStardust30S'] text-[var(--color-choco)]">
@@ -123,13 +123,20 @@
           <div v-else v-for="(item, index) in rankList" :key="item.id"
             class="flex items-center h-[3.75rem] border-b border-[var(--color-syrup)] last:border-none px-[2rem] rank-row"
             :class="[
+              /* 배경색 (짝수: 초코, 홀수: 크림) */
               index % 2 === 0 ? 'bg-[var(--color-choco)]' : 'bg-[var(--color-cream)]',
-              { '!bg-[var(--color-choco)] !border-2 !border-[var(--color-butter)] box-border': isMyself(item) }
+              
+              /* 본인 강조: 테두리(그림자)만 유지 */
+              { 'shadow-[inset_0_0_0_4px_var(--color-butter)] relative z-10': isMyself(item) },
+              
+              /* 모서리 둥글기 */
+              { 'rounded-t-[1.125rem]': index === 0 },
+              { 'rounded-b-[1.25rem]': index === rankList.length - 1 }
             ]">
+            
             <div class="w-[4rem] text-center">
               <span class="text-[1.75rem] font-['Xcu']" :class="[
-                isMyself(item) ? 'text-[var(--color-butter)] ' :
-                  (index % 2 === 0) ? 'text-[var(--color-cream)]' : 'text-[var(--color-pancake)]'
+                (index % 2 === 0) ? 'text-[var(--color-cream)]' : 'text-[var(--color-pancake)]'
               ]">
                 {{ item.rank }}
               </span>
@@ -137,10 +144,7 @@
 
             <div class="flex-1 text-center px-[1rem]">
               <span class="text-[1.5rem] font-['PfStardust30S'] truncate block" :class="[
-                isMyself(item) ? 'text-[var(--color-butter)]' :
-                  (index % 2 === 0 && index < 3) ? 'text-[var(--color-butter)]' :
-                    (index === 1) ? 'text-[var(--color-butter)]' :
-                      'text-[var(--color-pancake)]'
+                  (index % 2 === 0) ? 'text-[var(--color-cream)]' : 'text-[var(--color-pancake)]'
               ]">
                 {{ item.nickName }}
                 <span v-if="isMyself(item)" class="text-[0.8rem] ml-1 align-top">(나)</span>
@@ -149,8 +153,7 @@
 
             <div class="w-[6rem] text-right">
               <span class="text-[1.5rem] font-['PfStardust30S']" :class="[
-                isMyself(item) ? 'text-[var(--color-butter)]' :
-                  (index % 2 === 0) ? 'text-[var(--color-cream)]' : 'text-[var(--color-pancake)]'
+                (index % 2 === 0) ? 'text-[var(--color-cream)]' : 'text-[var(--color-pancake)]'
               ]">
                 {{ item.score }}p
               </span>
@@ -164,7 +167,7 @@
             </div>
           </div>
         </div>
-
+    
         <div class="mt-[1.5rem] flex justify-center gap-[1rem] rank-pagination">
           <button @click="changePage(0)" :disabled="currentPage === 0"
             class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform flex items-center justify-center overflow-hidden">
@@ -292,7 +295,7 @@ const isMyself = (item: RankItem) => {
   }
 
   .rank-avatar {
-    pointer-events: none;
+    display: none;
   }
 
   .rank-back {
@@ -313,7 +316,6 @@ const isMyself = (item: RankItem) => {
   .rank-panel-header {
     flex-direction: row;
     align-items: center;
-    flex-wrap: wrap;
     gap: 12px;
   }
 
@@ -338,7 +340,6 @@ const isMyself = (item: RankItem) => {
   }
 
   .rank-pagination {
-    flex-wrap: wrap;
     gap: 0.5rem;
   }
 

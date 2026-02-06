@@ -87,8 +87,6 @@ const handleSubmit = async () => {
         </div>
       </button>
 
-      <!-- 공개/비공개 토글 삭제 -->
-
       <h2 class="text-[var(--color-choco)] text-[32px] font-['Ram'] text-center mb-6">
         {{ isEditMode ? '방 정보 수정' : '방 만들기' }}
       </h2>
@@ -119,7 +117,7 @@ const handleSubmit = async () => {
           ></textarea>
         </div>
         <!-- 설명 박스 아래에 비공개방 체크박스 추가 -->
-        <div class="flex items-center gap-2 mt-[-0.5rem]">
+        <div v-if="!isEditMode || (isEditMode && form.type !== 'PRIVATE' && form.type !== 'PUBLIC')" class="flex items-center gap-2 mt-[-0.5rem]">
           <input
             type="checkbox"
             id="privateRoomCheckbox"

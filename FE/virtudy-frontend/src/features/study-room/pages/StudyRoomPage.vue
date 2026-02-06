@@ -674,7 +674,14 @@ onUnmounted(() => {
                 <main class="main-window-area">
                     
                     <div class="room-info-overlay">
-                        <h2 class="room-title">{{ roomTitle }}</h2>
+                        <h2 class="room-title flex items-center gap-2">
+                            {{ roomDetail?.title || roomTitle }}
+                            <span v-if="roomDetail?.type === 'PRIVATE'" class="ml-2 flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 12V11H19V6H18V4H17V3H16V2H14V1H10V2H8V3H7V4H6V6H5V11H4V12H3V22H4V23H20V22H21V12H20ZM8 6H9V5H10V4H14V5H15V6H16V11H8V6Z" fill="#805143"/>
+                              </svg>
+                            </span>
+                        </h2>
                         <p v-if="roomDescription" class="room-description">{{ roomDescription }}</p>
                         <div class="ai-score-debug">
                             <span>🤖 AI Score: {{ Math.round(aiStore.concentrationScore) }}점</span>
@@ -823,7 +830,7 @@ onUnmounted(() => {
                                 />
                             </div>
                             <div class="user-info">
-                                <span class="user-name">{{ remoteParticipantNames[rt.participantId] || rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
+                                <span class="user-name">{{ remoteParticipantNames[rt.participantId] || rt.participantId }}</span>
                                 <svg
                                     class="heart-svg"
                                     :style="getHeartStyle(remoteParticipantScores[rt.participantId] ?? 50)"
