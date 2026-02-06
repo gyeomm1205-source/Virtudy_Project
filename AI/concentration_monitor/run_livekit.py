@@ -34,7 +34,15 @@ def _should_log(last_times: dict, key: str, interval_sec: float, now: float = No
     return False
 
 
-async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: multiprocessing.Queue = None, participant_identity: str = "", session_id: str = None):
+async def ai_process_loop(
+    room: rtc.Room,
+    video_stream: rtc.VideoStream,
+    queue: multiprocessing.Queue = None,
+    participant_identity: str = "",
+    session_id: str = None,
+    initial_score: float = 100.0,
+    score_cache: dict = None,
+):
     print(f"[INFO] AI Processing Loop Started (SessionID: {session_id})", flush=True)
     
     # Initialize Logic
@@ -43,7 +51,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
     drowsy_det = DrowsinessDetector()
     phone_det = PhoneDetector()
     fuser = StateFuser()
-    scorer = FocusScorer()
+    scorer = FocusScorer(initial_score=initial_score)
 
     # 카프카 로거 초기화
     # [FIX] Use session_id if provided, else fallback to room.name (though likely to fail in backend)
@@ -144,6 +152,8 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         signals = FrameSignals(drowsy=sig_drowsy, absent=sig_abs, phone=sig_phone)
         decision = fuser.decide(signals)
         snap = scorer.update(decision.state)
+        if score_cache is not None:
+            score_cache[participant_identity] = snap.score
 
         # [DEBUG] State change log (rate-limited)
         if decision.state != last_state_logged and _should_log(log_times, "state", 1.0, log_now):
@@ -210,6 +220,7 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
     room = rtc.Room()
     track_tasks: dict[str, asyncio.Task] = {}
     participant_tracks: dict[str, set[str]] = {}
+    score_cache: dict[str, float] = {}
 
     def _start_video_task(track: rtc.Track, participant: rtc.RemoteParticipant):
         track_sid = getattr(track, "sid", None)
@@ -219,7 +230,18 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
             return
         video_stream = rtc.VideoStream(track)
         session_id = participant.metadata
-        task = asyncio.create_task(ai_process_loop(room, video_stream, queue, participant.identity, session_id))
+        initial_score = score_cache.get(participant.identity, 100.0)
+        task = asyncio.create_task(
+            ai_process_loop(
+                room,
+                video_stream,
+                queue,
+                participant.identity,
+                session_id,
+                initial_score,
+                score_cache,
+            )
+        )
         track_tasks[track_sid] = task
         participant_tracks.setdefault(participant.identity, set()).add(track_sid)
 

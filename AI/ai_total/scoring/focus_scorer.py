@@ -4,8 +4,12 @@ from core.types import FocusState, ScoreSnapshot
 from core.config import Config
 
 class FocusScorer:
-    def __init__(self):
-        self.score = 100.0
+    def __init__(self, initial_score: float = 100.0):
+        if initial_score < 0:
+            initial_score = 0.0
+        if initial_score > 100:
+            initial_score = 100.0
+        self.score = float(initial_score)
         self.last_t = time.time()
 
         self.focused_sec = 0.0
