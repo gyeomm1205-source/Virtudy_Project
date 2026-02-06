@@ -1,11 +1,10 @@
 <template>
-  <div class="bg-[var(--color-cream)] relative min-h-[85rem] w-full pb-[8rem]">
-    <!-- Global Navigation -->
-    <GlobalNavBar />
+  <GlobalBackground :skyType="3">
+  <div class="relative min-h-[85rem] w-full pb-[8rem] mypage-root">
     
     <!-- 마이페이지 제목 -->
     <div class="absolute left-[4.75rem] top-[22.25rem] -translate-y-1/2">
-      <h1 class="text-[var(--color-pancake)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
+      <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
         마이<br />페이지
       </h1>
     </div>
@@ -28,9 +27,9 @@
     </button>
 
     <!-- 왼쪽 프로필과 메뉴 -->
-    <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem]">
+    <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem] mypage-menu">
       <!-- 메뉴 버튼들 -->
-      <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[0.625rem]">
+      <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[12px] mypage-menu-buttons">
         <button 
           @click="activeTab = 'profile'"
           :class="[
@@ -57,8 +56,8 @@
     </div>
 
     <!-- 오른쪽 메인 콘텐츠 -->
-    <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem]">
-      <div class="bg-[var(--color-syrup)] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] overflow-hidden relative shadow-[4px_4px_0px_0px_var(--color-choco)]">
+    <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem] mypage-content">
+      <div class="bg-[var(--color-syrup)] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] overflow-hidden relative shadow-[4px_4px_0px_0px_var(--color-choco)] mypage-card">
         <!-- 회원정보수정 버튼 -->
         <button 
           @click="openEditModal"
@@ -69,29 +68,36 @@
           </span>
         </button>
         <!-- 프로필 영역 -->
-        <div class="absolute left-[18.125rem] top-[4.75rem] flex flex-col items-center">
+        <div class="absolute left-0 top-[4.5rem] w-full flex flex-col items-center">
           <!-- 아바타 -->
-          <div class="relative w-[9.125rem] h-[9.125rem] mb-[1.5rem]">
-            <div class="w-[9.125rem] h-[9.125rem] rounded-full overflow-hidden border-4 border-[var(--color-choco)]">
+          <div class="flex items-center justify-center text-[2rem] relative w-[10.5rem] h-[10.5rem] mb-[0.5rem] translate-y-[-0.1rem] translate-x-[0.2rem]">
+            <div class="w-[9rem] h-[9rem] rounded-full bg-[var(--color-butter)] relative overflow-hidden shadow-md mx-auto mt-[1.5rem] transform-gpu">
+              <CharacterAvatar 
+                v-if="hasAvatarConfig"
+                :config="userInfo!.avatar!"
+                class="absolute inset-0 w-full h-full object-cover scale-[1.45] origin-center translate-y-[58%] translate-x-[1.45rem]"
+              />
               <img 
-                v-if="userInfo?.avatarImageUrl" 
+                v-else-if="userInfo?.avatarImageUrl" 
                 :src="userInfo.avatarImageUrl" 
                 alt="프로필 사진"
-                class="w-full h-full object-cover"
+                class="absolute inset-0 w-full h-full object-cover scale-110 origin-center"
               />
-              <div v-else class="w-full h-full bg-[var(--color-butter)] flex items-center justify-center text-[2rem] font-bold text-[var(--color-choco)]">
-                ME
+              <div v-else @click="goToAvatarCreate"class="w-full h-full flex flex-col items-center justify-center hover:bg-[#FFE08C] transition-colors cursor-pointer group">
+                <span class="text-[var(--color-choco)] font-bold text-[1.1rem] font-['Xcu'] leading-tight text-center">
+                  아바타<br>생성하기
+                </span>
               </div>
             </div>
           </div>
           
           <!-- 닉네임 -->
-          <h2 class="text-[var(--color-choco)] text-[1.75rem] font-['Xcu'] font-medium leading-none mb-[1.1rem]">
+          <h2 class="text-[var(--color-choco)] text-[1.75rem] font-['Xcu'] font-medium leading-none mb-[0.3rem] text-center max-w-[24rem] break-words">
             {{ userInfo?.nickName || '닉네임' }}
           </h2>
           
           <!-- 점수와 티어 -->
-          <div class="flex items-center gap-[1rem] mb-[0.25rem]">
+          <div class="flex items-center gap-[1rem] mb-[-0.2rem] justify-center">
             <span class="text-[var(--color-pancake)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none">
               {{ userInfo?.tierScore || 0 }}p
             </span>
@@ -101,7 +107,7 @@
           </div>
           
           <!-- 최애 스터디 -->
-          <p class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none">
+          <p class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none text-center max-w-[28rem] break-words">
             &lt;{{ userInfo?.favoriteRoomTitle || '최애 스터디 없음' }}&gt;
           </p>
         </div>
@@ -116,8 +122,9 @@
           </div>
     
           <!-- 공부시간/집중도 카드 -->
-          <div class="mb-[1.25rem]">
+          <div class="mb-[1.25rem] mini-report-wrapper">
             <MiniReport 
+              class="gap-[12.5rem] h-[8.9375rem] px-[12.75rem] py-[1.125rem]"
               :studyTime="userInfo?.dailyPureStudyTime" 
               :focusing="userInfo?.dailyFocusDepth" 
             />
@@ -154,12 +161,16 @@
     </button>
 
     <!-- Global Footer -->
-    <GlobalFooter class="absolute bottom-0 w-full left-0" />
+    <div class="absolute bottom-0 left-0 w-full z-50">
+      <GlobalFooter />
+    </div>
     
     <!-- 프로필 수정 모달 -->
     <ProfileEditModal 
       v-if="isEditModalOpen"
       :email="userInfo?.email || ''"
+      :avatar="userInfo?.avatar"
+      :avatar-image-url="userInfo?.avatarImageUrl"
       v-model:nickName="editForm.nickName"
       v-model:jobType="editForm.jobType"
       :jobOptions="JOB_OPTIONS"
@@ -167,6 +178,7 @@
       @submit="submitEdit"
     />
   </div>
+  </GlobalBackground>
 </template>
 
 <script setup lang="ts">
@@ -174,14 +186,15 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMyPage } from '../logic/useMyPage';
 import { JOB_OPTIONS } from '../types/mypage.types';
-import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import MiniReport from '@/shared/ui/MiniReport.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';  
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import ProfileEditModal from '../ui/ProfileEditModal.vue';
 import { useWeeklyReport } from  '@/features/report/logic/useWeeklyReport';
 import { authAPI } from '@/features/auth/api/authAPI';
 import { useAuthStore } from '@/stores/authStore';
+import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -193,6 +206,10 @@ const {
 // useWeeklyReport 내부의 onMounted가 실행되면서 자동으로 '지난주' 데이터를 불러옵니다.
 const { reportData, isLoading } = useWeeklyReport();
 const hasReport = computed(() => Boolean(reportData.value && reportData.value.reportId));
+const hasAvatarConfig = computed(() => {
+  if (!userInfo.value?.avatar) return false;
+  return Object.values(userInfo.value.avatar).some((value) => Boolean(value));
+});
 const goBack = () => {
   router.push({ name: 'user' });
 };
@@ -216,5 +233,52 @@ const handleWithdraw = async () => {
     alert('회원탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.');
   }
 };
+
+const goToAvatarCreate = () => {
+  router.push('/avatar/create'); 
+};
 </script>
+
+<style scoped>
+@media (max-width: 1280px) {
+  .mypage-root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 140px;
+    gap: 28px;
+  }
+
+  .mypage-menu {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(92vw, 360px);
+    height: auto;
+    order: 2;
+  }
+
+  .mypage-content {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(95vw, 760px);
+    height: auto;
+    order: 1;
+    margin-top: 109px;
+  }
+
+  .mypage-card {
+    height: auto !important;
+    min-height: 1100px;
+  }
+
+  .mypage-menu-buttons {
+    position: static;
+    margin-top: 16px;
+    flex-direction: row;
+  }
+
+}
+</style>
 

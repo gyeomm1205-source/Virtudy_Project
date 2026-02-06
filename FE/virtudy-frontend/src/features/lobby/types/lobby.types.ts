@@ -83,6 +83,7 @@ export interface EnterRoomReq {
 export interface EnterSessionRes {
   // ✅ 명세서에 따라 userId -> memberId로 변경됨
   memberId: string; 
+  roomId: string;
   nickName: string;
   avatar: AvatarConfig;
   liveKitToken: string;

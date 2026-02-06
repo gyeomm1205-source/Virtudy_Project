@@ -1,5 +1,12 @@
 <template>
-  <div class="bg-[var(--color-syrup)] border-2 border-[var(--color-choco)] border-solid h-full w-full overflow-clip" style="box-shadow: 4px 4px 0px 0px var(--color-choco);">
+  <div
+    class="bg-[var(--color-syrup)] border-2 border-[var(--color-choco)] border-solid h-full w-full overflow-clip cursor-pointer"
+    style="box-shadow: 4px 4px 0px 0px var(--color-choco);"
+    role="button"
+    tabindex="0"
+    @click="goToRanking"
+    @keyup.enter="goToRanking"
+  >
     
     <div class="relative h-[19.625rem] overflow-clip">
       <div class="absolute left-[1.688rem] top-[2.188rem] transform -translate-y-1/2">
@@ -11,7 +18,7 @@
       <div class="absolute left-1/2 top-[calc(50%+1.594rem)] transform -translate-x-1/2 -translate-y-1/2 w-[26.938rem] h-[15.688rem] flex flex-col rounded-[1.25rem] overflow-hidden">
         
         <div v-if="isLoading" class="flex-1 flex items-center justify-center bg-[var(--color-cream)] text-[var(--color-choco)] font-['PfStardust30S'] text-xl">
-           불러오는 중...
+          불러오는 중...
         </div>
 
         <div 
@@ -30,7 +37,7 @@
             </p>
           </div>
           
-          <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[12.625rem]">
+          <div class="absolute left-45 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[11rem]">
             <p 
               class="text-[1.5rem] font-['PfStardust30S'] font-normal leading-none text-center truncate"
               :class="index === 0 ? 'text-[var(--color-butter)]' : 
@@ -40,7 +47,7 @@
             </p>
           </div>
           
-          <div class="absolute left-[19.969rem] top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[6.063rem]">
+          <div class="absolute left-[20rem] top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[6.063rem]">
             <p 
               class="text-[1.5rem] font-['PfStardust30S'] font-normal leading-none text-center"
               :class="index === 0 ? 'text-[var(--color-butter)]' : 
@@ -51,12 +58,10 @@
           </div>
           
           <div class="w-[4.5rem] absolute right-4 top-1/2 transform -translate-y-1/2 text-center flex justify-center">
-            <span 
-              class="font-['PfStardust30S'] text-lg transition-colors"
-              :class="getTierColorClass(item.tier)"
-            >
-              {{ item.tier }}
-            </span>
+            <TierIcon 
+              :tier="item.tier" 
+              class="w-[1.8rem] h-[1.8rem]" 
+            />
           </div>
         </div>
       </div>
@@ -91,7 +96,7 @@
             </p>
           </div>
           
-          <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[12.625rem]">
+          <div class="absolute left-45 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[12.625rem]">
             <p 
               class="text-[1.5rem] font-['PfStardust30S'] font-normal leading-none text-center truncate"
               :class="index === 0 ? 'text-[var(--color-butter)]' : 
@@ -101,7 +106,7 @@
             </p>
           </div>
           
-          <div class="absolute left-[19.969rem] top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[6.063rem]">
+          <div class="absolute left-[20rem] top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[6.063rem]">
             <p 
               class="text-[1.5rem] font-['PfStardust30S'] font-normal leading-none text-center"
               :class="index === 0 ? 'text-[var(--color-butter)]' : 
@@ -112,12 +117,10 @@
           </div>
           
           <div class="w-[4.5rem] absolute right-4 top-1/2 transform -translate-y-1/2 text-center flex justify-center">
-            <span 
-              class="font-['PfStardust30S'] text-lg transition-colors"
-              :class="getTierColorClass(item.tier)"
-            >
-              {{ item.tier }}
-            </span>
+            <TierIcon 
+              :tier="item.tier" 
+              class="w-[1.8rem] h-[1.8rem]" 
+            />
           </div>
         </div>
       </div>
@@ -126,7 +129,9 @@
 </template>
 
 <script setup lang="ts">
+import TierIcon from '@/shared/ui/TierIcon.vue';
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 export interface RankItem {
   id: string;
   nickName: string;
@@ -146,6 +151,12 @@ const props = withDefaults(defineProps<RankingSectionMiniProps>(), {
   isLoading: false,
 });
 
+const router = useRouter();
+
+const goToRanking = () => {
+  router.push({ name: 'ranking' });
+};
+
 // 상위 5개만 안전하게 슬라이싱
 const displayedPrivateRanking = computed(() => {
   return props.privateTop5.slice(0, 5);
@@ -154,27 +165,4 @@ const displayedPrivateRanking = computed(() => {
 const displayedTeamRanking = computed(() => {
   return props.teamTop5.slice(0, 5);
 });
-
-// 티어별 색상(나중에 이미지로 바뀔 예정)
-const getTierColorClass = (tierName: string | undefined) => {
-  const tier = tierName?.toUpperCase() || '';
-
-  if (tier.includes('BRONZE')) {
-    return 'text-[#CD7F32]';
-  }
-  if (tier.includes('SILVER')) {
-    return 'text-[#C0C0C0]';
-  }
-  if (tier.includes('GOLD')) {
-    return 'text-[#FFD700]';
-  }
-  if (tier.includes('PLATINUM')) {
-    return 'text-[#00CED1]';
-  }
-  if (tier.includes('DIA')) {
-    return 'text-[#38BDF8]';
-  }
-  
-  return 'text-[var(--color-choco)]';
-};
 </script>

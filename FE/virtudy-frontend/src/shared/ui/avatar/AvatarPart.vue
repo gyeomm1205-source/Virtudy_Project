@@ -22,6 +22,9 @@ const SvgComponent = computed(() => {
   });
 });
 
+// 색상 prop이 존재하는지 확인하는 플래그
+const hasColor = computed(() => !!props.color);
+
 // 2. 색상 스타일 (색상이 있을 때만 변수 주입)
 const styleObject = computed(() => {
   return props.color ? { '--part-color': props.color } : {};
@@ -29,7 +32,11 @@ const styleObject = computed(() => {
 </script>
 
 <template>
-  <div class="part-wrapper" :style="styleObject">
+  <div 
+    class="part-wrapper" 
+    :class="{ 'apply-color': hasColor }"
+    :style="styleObject"
+  >
     <component :is="SvgComponent" class="svg-content" />
   </div>
 </template>
@@ -41,17 +48,39 @@ const styleObject = computed(() => {
   left: 0;
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.svg-content {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+:deep(svg) {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 /* SVG 내부의 _base 레이어 색상 변경 로직
   ID가 "_base"로 끝나는 요소의 색상을 변경
   SVG가 stroke를 사용하므로 stroke를 변경
 */
-:deep([id$="_base"]) {
+.apply-color :deep([id$="_base"]) {
   /* props.color가 있을 때만 CSS 변수가 적용됨 */
   stroke: var(--part-color, initial) !important;
   
   /* 만약 나중에 면으로 채워진 SVG를 쓴다면 아래 주석을 해제하고 위를 주석 처리 */
   /* fill: var(--part-color, initial) !important; */
 }
+
+/* 그림자 레이어에 곱하기 모드 적용 */
+:deep([id$="_shadow"]) {
+  mix-blend-mode: multiply; /* 곱하기 효과 */
+  opacity: 0.9; /* 너무 진하면 투명도 조절 (선택사항) */
+}
+
 </style>

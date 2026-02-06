@@ -6,6 +6,7 @@ import com.ssafy.virtudy.member.domain.Member;
 import com.ssafy.virtudy.member.domain.MemberGameStat;
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
 import com.ssafy.virtudy.member.repository.MemberRepository;
+import com.ssafy.virtudy.rank.service.RankService;
 import com.ssafy.virtudy.study.domain.StudySession;
 import com.ssafy.virtudy.study.dto.StudyAnalysisResult;
 import com.ssafy.virtudy.tier.dto.TierResponse;
@@ -35,6 +36,9 @@ public class TierService {
     private final StudyAnalysisService studyAnalysisService;
     private final RedisTemplate<String, String> redisTemplate;
     // private final com.ssafy.virtudy.study.service.RedisLogService redisLogService; // 제거
+
+   // RankService
+   private final RankService rankService;
 
     private static final String DIAMOND = "DIAMOND";
     private static final String PLATINUM = "PLATINUM";
@@ -129,7 +133,7 @@ public class TierService {
      * 기존 점수에 누적합니다.
      */
     private void updateMemberTierScore(Member member, int newScore) {
-        MemberGameStat stat = memberGameStatRepository.findByMemberId(member.getId())
+        MemberGameStat stat = memberGameStatRepository.findByMember(member)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_GAME_STAT_NOT_FOUND_ERROR));
 
         // 기존 점수에 누적 (accumulate)
@@ -151,6 +155,9 @@ public class TierService {
         } catch (Exception e) {
             log.error("Redis 티어 점수 업데이트 실패: memberId={}, score={}", member.getMemberId(), updatedScore, e);
         }
+
+        // 랭킹 점수 업데이트와 동시에 랭킹 업데이트
+        rankService.refreshUserScore(member.getMemberId(), updatedScore);
     }
 
 
@@ -170,7 +177,7 @@ public class TierService {
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
 
         // DB에서 최신 게임 스탯 조회 (없으면 0점으로 간주)
-        MemberGameStat stat = memberGameStatRepository.findByMemberId(member.getId())
+        MemberGameStat stat = memberGameStatRepository.findByMember(member)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_GAME_STAT_NOT_FOUND_ERROR));
 
         return TierResponse.builder()

@@ -5,6 +5,7 @@
 
 /* Figma Design Variables */
 :root {
+  --font-primary: 'PfStardust30S', sans-serif;
   --color-butter: #ffd966;
   --color-cream: #fff2cc;
   --color-cream2: #fff8e5;
@@ -15,6 +16,14 @@
   --color-jam: #d70654;
   --color-melon: #b8d576;
   --spacing-m: 48px;
+}
+
+@theme {
+  --font-sans: 'PfStardust30S', sans-serif;
+}
+
+html, body, #app {
+  font-family: var(--font-primary);
 }
 
 @font-face {

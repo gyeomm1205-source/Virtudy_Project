@@ -1,16 +1,16 @@
 <template>
-  <div class="bg-[var(--color-cream)] relative min-h-[85rem] w-full pb-[8rem]">
-    <GlobalNavBar />
+  <GlobalBackground :skyType="3">
+  <div class="relative min-h-[85rem] w-full pb-[8rem] report-root">
     
     <div class="absolute left-[4.75rem] top-[22.25rem] -translate-y-1/2">
-      <h1 class="text-[var(--color-pancake)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
+      <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
         마이<br />페이지
       </h1>
     </div>
 
     <button 
       @click="goBack"
-      class="absolute left-[4.75rem] top-[7.4375rem] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform"
+      class="absolute left-[4.75rem] top-[7.4375rem] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform report-back"
     >
       <svg 
         xmlns="http://www.w3.org/2000/svg" 
@@ -24,8 +24,8 @@
       </svg>
     </button>
 
-    <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem]">
-      <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[0.625rem]">
+    <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem] report-menu">
+      <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[12px] report-menu-buttons">
         <button 
           @click="goToMyPage"
           class="w-full px-[2rem] py-[1.25rem] border-2 border-[var(--color-choco)] border-solid rounded-[0.125rem] shadow-[4px_4px_0px_0px_var(--color-choco)] cursor-pointer transition-transform hover:scale-105 bg-[var(--color-butter2)]"
@@ -45,8 +45,21 @@
       </div>
     </div>
 
-    <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem]">
-      <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border">
+    <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem] report-content">
+      <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border report-card">
+        <div class="absolute right-[-1rem] bottom-[-3rem] w-[12rem] h-[14rem] z-10">
+          <CharacterAvatar
+            v-if="hasAvatarConfig"
+            :config="authStore.userInfo!.avatar!"
+            class="w-full h-full"
+          />
+          <img
+            v-else-if="authStore.userInfo?.avatarImageUrl"
+            :src="authStore.userInfo.avatarImageUrl"
+            alt="프로필"
+            class="w-full h-full object-cover"
+          />
+        </div>
         <div
           v-if="!hasReport && !isLoading"
           class="absolute inset-0 z-20 flex items-center justify-center rounded-[1.25rem] bg-[rgba(255,253,245,0.75)] backdrop-blur-[2px]"
@@ -94,17 +107,20 @@
             {{ formatDateRange(currentWeek.monday, currentWeek.sunday) }}
             <div class="relative shrink-0 w-[2rem] h-[1.25rem]">
               <div class="absolute left-[0.125rem] top-[0.125rem] w-[1.75rem] h-[1rem]">
-                <img 
-                  alt="" 
-                  class="block max-w-none size-full" 
-                  src="http://localhost:3845/assets/fc82f790716939d8d7fb00be557667ae980832c8.svg" 
-                />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="10" viewBox="0 0 18 10" fill="none" class="block max-w-none size-full">
+                  <path 
+                    d="M18 0V2H16V4H14L14 6H12V8H10V10H8V8L6 8L6 6L4 6V4L2 4L2 2H0L0 0L18 0Z" 
+                    :fill="'var(--color-syrup)'" 
+                    :stroke="'var(--color-choco)'" 
+                    stroke-width="1.2"
+                  />
+                </svg>
               </div>
             </div>
           </button>
 
           <div v-if="showCalendar" class="absolute top-10 right-0 shadow-xl rounded-[20px] z-40">
-             <WeeklyCalendar 
+            <WeeklyCalendar 
               :selectedDate="baseDate"
               @select-date="changeWeek"
               @close="showCalendar = false"
@@ -152,33 +168,34 @@
             <p class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.25rem] leading-relaxed pr-[4rem]">
               {{ reportData?.aiComment || "열심히 공부한 당신에게 멋진 분석을 준비 중이에요..." }}
             </p>
-            <img 
-              src="http://localhost:3845/assets/ae7ca0939b29738c16aee5cf86953e893d60c594.svg" 
-              class="absolute right-4 bottom-2 w-[4rem] h-[4rem]"
-              alt="AI Character"
-            />
           </div>
         </div>
-
       </div>
     </div>
-
-    <GlobalFooter class="absolute bottom-0 w-full left-0" />
+    
+    <!-- Global Footer -->
+    <div class="absolute bottom-0 left-0 w-full z-50">
+      <GlobalFooter />
+    </div>
   </div>
+  </GlobalBackground>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useWeeklyReport } from '../logic/useWeeklyReport';
 
-import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';
 import WeeklyCalendar from '../pages/WeeklyCalendar.vue';
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import { useAuthStore } from '@/stores/authStore';
+import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 
 const router = useRouter();
 const showCalendar = ref(false);
+const authStore = useAuthStore();
 
 const { 
   reportData, 
@@ -189,6 +206,16 @@ const {
 } = useWeeklyReport();
 
 const hasReport = computed(() => Boolean(reportData.value && reportData.value.reportId));
+const hasAvatarConfig = computed(() => {
+  if (!authStore.userInfo?.avatar) return false;
+  return Object.values(authStore.userInfo.avatar).some((value) => Boolean(value));
+});
+
+onMounted(() => {
+  if (authStore.isLoggedIn && !authStore.userInfo) {
+    authStore.fetchUserInfo();
+  }
+});
 
 const formatDateRange = (startDate: Date, endDate: Date) => {
   const monthNames = [
@@ -223,3 +250,46 @@ const goToMyPage = () => {
   router.push({ name: 'mypage' });
 };
 </script>
+
+<style scoped>
+@media (max-width: 1280px) {
+  .report-root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 140px;
+    gap: 28px;
+  }
+
+  .report-menu {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(92vw, 360px);
+    height: auto;
+    order: 2;
+  }
+
+  .report-content {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(95vw, 760px);
+    height: auto;
+    order: 1;
+    margin-top: 109px;
+  }
+
+  .report-menu-buttons {
+    position: static;
+    margin-top: 16px;
+    flex-direction: row;
+  }
+
+  .report-card {
+    height: auto !important;
+    min-height: 1100px;
+  }
+
+}
+</style>

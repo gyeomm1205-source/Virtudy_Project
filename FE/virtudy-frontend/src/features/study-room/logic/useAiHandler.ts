@@ -8,7 +8,11 @@ export function useAiHandler() {
     const aiStore = useStudyRoomAiStore();
 
     // AI 데이터 수신 핸들러
-    const handleMessage = (payload: any) => {
+    const handleMessage = (payload: any, senderId?: string) => {
+        // Ignore AI_Bot LiveKit broadcasts to prevent global state sync.
+        if (senderId && senderId.startsWith('AI_Bot_')) {
+            return;
+        }
         // [수정] RoomManager에서 보낸 포장지(AI_EVENT) 확인
         // 모양: { type: 'AI_EVENT', data: { eventType: 'FOCUS', value: 0 } }
 

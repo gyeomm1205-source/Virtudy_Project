@@ -1,38 +1,84 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import { jwtDecode } from 'jwt-decode';
 import { useStudyRoom } from '../logic/useStudyRoom'; 
-// [Merge] Combined Imports
 import { useFocusTimer } from '../logic/useFocusTimer';
 import { RoomManager } from '@/shared/api/livekit/RoomManager';
 import { Track } from 'livekit-client';
-import { useAuthStore } from '@/stores/authStore'; // Pinia 스토어
+import { useAuthStore } from '@/stores/authStore'; // 피나이아 스토어
+import { useStudyStore } from '@/stores/studyStore';
+
+// 스터디룸 UI 컴포넌트 임포트
 import StudyTimer from '@/shared/ui/StudyTimer.vue';
 import FocusTimer from '@/shared/ui/FocusTimer.vue';
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
-import type { AvatarConfig } from '@/shared/types/common.types';
-import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
-import type { RoomData } from '@/features/lobby/types/lobby.types';
+import StudyRoomChat from '../ui/StudyRoomChat.vue';
+import PipDashboard from '../ui/PipDashboard.vue';
+import FlashbangEffect from '../ui/FlashbangEffect.vue';
+import WakeUpModal from '../ui/WakeUpModal.vue';
+import MatchingModal from '@/shared/ui/MatchingModal.vue';
 import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
+import RoomBackgroundFrame from '@/features/study-room/ui/RoomBackgroundFrame.vue';
+
+// 디버그 패널 임포트 (배포 시 제거 권장)
+import DebugControls from '../ui/DebugControls.vue';
+
+// API 임포트
+import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
+import type { AvatarConfig } from '@/shared/types/common.types';
+import type { RoomData } from '@/features/lobby/types/lobby.types';
+
 // HEAD Imports
 import { useAiHandler } from '../logic/useAiHandler';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 import { getScoreColor } from '../logic/scoreUtils'; 
-import PipDashboard from '../ui/PipDashboard.vue';
+import { useFlashbang } from '../logic/useFlashbang';
 
-// 1. 라우터 및 스토어 설정
+// ==========================================================
+// 라우터 및 스토어 설정
 const route = useRoute();
+const entryFrom = computed(() => route.query.from);
 const router = useRouter();
 const authStore = useAuthStore();
+const studyStore = useStudyStore();
+const { accessToken, currentRoomId } = storeToRefs(studyStore);
 
-// 2. URL에서 정보 추출
+// URL에서 정보 추출
 const roomId = route.params.roomId as string;
-const token = route.query.token as string;
 const userId = (route.query.userId as string) || authStore.userId || `guest-${Math.floor(Math.random() * 1000)}`;
-//[추가] 사용자 닉네임 표시용
+// 사용자 닉네임 표시용
 const displayName = computed(() => authStore.userInfo?.nickName || userId);
 
-// 3. 로직 훅
+const isChatOpen = ref(true); // 채팅창 열림 / 닫힘 상태
+
+const toggleChat = () => {
+    isChatOpen.value = !isChatOpen.value;
+};
+
+const getValidStudyToken = (): string | null => {
+    if (!accessToken.value || !currentRoomId.value || currentRoomId.value !== roomId) {
+        studyStore.clearToken();
+        router.replace('/guest');
+        return null;
+    }
+    try {
+        const decoded = jwtDecode<{ exp?: number }>(accessToken.value);
+        if (decoded?.exp && Date.now() / 1000 >= decoded.exp) {
+            studyStore.clearToken();
+            router.replace('/guest');
+            return null;
+        }
+    } catch (error) {
+        studyStore.clearToken();
+        router.replace('/guest');
+        return null;
+    }
+    return accessToken.value;
+};
+
+// 로직 훅
 const { 
     joinRoom, 
     leaveRoom, 
@@ -42,26 +88,66 @@ const {
     messages, 
     remoteTracks,
     remoteParticipantStates,
-    remoteParticipantScores, // [추가]
+    remoteParticipantScores,
+    remoteParticipantNames,
+    remoteParticipantAvatars,
+    remoteParticipantOrder,
     isDistracted,
+    roomInfoUpdate,
 } = useStudyRoom();
 
-// 3.1 AI 핸들러 & 타이머 연결 ([Merge] Both)
+// 렌더링 에러 방지용: 유효한 트랙만 걸러내는 computed 생성
+const validRemoteTracks = computed(() => {
+    if (!remoteTracks.value) return [];
+    // rt가 존재하고, participantId가 확실히 있는 것만 통과
+    return remoteTracks.value.filter(rt => rt && rt.participantId);
+});
+
+// AI 핸들러 & 타이머 연결
 useAiHandler();
 const aiStore = useStudyRoomAiStore();
 const canRunFocusTimer = computed(() => isConnected.value && !isDistracted.value);
 const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 
-// 4. 상태 변수
-const chatMessage = ref('');
+// 상태 변수
 const localVideoRef = ref<HTMLVideoElement | null>(null);
-//[추가] 방 정보
+// 방 정보
 const roomTitle = ref('');
 const roomDescription = ref('');
 const roomDetail = ref<RoomData | null>(null);
 const showEditModal = ref(false);
 const roomOwnerFlag = ref(false);
 const isRoomOwner = computed(() => !!roomDetail.value?.owner || roomOwnerFlag.value);
+
+// 채팅창 열림/닫힘 상태
+const isRoomReady = ref(false);
+
+watch(isConnected, async (val) => {
+    if (val) {
+        await nextTick();
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                isRoomReady.value = true;
+            }, 50);
+        });
+    } else {
+        isRoomReady.value = false;
+    }
+}, { immediate: true });
+
+
+// 섬광탄 훅 초기화 
+const { 
+    isStunned, 
+    showSentFeedback, 
+    isModalOpen, 
+    drowsyParticipants, 
+    isWakeUpAvailable, 
+    openModal, 
+    closeModal, 
+    sendFlashbang,
+    triggerStunEffect, // 테스트용 공개 메서드 (배포 시에는 제거 권장)
+} = useFlashbang(remoteParticipantScores, remoteParticipantNames);
 
 // -------------------------------------------------------------
 // 🪟 Document PIP 관련 로직
@@ -70,6 +156,14 @@ const isPipActive = ref(false);
 const pipDashboardRef = ref<HTMLElement | null>(null); 
 const pipSourceContainerRef = ref<HTMLElement | null>(null);
 let pipWindow: Window | null = null;
+
+const closePip = () => {
+    if (pipWindow) {
+        pipWindow.close();
+        pipWindow = null;
+    }
+    isPipActive.value = false;
+};
 
 // 코드 복사 버튼 관련 상태
 const isHoveringCopyButton = ref(false);
@@ -80,9 +174,9 @@ const isHoveringSettingsButton = ref(false);
 // [PIP용 데이터] 팀원 정보 가공 (ID와 상태 점수를 넘김)
 // 실제 팀원 점수 데이터가 있다면 이곳에 매핑 (현재는 Mock 65점)
 const teammatesData = computed(() => {
-    return remoteTracks.value.map(rt => ({
-        id: rt.participantId,
-        score: 65 // 예시: 팀원은 보통(노랑) 상태로 가정
+    return remoteParticipantOrder.value.map((participantId) => ({
+        id: participantId,
+        score: remoteParticipantScores.value[participantId] ?? 50
     }));
 });
 
@@ -99,10 +193,12 @@ const togglePip = async () => {
 
     try {
         // 이미지 비율 고려하여 세로형 창 생성
+        const minPipWidth = 200;
+        const minPipHeight = 300;
         // @ts-ignore
         pipWindow = await window.documentPictureInPicture.requestWindow({
-            width: 200, 
-            height: 280,
+            width: minPipWidth, 
+            height: minPipHeight,
         });
 
         if (!pipWindow) return;
@@ -126,9 +222,18 @@ const togglePip = async () => {
 
         // DOM 이동
         if (pipDashboardRef.value) {
-            pipWindow.document.body.append(pipDashboardRef.value);
+            const pipRoot = pipDashboardRef.value;
+            // 기본 표시 보장 (스타일 복사 실패 시에도 화면이 안 비도록)
+            pipRoot.style.display = 'block';
+            pipRoot.style.width = '100%';
+            pipRoot.style.height = '100%';
+            pipRoot.style.background = '#FFF4D9';
+
+            pipWindow.document.body.append(pipRoot);
             // PIP 창 바디 스타일 (여백 제거)
             pipWindow.document.body.style.margin = '0';
+            pipWindow.document.body.style.padding = '0';
+            pipWindow.document.body.style.background = '#FFF4D9';
         }
 
         isPipActive.value = true;
@@ -207,6 +312,13 @@ const handleEditSuccess = async () => {
         } else {
             roomOwnerFlag.value = false;
         }
+
+        // 방 정보 변경을 다른 참가자에게 전파
+        RoomManager.getInstance().sendControlMessage('ROOM_UPDATED', {
+            roomId,
+            title: roomTitle.value,
+            description: roomDescription.value,
+        });
     } catch (err) {
         console.error('방 정보 갱신 실패:', err);
     }
@@ -224,65 +336,150 @@ const checkRoomOwner = async () => {
     }
 };
 
-// =================================================================
-// 🧪 [테스트/아바타] 설정
-// =================================================================
-
-// 1) 내 아바타 설정 (백엔드 Mock Data)
-const myAvatarConfig = ref<AvatarConfig>({
-    hairFront: 'bang',                  
-    hairBack: 'hair_back_long_straight',
-    hairColor: '#3B3024',               
-    eyes: 'eyes_cat',                   
-    glasses: 'accessory_glasses',       
-    outfit: 'outfit_knit',              
-    clothesColor: '#FFD700'             
+// ==========================================================// 🧪 [테스트/아바타] 설정
+// ==========================================================
+// 내 아바타 설정 (실사용: 스토어에서 가져오기)
+const myAvatarConfig = computed<AvatarConfig>(() => {
+    return authStore.userInfo?.avatar ?? {
+        hairFront: '',
+        hairBack: '',
+        hairColor: '',
+        eyes: '',
+        glasses: '',
+        outfit: '',
+        clothesColor: ''
+    };
 });
 
-// 2) AI 상태 매핑 Helpers
+// AI 상태 매핑 Helpers
 // HEAD의 aiStore.focusStatus (FOCUS, SLEEP, PHONE, AWAY)를 Avatar Props (0/1)로 변환
 const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
 const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
 const getAiAbsent = (status: string) => (status === 'AWAY' ? 1 : 0);
 
-// 눈 깜빡임 & 입모양 상태 (기본값)
-const isBlinking = ref(false); 
-const mouthState = ref<'closed' | 'slightly_open' | 'wide_open'>('closed');
+// 유틸리티: R값 보존을 위한 가중치 적용 음영 함수
+const shiftToVividRed = (hex: string, intensity: number) => {
+    const normalized = hex.replace('#', '');
+    if (normalized.length !== 6) return hex;
 
-// =================================================================
-// 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
-// =================================================================
+    const num = parseInt(normalized, 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
 
-onMounted(() => {
-    const init = async () => {
-        // [수정] 로컬 테스트 지원: token이 없어도 userId가 URL에 있거나 로컬 환경이면 진행
-        if (!roomId) {
-            alert('잘못된 접근입니다.');
-            router.replace('/lobby');
-            return;
-        }
-        if (!authStore.userInfo) {
-            await authStore.fetchUserInfo(); //입장시 유저 정보 로드
-        }
-        try {
-            const { data } = await lobbyAPI.getRoomDetail(roomId);
-            roomDetail.value = data;
-            roomTitle.value = data.title || roomId;
-            roomDescription.value = data.description || '방 설명이 없습니다.';
-            if (!data.owner) {
-                roomOwnerFlag.value = await checkRoomOwner();
-            }
-        } catch (detailError) {
-            console.warn('방 정보 조회 실패:', detailError);
-            roomDetail.value = null;
-            roomOwnerFlag.value = false;
-            roomTitle.value = roomId;
-            roomDescription.value = '';
-        }
-        console.log(`🚀 입장 시도: Room=${roomId}, User=${userId}`);
-        await joinRoom(roomId, userId, token);
+    // RGB 색 공간에서 Red 채널의 감소폭을 줄이고(0.5배), 
+    // Green/Blue 채널의 감소폭을 키워(1.3배) 붉은 기와 채도를 동시에 확보함
+    const rFactor = 1 - (intensity * 0.8); 
+    const gbFactor = 1 - (intensity * 1.0);
+
+    const rr = Math.max(0, Math.round(r * rFactor));
+    const gg = Math.max(0, Math.round(g * gbFactor));
+    const bb = Math.max(0, Math.round(b * gbFactor));
+
+    const toHex = (c: number) => c.toString(16).padStart(2, '0');
+    return `#${toHex(rr)}${toHex(gg)}${toHex(bb)}`;
+};
+
+const getHeartStyle = (score: number) => {
+    const base = getScoreColor(score);
+    return {
+        '--heart-base': base,
+        // 기존 shadeColor 대신 vivid 로직 적용
+        // line: 강한 붉은 음영 (intensity 0.4)
+        '--heart-line': shiftToVividRed(base, 0.4), 
+        // shadow: 중간 붉은 음영 (intensity 0.25)
+        '--heart-shadow': shiftToVividRed(base, 0.25), 
     };
-    init();
+};
+
+type BgState = 'GREEN' | 'YELLOW' | 'RED';
+
+const getStateFromScore = (score: number): BgState => {
+    if (score > 79) return 'GREEN';
+    if (score > 59) return 'YELLOW';
+    return 'RED';
+};
+
+const computeAverageScore = () => {
+    const scores = [aiStore.concentrationScore];
+    Object.values(remoteParticipantScores.value).forEach((score) => {
+        if (typeof score === 'number') scores.push(score);
+    });
+    if (!scores.length) return 0;
+    return scores.reduce((acc, v) => acc + v, 0) / scores.length;
+};
+
+const teamAverageScore = ref<number>(100);
+const bgState = computed<BgState>(() => getStateFromScore(teamAverageScore.value));
+
+const bgHeartStyle = computed(() => {
+    if (bgState.value === 'GREEN') return getHeartStyle(90);
+    if (bgState.value === 'YELLOW') return getHeartStyle(70);
+    return getHeartStyle(30);
+});
+
+const TEAM_AVG_INTERVAL_MS = 5000;
+let teamAverageInterval: number | undefined;
+
+// ==========================================================// 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
+// ==========================================================
+onMounted(async () => {
+    if (!roomId) { alert('잘못된 접근입니다.'); router.replace('/lobby'); return; }
+
+    const validToken = getValidStudyToken();
+    if (!validToken) return;
+
+    if (!authStore.userInfo) await authStore.fetchUserInfo();
+
+    // 아바타 미생성 시 입장 차단
+    if (!authStore.userInfo?.avatar || !authStore.userInfo.avatar.hairFront) {
+        // confirm 창을 띄워 확인을 누르면 이동, 취소를 누르면 로비로 보냄
+        const shouldCreate = confirm("스터디룸에 입장하려면 아바타가 필요해요! 🎨\n지금 아바타를 만들러 가시겠어요?");
+        if (shouldCreate) {
+            router.push('/avatar/create'); // '확인' 클릭 시 아바타 생성 페이지로 이동
+        } else {
+            router.replace('/lobby'); // '취소' 클릭 시 로비로 이동
+        }
+        return; // 중요: 아래 로직(방 입장)이 실행되지 않도록 여기서 함수 종료
+    }
+
+    try {
+        const { data } = await lobbyAPI.getRoomDetail(roomId);
+        roomDetail.value = data;
+        roomTitle.value = data.title || roomId;
+        roomDescription.value = data.description || '';
+        if (!data.owner) roomOwnerFlag.value = await checkRoomOwner();
+    } catch {
+        roomTitle.value = roomId;
+    }
+
+    await joinRoom(roomId, userId, validToken, displayName.value, myAvatarConfig.value);
+    
+
+    const updateTeamAverage = () => {
+        teamAverageScore.value = computeAverageScore();
+    };
+
+    updateTeamAverage();
+    teamAverageInterval = window.setInterval(updateTeamAverage, TEAM_AVG_INTERVAL_MS);
+});
+
+// 다른 참가자의 방 정보 업데이트 수신 처리
+watch(roomInfoUpdate, (update) => {
+    if (!update || update.roomId !== roomId) return;
+    if (typeof update.title === 'string') {
+        roomTitle.value = update.title || roomId;
+    }
+    if (typeof update.description === 'string') {
+        roomDescription.value = update.description || '방 설명이 없습니다.';
+    }
+    if (roomDetail.value) {
+        roomDetail.value = {
+            ...roomDetail.value,
+            title: roomTitle.value,
+            description: roomDescription.value,
+        };
+    }
 });
 
 watch(isConnected, (connected) => {
@@ -314,26 +511,128 @@ const handleLeave = () => {
         leaveRoom({
             'study-time': String(focusMinutes),
         });
+        studyStore.clearToken();
+
+        // PIP 강제 종료
+        closePip();
+
         router.replace('/lobby'); // 로비로 이동
     }
 };
 
-const handleSendChat = () => {
-    if (!chatMessage.value.trim()) return;
-    sendChat(chatMessage.value);
-    chatMessage.value = '';
-};
-
 onUnmounted(() => {
+    if (teamAverageInterval) {
+        window.clearInterval(teamAverageInterval);
+        teamAverageInterval = undefined;
+    }
     const focusMinutes = Math.floor(focusSeconds.value / 60);
     leaveRoom({
         'study-time': String(focusMinutes),
     });
+    closePip();
 });
 </script>
 
 <template>
     <div class="page-container">
+        <svg class="heart-symbols" aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;">
+            <symbol id="heart-pixel-symbol" viewBox="0 0 32 24">
+            <g class="heart-line">
+            <path d="M13.3334 2.84446H16V5.51113H13.3334V2.84446Z"/>
+            <path d="M10.6667 0.177794H13.3334L13.3334 2.84446H10.6667V0.177794Z"/>
+            <path d="M8.00002 0.177794H10.6667V2.84446H8.00002V0.177794Z"/>
+            <path d="M5.33335 2.66667H8.00002V5.33333H5.33335V2.66667Z"/>
+            <path d="M2.66669 5.51113H5.33335V8.17779H2.66669V5.51113Z"/>
+            <path d="M2.66669 8H5.33335V10.6667H2.66669V8Z"/>
+            <path d="M5.33335 10.6667H8.00002V13.3333H5.33335V10.6667Z"/>
+            <path d="M8.00002 13.3333L10.6667 13.3333V16H8.00002L8.00002 13.3333Z"/>
+            <path d="M10.6667 16H13.3334V18.6667H10.6667V16Z"/>
+            <path d="M13.3334 18.6667H16V21.3333H13.3334L13.3334 18.6667Z"/>
+            <path d="M16 21.3333L18.6667 21.3333V24H16V21.3333Z"/>
+            <path d="M18.6667 18.6667H21.3334V21.3333L18.6667 21.3333L18.6667 18.6667Z"/>
+            <path d="M21.3334 16H24V18.6667H21.3334L21.3334 16Z"/>
+            <path d="M24 13.3333H26.6667V16H24V13.3333Z"/>
+            <path d="M26.6667 10.6667H29.3334V13.3333L26.6667 13.3333V10.6667Z"/>
+            <path d="M29.3334 8H32V10.6667H29.3334L29.3334 8Z"/>
+            <path d="M29.3334 5.51113H32V8.17779H29.3334V5.51113Z"/>
+            <path d="M26.6667 2.66667H29.3334V5.33333H26.6667V2.66667Z"/>
+            <path d="M24 0H26.6667V2.66667H24V0Z"/>
+            <path d="M21.3334 0H24V2.66667H21.3334V0Z"/>
+            <path d="M18.6667 2.66667H21.3334L21.3334 5.33333H18.6667V2.66667Z"/>
+            <path d="M16 5.51113H18.6667V8.17779H16V5.51113Z"/>
+            </g>
+            <g class="heart-highlight">
+            <path d="M10.6667 5.33337H13.3333V8.00004H10.6667V5.33337Z"/>
+            <path d="M8 8.00004L10.6667 8.00004L10.6667 10.6667H8V8.00004Z"/>
+            </g>
+            <g class="heart-base">
+            <path d="M26.6666 2.66663H24V5.33329H26.6666V2.66663Z"/>
+            <path d="M10.6666 13.3333H13.3333V16H10.6666V13.3333Z"/>
+            <path d="M13.3333 13.3333H16V16H13.3333V13.3333Z"/>
+            <path d="M16 13.3333H18.6666V16H16V13.3333Z"/>
+            <path d="M16 10.6666H18.6666V13.3333H16V10.6666Z"/>
+            <path d="M16 7.99996H18.6666V10.6666H16V7.99996Z"/>
+            <path d="M10.6666 2.84442H13.3333V5.51109H10.6666V2.84442Z"/>
+            <path d="M7.99998 2.84442H10.6666V5.51109H7.99998V2.84442Z"/>
+            <path d="M5.33331 5.33329H7.99998V7.99996H5.33331V5.33329Z"/>
+            <path d="M7.99998 5.33329H10.6666V7.99996H7.99998V5.33329Z"/>
+            <path d="M13.3333 5.51109H16V8.17775H13.3333L13.3333 5.51109Z"/>
+            <path d="M13.3333 7.99996H16V10.6666H13.3333V7.99996Z"/>
+            <path d="M13.3333 10.6666H16V13.3333H13.3333L13.3333 10.6666Z"/>
+            <path d="M10.6666 10.6666H13.3333L13.3333 13.3333H10.6666V10.6666Z"/>
+            <path d="M10.6666 7.99996L13.3333 7.99996V10.6666H10.6666L10.6666 7.99996Z"/>
+            <path d="M7.99998 10.6666H10.6666V13.3333L7.99998 13.3333V10.6666Z"/>
+            <path d="M5.33331 7.99996H7.99998L7.99998 10.6666H5.33331V7.99996Z"/>
+            <path d="M16 18.6666H18.6666V21.3333H16V18.6666Z"/>
+            <path d="M18.6666 16H21.3333V18.6666L18.6666 18.6666V16Z"/>
+            <path d="M16 16H18.6666V18.6666H16V16Z"/>
+            <path d="M13.3333 16H16V18.6666L13.3333 18.6666L13.3333 16Z"/>
+            <path d="M21.3333 13.3333H24V16H21.3333L21.3333 13.3333Z"/>
+            <path d="M21.3333 10.6666H24V13.3333H21.3333V10.6666Z"/>
+            <path d="M21.3333 7.99996H24V10.6666H21.3333V7.99996Z"/>
+            <path d="M18.6666 5.33329H21.3333L21.3333 7.99996H18.6666L18.6666 5.33329Z"/>
+            <path d="M18.6666 7.99996H21.3333V10.6666H18.6666V7.99996Z"/>
+            <path d="M18.6666 10.6666H21.3333V13.3333H18.6666V10.6666Z"/>
+            <path d="M18.6666 13.3333H21.3333L21.3333 16H18.6666V13.3333Z"/>
+            <path d="M21.3333 5.33329H24L24 7.99996H21.3333L21.3333 5.33329Z"/>
+            <path d="M21.3333 2.66663H24V5.33329H21.3333L21.3333 2.66663Z"/>
+            <path d="M24 2.66663H26.6666V5.33329H24V2.66663Z"/>
+            <path d="M24 5.33329H26.6666V7.99996L24 7.99996L24 5.33329Z"/>
+            <path d="M24 7.99996L26.6666 7.99996V10.6666H24V7.99996Z"/>
+            <path d="M24 10.6666H26.6666V13.3333L24 13.3333V10.6666Z"/>
+            <path d="M26.6666 5.33329H29.3333V7.99996H26.6666V5.33329Z"/>
+            <path d="M26.6666 7.99996H29.3333V10.6666H26.6666V7.99996Z"/>
+            </g>
+            <g id="heart_shadow">
+            <path d="M13.3333 21.3333H16V24H13.3333V21.3333Z"/>
+            <path d="M10.6667 18.6667H13.3333L13.3333 21.3333L10.6667 21.3333V18.6667Z"/>
+            <path d="M16 2.84446H18.6667V5.51113H16V2.84446Z"/>
+            <path d="M8 16H10.6667V18.6667H8V16Z"/>
+            <path d="M5.33333 13.3333H8V16H5.33333V13.3333Z"/>
+            <path d="M2.66667 10.6667H5.33333V13.3333L2.66667 13.3333V10.6667Z"/>
+            <path d="M0 8H2.66667V10.6667H0V8Z"/>
+            <path d="M0 5.51113H2.66667V8.17779H0V5.51113Z"/>
+            <path d="M2.66667 2.84446H5.33333V5.51113H2.66667V2.84446Z"/>
+            <path d="M5.33333 0.177794H8V2.84446H5.33333V0.177794Z"/>
+            <path d="M18.6667 0H21.3333V2.66667H18.6667V0Z"/>
+            </g>
+            </symbol>
+        </svg>
+
+        <!-- 섬광탄 효과 컴포넌트 -->
+        <FlashbangEffect :visible="isStunned" />
+
+        <div v-if="showSentFeedback" class="feedback-toast">
+            ✨ 섬광탄 발사 완료!
+        </div>
+
+        <WakeUpModal 
+            :isOpen="isModalOpen"
+            :targets="drowsyParticipants"
+            @close="closeModal"
+            @send="sendFlashbang"
+        />
+
         <!-- pip 로직 추가 -->
         <div ref="pipSourceContainerRef" style="display: none;">
             <div ref="pipDashboardRef" class="pip-content-root">
@@ -343,23 +642,30 @@ onUnmounted(() => {
                     :aiScore="aiStore.concentrationScore"
                     :aiStatus="aiStore.focusStatus"
                     :teammates="teammatesData"
+                    :isWakeUpAvailable="isWakeUpAvailable"
+                    :onOpenWakeUpModal="openModal"
+                    :isStunned="isStunned"
+                    :bgState="bgState"
                 />
             </div>
         </div>
 
-        <div v-if="!isConnected" class="loading-overlay">
+        <div v-if="!isConnected && error" class="loading-overlay">
             <div class="loading-content">
-                <div v-if="error" class="error-msg">
-                    <p>🚫 입장 실패</p>
+                <div class="error-msg">
+                    <p>입장 실패</p>
                     <p>{{ error }}</p>
                     <button @click="router.replace('/lobby')" class="btn-retry">돌아가기</button>
                 </div>
-                <div v-else>
-                    <div class="spinner"></div>
-                    <p>입장 중...</p>
-                </div>
             </div>
         </div>
+
+        <MatchingModal
+            v-else-if="!isRoomReady && !entryFrom"
+            title-text="입장 중..."
+            subtitle-text="잠시만 기다려주세요..."
+            @close="router.replace('/lobby')"
+        />
 
         <div v-else class="room-layout">
             
@@ -368,7 +674,14 @@ onUnmounted(() => {
                 <main class="main-window-area">
                     
                     <div class="room-info-overlay">
-                        <h2 class="room-title">{{ roomTitle }}</h2>
+                        <h2 class="room-title flex items-center gap-2">
+                            {{ roomDetail?.title || roomTitle }}
+                            <span v-if="roomDetail?.type === 'PRIVATE'" class="ml-2 flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 12V11H19V6H18V4H17V3H16V2H14V1H10V2H8V3H7V4H6V6H5V11H4V12H3V22H4V23H20V22H21V12H20ZM8 6H9V5H10V4H14V5H15V6H16V11H8V6Z" fill="#805143"/>
+                              </svg>
+                            </span>
+                        </h2>
                         <p v-if="roomDescription" class="room-description">{{ roomDescription }}</p>
                         <div class="ai-score-debug">
                             <span>🤖 AI Score: {{ Math.round(aiStore.concentrationScore) }}점</span>
@@ -376,10 +689,18 @@ onUnmounted(() => {
                                 <div class="fill" :style="{ width: aiStore.concentrationScore + '%', background: aiStore.concentrationScore < 50 ? 'red' : 'green' }"></div>
                             </div>
                         </div>
+                        <div>
+                            <DebugControls 
+                                :scores="remoteParticipantScores"
+                                :names="remoteParticipantNames"
+                                :isStunned="isStunned"
+                                :onTriggerStun="triggerStunEffect"
+                            />
+                        </div>
                     </div>
 
                     <div class="room-controls-overlay">
-                        <span class="member-count">👤 {{ remoteTracks.length + 1 }}/6</span>
+                        <span class="member-count">{{ validRemoteTracks.length + 1 }}/6명</span>
 
                         <button
                             v-if="isRoomOwner"
@@ -419,8 +740,22 @@ onUnmounted(() => {
                         <button @click="handleLeave" class="btn-leave">나가기</button>
                     </div>
                     
-                    <div class="combined-timer-widget">
-                        <!-- Window Frame -->
+                    <RoomBackgroundFrame :bgState="bgState" />
+                    
+                    <!-- 타이머 / PIP / 깨우기 버튼 영역 -->
+                    <div class="timer-floating-widget">
+                        <div class="hearts-container">
+                            <svg class="heart-svg heart-svg--timer" :style="bgHeartStyle" viewBox="0 0 32 24">
+                                <use href="#heart-pixel-symbol" />
+                            </svg>
+                            <svg class="heart-svg heart-svg--timer" :style="bgHeartStyle" viewBox="0 0 32 24">
+                                <use href="#heart-pixel-symbol" />
+                            </svg>
+                            <svg class="heart-svg heart-svg--timer" :style="bgHeartStyle" viewBox="0 0 32 24">
+                                <use href="#heart-pixel-symbol" />
+                            </svg>
+                        </div>
+
                         <div class="window-frame">
                             <div class="window-framing">
                                 <div class="window-title">
@@ -431,12 +766,21 @@ onUnmounted(() => {
                         
                         <!-- Timer Display -->
                         <div class="timer-display">
-                            <StudyTimer />
                             <FocusTimer :seconds="focusSeconds" />
+                            <StudyTimer />
                         </div>
+                        
                         <div class="pip-btn-area">
-                            <button @click="togglePip" class="btn-pip" :class="{ active: isPipActive }">
-                                {{ isPipActive ? 'PIP 종료' : '미니 모드 (PIP)' }}
+                            <button @click="togglePip" class="btn-pip btn-pixel-action">
+                                {{ isPipActive ? 'PIP종료' : 'PIP전환' }}
+                            </button>
+                            <button 
+                                class="btn-pixel-action btn-wakeup"
+                                :class="{ 'active': isWakeUpAvailable }"
+                                :disabled="!isWakeUpAvailable"
+                                @click="openModal"
+                            >
+                                깨우기!
                             </button>
                         </div>
                     </div>
@@ -452,57 +796,78 @@ onUnmounted(() => {
                                     :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
                                     :aiPhone="getAiPhone(aiStore.focusStatus)"
                                     :aiAbsent="getAiAbsent(aiStore.focusStatus)"
-                                    :isBlinking="isBlinking"
-                                    :mouthState="mouthState"
                                 />
                             </div>
                             
                             <div class="user-info">
-                                <span class="user-name">나 ({{ displayName }})</span>
-                                <span class="heart-icon" :style="{ color: getScoreColor(aiStore.concentrationScore) }">♥</span>
+                                <span class="user-name">{{ displayName }}</span>
+                                <svg
+                                    class="heart-svg"
+                                    :style="getHeartStyle(aiStore.concentrationScore)"
+                                    aria-label="teammate-focus-heart"
+                                    viewBox="0 0 32 24"
+                                >
+                                    <use href="#heart-pixel-symbol" />
+                                </svg>
                             </div>
                         </div>
 
-                        <div v-for="rt in remoteTracks" :key="rt.participantId" class="avatar-card remote">
+                        <div v-for="rt in validRemoteTracks" :key="rt.participantId" class="avatar-card remote">
                             <video 
-                                :ref="(el) => { if(el) rt.track.attach(el as HTMLMediaElement) }"
+                                :ref="(el) => { if(el && rt?.track) rt.track.attach(el as HTMLMediaElement) }"
                                 autoplay playsinline 
                                 class="hidden-video"
                             ></video>
                             
                             <div class="avatar-display">
                                 <CharacterAvatar 
-                                    :config="myAvatarConfig"
-                                    :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
-                                    :aiPhone="getAiPhone(remoteParticipantStates[rt.participantId] || 'FOCUS')" 
-                                    :aiAbsent="getAiAbsent(remoteParticipantStates[rt.participantId] || 'FOCUS')"
-                                    :isBlinking="false"
-                                    :mouthState="'closed'"
+                                    :config="remoteParticipantAvatars?.[rt?.participantId] || {
+                                        hairFront: 'none', hairBack: 'none', outfit: 'none', hairColor: '', clothesColor: '', eyes: 'default', glasses: 'none'
+                                    }"
+                                    :aiDrowsy="getAiDrowsy(remoteParticipantStates[rt?.participantId] || 'FOCUS')" 
+                                    :aiPhone="getAiPhone(remoteParticipantStates[rt?.participantId] || 'FOCUS')" 
+                                    :aiAbsent="getAiAbsent(remoteParticipantStates[rt?.participantId] || 'FOCUS')"
                                 />
                             </div>
                             <div class="user-info">
-                                <span class="user-name">{{ rt.participantId }} - {{ remoteParticipantStates[rt.participantId] || 'FOCUS' }}</span>
-                                <span class="heart-icon" :style="{ color: getScoreColor(remoteParticipantScores[rt.participantId] || 50) }">♥</span>
+                                <span class="user-name">{{ remoteParticipantNames[rt.participantId] || rt.participantId }}</span>
+                                <svg
+                                    class="heart-svg"
+                                    :style="getHeartStyle(remoteParticipantScores[rt.participantId] ?? 50)"
+                                    aria-label="teammate-focus-heart"
+                                    viewBox="0 0 32 24"
+                                >
+                                    <use href="#heart-pixel-symbol" />
+                                </svg>
                             </div>
                         </div>
                     </div>
                 </main>
 
-                <aside class="chat-section">
-                    <div class="chat-header-simple">채팅창 영역</div> <div class="chat-messages">
-                        <div v-for="(msg, idx) in messages" :key="idx" class="message-bubble" :class="{ 'my-msg': msg.sender === userId, 'sys-msg': msg.type !== 'CHAT' }">
-                            <div v-if="msg.type === 'CHAT'">
-                                <span class="sender">{{ msg.sender }}</span>
-                                <p class="text">{{ msg.data?.message || msg.message }}</p>
-                            </div>
-                            <div v-else class="system-text">🔔 {{ msg.type }} 이벤트</div>
-                        </div>
-                    </div>
-                    <div class="chat-input-area">
-                        <input v-model="chatMessage" @keyup.enter="handleSendChat" type="text" placeholder="메시지 입력..." />
-                        <button @click="handleSendChat">전송</button>
-                    </div>
-                </aside>
+                <button 
+                    @click="toggleChat" 
+                    class="btn-side-toggle"
+                    :class="{ 'open': isChatOpen }"
+                    :title="isChatOpen ? '채팅 닫기' : '채팅 열기'"
+                >
+                    <svg v-if="isChatOpen" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#805143" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                    
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#805143" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+
+                <div class="chat-container-wrapper" :class="{ 'open': isChatOpen }">
+                    <StudyRoomChat
+                        :messages="messages"
+                        :userId="userId"
+                        :userNames="remoteParticipantNames"
+                        :onSendMessage="sendChat"
+                        @close="isChatOpen = false"
+                    />
+                </div>
 
             </div>
         </div>
@@ -522,7 +887,8 @@ onUnmounted(() => {
 .page-container {
     width: 100vw;
     height: 100vh;
-    background-color: #f0f2f5;
+    background: url('@/assets/room/room_wood_bg.png') center/cover no-repeat;
+    background-color: #dcd0c0;
     overflow: hidden;
 }
 
@@ -538,8 +904,15 @@ onUnmounted(() => {
 .content-wrapper { display: flex; flex: 1; height: 100vh; overflow: hidden; }
 
 /* 메인 윈도우 */
-.main-window-area { flex: 3; position: relative; background-color: #a29bfe; overflow: hidden; }
-/* [NEW] 좌측 상단 방 정보 오버레이 */
+.main-window-area { 
+    flex: 3; 
+    position: relative; 
+    background: url('@/assets/room/room_wood_bg.png') center/cover no-repeat;
+    background-color: #dcd0c0; /* 이미지 로드 전 폴백 색상 */
+    overflow: hidden; 
+}
+
+/* 좌측 상단 방 정보 오버레이 */
 .room-info-overlay {
     position: absolute;
     top: 20px;
@@ -548,11 +921,37 @@ onUnmounted(() => {
     color: white; /* 배경에 따라 색상 조정 */
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
-.room-title { margin: 0; font-size: 1.5rem; margin-bottom: 5px; }
+/* 방 제목: 피그마 h4 디자인 정확 구현 */
+.room-title {
+    margin: 0;
+    color: #FFF2CC;
+    
+    /* pixel Shadow */
+    text-shadow: 4px 4px 0 #805143;
+    
+    /* h4 */
+    font-family: Ram;
+    font-size: 2.25rem;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    
+    white-space: nowrap;
+    margin-bottom: 6px;
+}
+
+/* 방 설명: 피그마 p 디자인 정확 구현 */
 .room-description {
-    margin: 0 0 6px 0;
-    font-size: 0.95rem;
-    opacity: 0.9;
+    margin-left: 10px;
+    font-family: "PfStardust30S";
+    font-size: 24px; /* 1.5rem */
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 0;
+    color: #805143; /* Text & Stroke (Choco) */
+    white-space: nowrap;
+    margin-bottom: 6px;
 }
 .ai-score-debug { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 4px; }
 .mini-bar { width: 50px; height: 6px; background: #ccc; border-radius: 3px; overflow: hidden; }
@@ -565,25 +964,78 @@ onUnmounted(() => {
     right: 20px; /* 타이머 위치 고려해서 조정 필요 */
     z-index: 20;
     display: flex;
-    gap: 10px;
+    gap: 40px;
     align-items: center;
 }
-.btn-leave { background: #ff4757; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.member-count { color: white; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+/* 나가기 버튼: 피그마 디자인 정확 구현 */
+.btn-leave {
+    background: #FFD966; /* Primary (Butter) */
+    border: 2px solid #805143; /* Text & Stroke (Choco) */
+    color: #805143;
+    padding: 12px 32px;
+    border-radius: 2px;
+    cursor: pointer;
+    
+    /* 피그마 폰트 스타일 */
+    font-family: 'PfStardust30S', sans-serif;
+    font-weight: 400;
+    font-size: 24px;
+    line-height: normal;
+    white-space: nowrap;
+    
+    /* 픽셀 그림자 효과 */
+    box-shadow: 4px 4px 0px 0px #805143;
+    
+    /* 정확한 크기 */
+    width: 92px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    transition: all 0.1s ease;
+}
 
-/* 설정 버튼 스타일 */
+.btn-leave:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px 0px #805143;
+}
+
+.btn-leave:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+}
+/* 멤버 수 표시 */
+.member-count {
+    color: var(--text-stroke-choco, #805143);
+    /* p */
+    font-family: "PfStardust30S";
+    font-size: 1.5rem;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    white-space: nowrap;
+    /* 숫자 일관성을 위한 속성 */
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    letter-spacing: 0;
+}
+
+/* 설정 버튼 스타일: */
 .btn-settings {
     background: transparent;
     border: none;
     cursor: pointer;
     padding: 0;
-    color: #FFF2CC;
-    font-family: 'PF Stardust S', sans-serif;
+    font-family: 'PfStardust30S', sans-serif;
     font-weight: 400;
     font-size: 24px;
+    line-height: normal;
+    color: #805143; /* Text & Stroke (Choco) */
+    white-space: nowrap;
+    transition: all 0.2s ease;
     line-height: 1;
     transition: all 0.2s ease;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 .btn-settings:hover {
@@ -655,21 +1107,47 @@ onUnmounted(() => {
     }
 }
 /* 타이머 */
-.combined-timer-widget { 
+.timer-floating-widget { 
     position: absolute; 
-    top: 100px; 
-    right: 40px; 
+    top: 20%; 
+    right: 50px; 
     width: 323px;
-    height: 213.377px;
-    z-index: 5; 
+    height: auto;
+    z-index: 10; 
 }
 
+.hearts-container {
+    display: flex;
+    justify-content: flex-end; /* 우측 정렬 */
+    gap: 5px;
+    margin-bottom: -10px; /* 윈도우와 겹치지 않게 간격 조정 */
+    margin-right: 0px;
+    position: relative;
+    z-index: 11; /* 윈도우보다 위에 뜨도록 */
+}
+.heart-svg {
+    width: 30px;
+    height: 30px;
+    display: inline-block;
+    margin-left: 2px;
+}
+.heart-svg--timer {
+    display: block;
+    margin-left: 0;
+    margin-bottom: 3px;
+}
+.heart-line path { fill: var(--heart-line, #668128); }
+.heart-base path { fill: var(--heart-base, #B8D576); }
+.heart-highlight path { fill: #FFFFDB; }
+.heart-shadow path,
+#heart_shadow path { fill: var(--heart-shadow, var(--heart-line, #668128)); }
+
 .window-frame {
-    position: absolute;
+    position: relative;
     width: 323px;
     height: 200px;
     right: -10px;
-    top: 80px;
+    top: 10px;
     background: #fff8e5;
 }
 
@@ -699,38 +1177,106 @@ onUnmounted(() => {
 }
 
 .window-title span {
-    font-family: 'exqt', sans-serif;
+    font-family: 'Xcu', sans-serif;
     font-size: 28.805px;
     color: white;
     font-weight: normal;
-    line-height: normal;
 }
 
+/* 타이머 디스플레이 중앙 정렬 */
 .timer-display {
     position: absolute;
-    left: 45px;
-    top: 137px;
+    width: 100%; /* 전체 너비 사용 */
+    top: 55%;
+    left: 47%;
+    transform: translate(-50%, -40%); /* 정중앙보다 약간 아래로 보정 */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 가로 중앙 정렬 */
+    justify-content: center;
+    text-align: center;
+    z-index: 5;
 }
 
 .pip-btn-area {
-    margin-top: 12px;
-    border-top: 1px solid #f1f2f6;
-    padding-top: 10px;
+    position: relative;
+    top: 18px; /* 윈도우 프레임과의 간격 */
+    width: 323px;
+    display: flex;
+    justify-content: center; /* 버튼 가운데 정렬 */
+    gap: 8px; /* 버튼 사이 간격 */
+    justify-content: flex-end; /* 우측 정렬 */
 }
-.btn-pip {
-    background: #4b6584;
-    color: white;
-    border: none;
-    padding: 8px 0;
-    width: 100%;
-    border-radius: 6px;
+
+/* 버튼 스타일 */
+.btn-pixel-action {
+    background: var(--color-butter2);
+    color: var(--color-choco); /* 텍스트 갈색 */
+    border: 2px solid var(--color-choco); /* 진한 갈색 테두리 */
+    border-radius: 50px; /* 둥근 알약 모양 */
+    padding: 10px;
     cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: bold;
-    transition: background 0.2s;
+    font-family: 'PfStardust30S', sans-serif; /* 폰트 유지 */
+    font-size: 1.5rem;
+    line-height: normal;
+    
+    /* 픽셀 아트 느낌의 그림자 효과 */
+    box-shadow: 0px 4px 0px var(--color-choco); 
+    transform: translateY(0);
+    transition: all 0.1s;
+    
+    /* PIP 버튼 너비 리셋 */
+    width: 110px; 
+    max-width: 140px;
 }
-.btn-pip:hover { background: #778ca3; }
-.btn-pip.active { background: #2ed573; }
+
+/* 버튼 클릭/호버 효과 */
+.btn-pixel-action:active {
+    transform: translateY(4px); /* 눌리는 효과 */
+    box-shadow: 0px 0px 0px var(--color-choco);
+}
+
+.btn-pixel-action:hover {
+    filter: brightness(1.05);
+}
+
+/* 깨우기 버튼 스타일 */
+.btn-wakeup {
+    background: #e0e0e0; /* 비활성: 회색 */
+    color: #999;
+    border-color: #999;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none !important;
+}
+
+.btn-wakeup.active:active {
+    transform: translateY(4px);
+}
+
+/* 활성화 상태 (노란색) */
+.btn-wakeup.active {
+    background: #FFD966; 
+    color: #805143;
+    border-color: #805143;
+    cursor: pointer;
+    box-shadow: 0px 4px 0px #805143;
+    animation: bounce 1s infinite; /* 통통 튀는 애니메이션 */
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.feedback-toast {
+    position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: #FFF2CC;
+    padding: 15px 30px; border-radius: 30px;
+    font-family: 'PfStardust30S'; z-index: 3000;
+    animation: fadeOut 2s forwards;
+}
+@keyframes fadeOut { 0% {opacity: 1;} 80% {opacity: 1;} 100% {opacity: 0;} }
 
 /* 아바타 스트립: 긴 바(Bar)*/
 .avatar-strip {
@@ -739,9 +1285,12 @@ onUnmounted(() => {
     left: 0;
     width: 100%;
     height: 50px; /* 바의 높이 */
-    
-    /* 긴 바의 배경색 */
     background-color:#FFC497; 
+
+    background-image: url('@/assets/room/footer_bar_bg.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
     
     display: flex;
     flex-direction: row;
@@ -769,54 +1318,103 @@ onUnmounted(() => {
 /*아바타 이미지: 바 위로 올려서 배치 */
 .avatar-display {
     position: absolute;
-    bottom: 100px; 
-    width: 140px;
-    height: 140px;
+    bottom: -46px; 
+    width: 200px;
+    height: 215px;
+    left: 7px
 }
 
-/* 텍스트*/
+/* 텍스트 */
 .user-info {
-    /* 바 내부 중앙 정렬 */
+    width: 90%;
+    height: 40px; /* 이름표 높이 */
+    /* 이름표 PNG 배경 */
+    background: url('@/assets/room/nametag_bg.png') center/100% 100% no-repeat; 
     display: flex;
     align-items: center;
-    gap: 6px;
-    
-    color: #fff; /* 글자색 */
-    font-weight: bold;
-    font-size: 1rem;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-    /* 배경(strip)보다는 위 */
-    z-index: 15; 
+    justify-content: center;
+    font-family: 'PfStardust30S';
+    color: #805143;
+    font-size: 1.7rem;
+    z-index: 11;
+    position: relative;
 }
 
 .user-name {
-    max-width: 100px;
+    max-width: 110px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    margin-bottom: 3px;
 }
 
-.heart-icon { 
-    font-size: 1.2rem; 
-    transition: color 0.5s ease; /* 색상 변경 시 부드럽게 */
-    margin-left: 2px;
-}
 
 .hidden-video { display: none; }
 
-/* 채팅 */
-.chat-section { 
-    flex: 1; 
-    min-width: 300px; 
-    background-color: #FFD966;
-    display: flex; 
-    flex-direction: column; 
+.btn-side-toggle {
+    /* 1. 위치 잡기 (화면 기준 절대 위치) */
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 50; /* 채팅창보다 위에, 메인보다 위에 */
+    /* 2. 애니메이션 (부드럽게 이동) */
+    transition: right 0.3s ease; 
+    right: 0;
+    display: flex;
+    width: 1.5rem;
+    height: 5rem;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0.875rem 0 0 0.875rem; 
+    
+    border: 1px solid var(--text-stroke-choco, #805143);
+    background: var(--color-butter2, #ffeaac);
+    
+    box-shadow: 4px 4px 0 0 #805143; 
+    
+    color: var(--text-stroke-choco, #805143);
+    cursor: pointer;
 }
-.chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-.message-bubble { background: white; padding: 8px 12px; border-radius: 10px; max-width: 90%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-.message-bubble.my-msg { align-self: flex-end; background: #7bed9f; }
-.message-bubble.sys-msg { align-self: center; background: none; box-shadow: none; color: #888; font-size: 0.8rem; }
-.chat-input-area { padding: 15px; display: flex; gap: 10px; flex-shrink: 0; }
-.chat-input-area input { flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #ddd; }
-.chat-input-area button { padding: 0 20px; border-radius: 4px; border: none; background: #333; color: white; cursor: pointer; }
+
+/* 열린 상태: 채팅창 너비(20rem = 320px) 만큼 왼쪽으로 이동 */
+.btn-side-toggle.open {
+    right: 20rem;
+}
+
+.btn-side-toggle:hover {
+    filter: brightness(1.05);
+}
+
+/* 채팅창 래퍼: 너비 애니메이션 적용 */
+.chat-container-wrapper {
+    width: 0;
+    overflow: hidden;
+    transition: width 0.3s ease; 
+    flex-shrink: 0; 
+}
+
+.chat-container-wrapper.open {
+    width: 20rem; /* 320px */
+}
+
+/* 부모 컨테이너가 relative여야 absolute 자식이 기준을 잡음 */
+.content-wrapper {
+    position: relative; 
+    display: flex; 
+    flex: 1; 
+    height: 100vh; 
+    overflow: hidden; 
+}
+
+/* 채팅 스크롤바 숨김 */
+.chat-list {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.chat-list::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+
 </style>

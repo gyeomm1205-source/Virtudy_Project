@@ -29,6 +29,7 @@ public class AuthController {
     public ResponseEntity<MemberKakaoLoginResponse> kakaoLogin(@RequestParam String code, HttpServletResponse response) {
         MemberKakaoLoginResponse result = authService.kakaoLogin(code);
 
+        // 회원 가입이 필요 없는 경우
         if (!result.isNeedSignup()) {
             // 로그인 성공 시 쿠키/헤더 세팅
             setTokenToResponse(response, result.getAccessToken(), result.getRefreshToken());
@@ -159,7 +160,7 @@ public class AuthController {
                 .path("/")
                 .sameSite("Lax") // 혹은 None (HTTPS 필요)
                 .httpOnly(true)
-                .secure(false) // TODO 로컬 개발이라 false, 배포 시 true
+                .secure(false) // TODO local 테스트 필요가 없어지면 true로 변경 필요
                 .maxAge(14 * 24 * 60 * 60) // 2주
                 .build();
 

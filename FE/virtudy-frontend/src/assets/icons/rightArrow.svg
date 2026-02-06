@@ -1,0 +1,29 @@
+<svg width="14" height="20" viewBox="0 0 14 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g filter="url(#filter0_d_198_331)">
+<path d="M5.89481 16.2104H4.42113V2.21045H5.89481V3.766H7.3685V5.32156H8.84218V6.87712H10.3159V8.43267H11.7896V9.98823H10.3159V11.5438H8.84218V13.0993H7.3685V14.6549H5.89481V16.2104Z" fill="#FFC497"/>
+<path d="M3.31592 1.10498V17.3159H7.00049V15.7603H8.47412V14.2046H9.94775V12.6489H11.4214V11.0933H12.895V7.32764H11.4214V5.77197H9.94775V4.21631H8.47412V2.66064H7.00049V1.10498H3.31592Z" stroke="#805143" stroke-width="2.21053"/>
+</g>
+<g filter="url(#filter1_d_198_331)">
+<path d="M4.42113 2.21045H5.89481V3.766H7.3685V5.32156H8.84218V6.87712H10.3159V8.43267H11.7896V9.98823H10.3159V11.5438H8.84218V13.0993H7.3685V14.6549H5.89481V16.2104H4.42113V2.21045Z" fill="white" fill-opacity="0.3" shape-rendering="crispEdges"/>
+</g>
+<defs>
+<filter id="filter0_d_198_331" x="2.21069" y="0" width="15.4735" height="22.1051" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dx="3.68421" dy="3.68421"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0.5 0 0 0 0 0.319391 0 0 0 0 0.264423 0 0 0 1 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_198_331"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_198_331" result="shape"/>
+</filter>
+<filter id="filter1_d_198_331" x="4.42114" y="2.21045" width="11.0526" height="17.6842" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dx="3.68421" dy="3.68421"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0.5 0 0 0 0 0.319391 0 0 0 0 0.264423 0 0 0 1 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_198_331"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_198_331" result="shape"/>
+</filter>
+</defs>
+</svg>

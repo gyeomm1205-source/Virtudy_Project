@@ -32,6 +32,9 @@ const handleSubmit = async () => {
   if (!form.value.title.trim()) {
     return alert('방 제목을 입력해주세요! 📝');
   }
+  if (form.value.title.length > 20) {
+    return alert('방 제목은 20자 이내로 입력해주세요!');
+  }
 
   // 비공개 방 생성 시 비밀번호 필수
   if (!isEditMode.value && form.value.type === 'PRIVATE' && !form.value.password?.trim()) {
@@ -60,15 +63,28 @@ const handleSubmit = async () => {
 <template>
   <div class="fixed inset-0 bg-black/50 z-[999] flex items-center justify-center backdrop-blur-sm" @click.self="$emit('close')">
     
-    <div class="bg-white w-[480px] rounded-[30px] border-4 border-[var(--color-choco)] p-8 shadow-xl transform transition-all relative">
+    <div class="bg-[var(--color-cream2)] w-[480px] rounded-[24px] border-2 border-[var(--color-choco)] p-8 shadow-[4px_4px_0px_0px_var(--color-choco)] transform transition-all relative">
       
       <button 
-        class="absolute top-4 right-4 text-[var(--color-choco)] hover:scale-110 transition-transform"
         @click="$emit('close')"
+        class="absolute top-4 right-4 w-[2.625rem] h-[2.625rem] cursor-pointer hover:scale-110 transition-transform flex items-center justify-center"
+        aria-label="닫기"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <div class="w-[1.5rem] h-[1.5rem] relative">
+          <!-- 마름모 점선 X 패턴 - 중심 기준 대칭 -->
+          <!-- 왼쪽 위에서 오른쪽 아래 대각선 -->
+          <div class="absolute top-[4px] left-[4px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[8px] left-[8px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[11px] left-[11px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[14px] left-[14px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[18px] left-[18px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <!-- 오른쪽 위에서 왼쪽 아래 대각선 -->
+          <div class="absolute top-[4px] left-[18px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[8px] left-[14px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[11px] left-[11px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[14px] left-[8px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+          <div class="absolute top-[18px] left-[4px] w-[2px] h-[2px] bg-[var(--color-choco)] rotate-45"></div>
+        </div>
       </button>
 
       <h2 class="text-[var(--color-choco)] text-[32px] font-['Ram'] text-center mb-6">
@@ -76,60 +92,48 @@ const handleSubmit = async () => {
       </h2>
 
       <div class="flex flex-col gap-5">
-        
         <div class="flex flex-col gap-2">
-          <label class="text-[var(--color-choco)] font-bold text-lg pl-2">방 제목</label>
+          <label class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.125rem] pl-2">방 제목</label>
           <input 
             v-model="form.title" 
             type="text" 
-            placeholder="예) 알고리즘 뿌시기 👊" 
+            placeholder="예) 알고리즘 뿌시기" 
             class="input-box"
+            maxlength="20"
             autofocus
           />
+          <div class="flex justify-between items-center mt-[-0.25rem] px-1">
+            <span class="text-xs text-[var(--color-syrup)]">최대 20자까지 입력할 수 있어요.</span>
+            <span class="text-xs text-[var(--color-choco)]">{{ form.title.length }}/20</span>
+          </div>
         </div>
 
         <div class="flex flex-col gap-2">
-          <label class="text-[var(--color-choco)] font-bold text-lg pl-2">설명</label>
+          <label class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.125rem] pl-2">설명</label>
           <textarea 
             v-model="form.description" 
             placeholder="어떤 스터디인지 알려주세요!" 
             class="input-box h-24 resize-none"
           ></textarea>
         </div>
-
-        <div class="flex gap-4">
-          <template v-if="isEditMode">
-            <div
-              class="flex-1 p-3 rounded-xl border-2 text-center font-bold bg-[var(--color-butter)] border-[var(--color-choco)] text-[var(--color-choco)]"
-            >
-              {{ form.type === 'PUBLIC' ? '📢 공개' : '🔒 비공개' }}
-            </div>
-          </template>
-          <template v-else>
-            <label 
-              class="flex-1 cursor-pointer p-3 rounded-xl border-2 transition-all text-center font-bold"
-              :class="form.type === 'PUBLIC' 
-                ? 'bg-[var(--color-butter)] border-[var(--color-choco)] text-[var(--color-choco)]' 
-                : 'bg-gray-100 border-gray-300 text-gray-400'"
-            >
-              <input type="radio" v-model="form.type" value="PUBLIC" class="hidden">
-              📢 공개
-            </label>
-            <label 
-              class="flex-1 cursor-pointer p-3 rounded-xl border-2 transition-all text-center font-bold"
-              :class="form.type === 'PRIVATE' 
-                ? 'bg-[var(--color-butter)] border-[var(--color-choco)] text-[var(--color-choco)]' 
-                : 'bg-gray-100 border-gray-300 text-gray-400'"
-            >
-              <input type="radio" v-model="form.type" value="PRIVATE" class="hidden">
-              🔒 비공개
-            </label>
-          </template>
+        <!-- 설명 박스 아래에 비공개방 체크박스 추가 -->
+        <div v-if="!isEditMode || (isEditMode && form.type !== 'PRIVATE' && form.type !== 'PUBLIC')" class="flex items-center gap-2 mt-[-0.5rem]">
+          <input
+            type="checkbox"
+            id="privateRoomCheckbox"
+            :checked="form.type === 'PRIVATE'"
+            :disabled="isEditMode"
+            @change="form.type = ($event.target as HTMLInputElement).checked ? 'PRIVATE' : 'PUBLIC'"
+            class="w-4 h-4 accent-[var(--color-butter)] border-2 border-[var(--color-choco)] rounded focus:ring-2 focus:ring-[var(--color-butter)]"
+          />
+          <label for="privateRoomCheckbox" class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1rem] select-none cursor-pointer">
+            비공개방으로 설정
+          </label>
         </div>
 
         <transition name="slide-fade">
           <div v-if="form.type === 'PRIVATE'" class="flex flex-col gap-2">
-            <label class="text-[var(--color-choco)] font-bold text-lg pl-2">
+            <label class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.125rem] pl-2">
               비밀번호 {{ isEditMode ? '(변경 시 입력)' : '' }}
             </label>
             <input 
@@ -143,19 +147,15 @@ const handleSubmit = async () => {
 
       </div>
 
-      <div class="mt-8 flex gap-3">
-        <button 
-          class="flex-1 py-3 rounded-xl bg-gray-200 text-gray-500 font-bold hover:bg-gray-300 transition-colors"
-          @click="$emit('close')"
-        >
-          취소
-        </button>
-        <button 
-          class="flex-1 py-3 rounded-xl bg-[var(--color-choco)] text-white font-['Xcu'] text-xl font-bold hover:bg-[#3A2A2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      <div class="mt-8 flex justify-center">
+        <button
+          class="butter-btn w-[7rem] h-[2.5rem] !rounded-[1.5rem] !px-[5px] py-[7px] disabled:opacity-50 disabled:cursor-not-allowed"
           @click="handleSubmit"
           :disabled="isLoading"
         >
-          {{ isLoading ? '처리 중...' : (isEditMode ? '수정 완료!' : '만들기 완료!') }}
+          <span class="butter-btn-text text-[15px]">
+            {{ isLoading ? '처리 중...' : (isEditMode ? '수정 완료!' : '만들기 완료!') }}
+          </span>
         </button>
       </div>
 
@@ -168,24 +168,26 @@ const handleSubmit = async () => {
 .input-box {
   width: 100%;
   padding: 12px 16px;
-  border: 3px solid #E5E7EB;
-  border-radius: 16px;
-  font-size: 16px;
+  border: 2px solid var(--color-choco);
+  border-radius: 12px;
+  font-size: 18px;
   color: var(--color-choco);
+  font-family: 'PfStardust30S', sans-serif;
   transition: all 0.2s;
-  background-color: #F9FAFB;
+  background-color: var(--color-cream);
 }
 
 /* 포커스 시 초코색 테두리 */
 .input-box:focus {
   border-color: var(--color-choco);
   outline: none;
-  background-color: white;
+  background-color: var(--color-cream2);
 }
 
 /* 플레이스홀더 색상 */
 .input-box::placeholder {
-  color: #9CA3AF;
+  color: var(--color-syrup);
+  opacity: 0.7;
 }
 
 /* 애니메이션: 슬라이드 효과 */
@@ -199,5 +201,8 @@ const handleSubmit = async () => {
 .slide-fade-leave-to {
   transform: translateY(-10px);
   opacity: 0;
+}
+.butter-btn-text {
+ font-size: 21px;
 }
 </style>

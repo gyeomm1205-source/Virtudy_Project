@@ -54,7 +54,7 @@ class JwtUtilTest {
         MemberDto member = MemberDto.builder()
                 .memberId("testUser")
                 .nickName("Tester")
-                .avatarImageUrl("http://img.url")
+                .avatar(null)
                 .build();
 
         given(jwtTokenProvider.createJwtToken(any(), anyLong(), any())).willReturn("mockAccessToken");

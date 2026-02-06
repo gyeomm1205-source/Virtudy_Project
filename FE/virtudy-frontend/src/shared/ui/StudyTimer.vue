@@ -32,31 +32,28 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="study-timer">
+  <div class="focus-timer">
     <span class="time">{{ formattedTime }}</span>
   </div>
 </template>
 
 <style scoped>
-.study-timer {
+.focus-timer {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
-  height: 100%;
+  padding-bottom: 30px;
 }
 
 .time {
-  font-family: 'exqt', sans-serif;
-  font-size: 4.5rem;
-  color: #ffd966;
-  font-weight: 100;
-  line-height: 1;
-  letter-spacing: -2px;
+  font-family: 'Xcu', sans-serif;
+  font-size: 37.497px;
+  color: #dfa67b;
+  font-weight: 500;
+  line-height: normal;
   white-space: nowrap;
   text-align: center;
-  margin-top: 10px;
-  margin-left: 20px;
+  margin-left: 173px;
   transform: scaleY(1.3);
 }
 </style>

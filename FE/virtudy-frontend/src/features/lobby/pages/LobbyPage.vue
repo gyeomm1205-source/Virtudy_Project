@@ -1,11 +1,8 @@
 <template>
-  <div class="bg-[var(--color-syrup)] w-full min-h-screen flex flex-col relative">
+  <GlobalBackground :skyType="2">
+  <div class="w-full min-h-screen flex flex-col relative">
     
-    <div class="flex-none z-50">
-      <GlobalNavBar />
-    </div>
-    
-    <main class="flex-1 w-full relative min-h-[850px]">
+    <main class="flex-1 w-full relative min-h-[850px] lobby-main">
       
       <div class="absolute left-[76px] top-[119px] w-[54px] h-[54px] cursor-pointer hover:scale-110 transition-transform" @click="goBack">
         <svg viewBox="0 0 54 54" class="w-full h-full" fill="var(--color-choco)">
@@ -14,17 +11,27 @@
       </div>
       
       <div class="absolute left-[58px] top-[324px] transform -translate-y-1/2">
-        <h1 class="text-[var(--color-pancake)] text-[156px] font-['Ram'] font-medium leading-none tracking-[-18.72px]">
+        <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[156px] font-['Ram'] font-medium leading-none tracking-[-18.72px]">
           방목록
         </h1>
       </div>
       
-      <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px]">
-        <div class="absolute left-[54px] top-[83px] w-[146px] h-[146px] rounded-full overflow-hidden border-4 border-[var(--color-choco)]">
-          프로필 사진
+      <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px] lobby-actions">
+        <div class="absolute left-[100px] top-[140px] w-[200px] h-[200px]">
+          <CharacterAvatar
+            v-if="hasAvatarConfig"
+            :config="authStore.userInfo!.avatar!"
+            class="w-full h-full"
+          />
+          <img
+            v-else-if="authStore.userInfo?.avatarImageUrl"
+            :src="authStore.userInfo.avatarImageUrl"
+            alt="프로필"
+            class="w-full h-full object-cover"
+          />
         </div>
         
-        <div class="absolute top-[260px] w-full flex flex-col gap-[10px]">
+        <div class="absolute top-[260px] w-full flex flex-col gap-[10px] lobby-action-buttons">
           <button class="butter-btn bg-[var(--color-butter)] w-full" @click="handleRandomMatch">
             <span class="text-[var(--color-choco)] text-[28px] font-['Xcu'] font-medium leading-none">
               랜덤매칭
@@ -39,7 +46,7 @@
         </div>
       </div>
       
-      <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px]">
+      <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px] lobby-roomlist">
         <RoomList 
           :rooms="displayedRooms"
           :isMyRoomTab="currentFilter === 'myRooms'"  @roomClick="handleRoomClick"
@@ -48,6 +55,16 @@
           @edit="handleEditRoom"      
           @delete="handleDeleteRoom"
           @toggleFavorite="handleToggleFavorite" />
+      </div>
+
+      <div
+        v-if="showFavoriteToast"
+        class="absolute left-1/2 top-[110px] -translate-x-1/2 z-40 border-2 bg-[var(--color-butter2)]/80 rounded-[20px] px-[18px] py-[10px]"
+        style="border-color: color-mix(in srgb, var(--color-choco) 80%, transparent); box-shadow: 4px 4px 0px 0px color-mix(in srgb, var(--color-choco) 80%, transparent);"
+      >
+        <span class="text-[var(--color-choco)] text-[18px] font-['PfStardust30S'] font-normal leading-none">
+          {{ favoriteToastMessage }}
+        </span>
       </div>
 
     </main>
@@ -63,11 +80,26 @@
     @success="fetchAllRooms" 
   />
 
+  <PasswordModal
+    v-if="showPasswordModal"
+    :error="passwordError"
+    @close="showPasswordModal = false"
+    @submit="handlePasswordSubmit"
+  />
+
+  <MatchingModal
+    v-if="isEntering"
+    title-text="입장 중..."
+    subtitle-text="잠시만 기다려주세요..."
+    @close="isEntering = false"
+  />
+
   </div>
+  </GlobalBackground>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
@@ -77,18 +109,28 @@ import { useLobby } from '@/features/lobby/logic/useLobby';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI'; // 랜덤매칭용
 import type { RoomData } from '@/features/lobby/types/lobby.types'; // 방 데이터 타입
 // ✅ UI 컴포넌트 import
-import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RoomList from '@/shared/ui/RoomList.vue';
 import CreateRoomModal from '../ui/CreateRoomModal.vue'; // 새로 만든 모달
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+import MatchingModal from '@/shared/ui/MatchingModal.vue';
+import PasswordModal from '../ui/PasswordModal.vue';
 
 import { maxMembers } from '@/shared/config/constants'; // 상수 import
+
+import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
+
 
 const router = useRouter();
 
 // 1. Store & Hook 연결
 const authStore = useAuthStore();
 const { userId } = storeToRefs(authStore);
+
+const hasAvatarConfig = computed(() => {
+  if (!authStore.userInfo?.avatar) return false;
+  return Object.values(authStore.userInfo.avatar).some((value) => Boolean(value));
+});
 
 const { 
   publicRooms, 
@@ -104,10 +146,15 @@ const {
 // UI 상태 관리
 const showModal = ref(false); // 모달 표시 여부
 const selectedRoom = ref<RoomData | null>(null);
+const showPasswordModal = ref(false); // 비밀번호 입력 모달
+const passwordRoom = ref<RoomData | null>(null); // 비밀번호 입력 대상 방
+const passwordError = ref('');
 const currentFilter = ref<string>('all'); // 'all' | 'my'
 const searchQuery = ref<string>('');
-const currentPage = ref<number>(1);
-const ITEMS_PER_PAGE = 6;
+const showFavoriteToast = ref(false);
+const favoriteToastMessage = ref('');
+let favoriteToastTimer: ReturnType<typeof setTimeout> | null = null;
+const isEntering = ref(false);
 
 // Methods
 const goBack = () => router.back();
@@ -148,8 +195,8 @@ const handleRandomMatch = async () => {
   }
   try {
     const  data  = await lobbyAPI.enterRandomRoom(userId.value);
-    // 입장 성공 -> 스터디룸으로 이동 (userId를 사용)
-    router.push(`/study/${data.userId}?token=${data.liveKitToken}`);
+    // 입장 성공 -> 스터디룸으로 이동 (roomId를 사용)
+    router.push(`/study/${data.roomId}?token=${data.liveKitToken}`);
   } catch (e) {
     console.error(e);
     alert('입장 가능한 방이 없습니다.');
@@ -158,8 +205,39 @@ const handleRandomMatch = async () => {
 
 // 방 클릭 (입장 로직)
 const handleRoomClick = async (room: any) => {
-  // RoomList에서 넘어오는 room 객체의 ID 사용
-  await joinRoom(room.roomId);
+  if (isEntering.value) return;
+  // 내 방(방장)은 바로 입장, 공개방도 바로 입장
+  if (room.owner || room.type !== 'PRIVATE') {
+    isEntering.value = true;
+    try {
+      const success = await joinRoom(room.roomId);
+      if (!success) {
+        isEntering.value = false;
+      }
+    } catch {
+      isEntering.value = false;
+    }
+    return;
+  }
+  // 비공개방 + 내 방이 아니면 비밀번호 입력 모달
+  passwordRoom.value = room;
+  showPasswordModal.value = true;
+  passwordError.value = '';
+};
+
+const handlePasswordSubmit = async (password: string) => {
+  if (!passwordRoom.value || !userId.value) return;
+  isEntering.value = true;
+  passwordError.value = '';
+  try {
+    // joinRoom이 아니라 직접 lobbyAPI.enterRoom 사용 (비밀번호 필요)
+    const data = await lobbyAPI.enterRoom(userId.value, passwordRoom.value.roomId, password);
+    showPasswordModal.value = false;
+    router.push(`/study/${data.roomId}?token=${data.liveKitToken}`);
+  } catch (e: any) {
+    passwordError.value = e?.response?.data?.message || '비밀번호가 올바르지 않습니다.';
+    isEntering.value = false;
+  }
 };
 
 
@@ -167,14 +245,12 @@ const handleRoomClick = async (room: any) => {
 // 탭 변경 (전체 <-> 내 스터디)
 const setFilter = (filter: string) => {
   currentFilter.value = filter;
-  currentPage.value = 1;
   searchQuery.value = '';
   fetchAllRooms(); // 탭 바꿀 때 데이터 갱신
 };
 
 const onSearchInput = (query: string) => {
   searchQuery.value = query;
-  currentPage.value = 1;
 };
 
 // Computed Properties (데이터 가공)
@@ -191,9 +267,10 @@ const filteredRooms = computed(() => {
 
   // 검색
   if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase();
+    const query = searchQuery.value.trim().toLowerCase();
     filtered = filtered.filter(room => 
-      room.title?.toLowerCase().includes(query)
+      room.title?.toLowerCase().includes(query) ||
+      String(room.roomId ?? '').toLowerCase().includes(query)
     );
   }
 
@@ -202,17 +279,29 @@ const filteredRooms = computed(() => {
 
 // ✅ [NEW] 하트 클릭 핸들러
 const handleToggleFavorite = async (roomId: string) => {
+  const targetRoom = myRooms.value.find(room => room.roomId === roomId);
   await toggleFavoriteRoom(roomId);
+  if (targetRoom?.title) {
+    const lastChar = targetRoom.title.trim().slice(-1);
+    const code = lastChar.charCodeAt(0);
+    const hasJong = code >= 0xac00 && code <= 0xd7a3 ? (code - 0xac00) % 28 !== 0 : false;
+    const particle = hasJong ? '을' : '를';
+    favoriteToastMessage.value = `${targetRoom.title}${particle} 최애방으로 선택했습니다!`;
+    showFavoriteToast.value = true;
+    if (favoriteToastTimer) {
+      clearTimeout(favoriteToastTimer);
+    }
+    favoriteToastTimer = setTimeout(() => {
+      showFavoriteToast.value = false;
+      favoriteToastTimer = null;
+    }, 2000);
+  }
 };
 
 // 페이지네이션 및 RoomList 컴포넌트 타입 매핑
 const displayedRooms = computed(() => {
-  const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
-  const end = start + ITEMS_PER_PAGE;
-  const slicedRooms = filteredRooms.value.slice(start, end);
-  
   // RoomList 컴포넌트가 요구하는 Room 타입으로 변환
-  return slicedRooms.map(room => ({
+  return filteredRooms.value.map(room => ({
     roomId: room.roomId,
     title: room.title,
     currentMembers: room.currentUser,
@@ -221,14 +310,21 @@ const displayedRooms = computed(() => {
     owner: room.owner || false, 
     description: room.description,
     type: room.type,
-    favorite: room.favorite || false // ✅ favorite 속성 추가
+    favorite: room.favorite || false, // ✅ favorite 속성 추가
+    lockIcon: room.type === 'PRIVATE' // 비공개방이면 true
   }));
 });
 
 
 
 // 초기 데이터 로드
+let roomsRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
 onMounted(() => {
+  if (authStore.isLoggedIn && !authStore.userInfo) {
+    authStore.fetchUserInfo();
+  }
+
   if (userId.value) {
     fetchAllRooms();
   } else {
@@ -236,5 +332,62 @@ onMounted(() => {
     console.warn('로그인 정보가 없습니다. (게스트 모드)');
     fetchAllRooms(); // 공개방은 볼 수 있게 할 경우
   }
+
+  roomsRefreshTimer = setInterval(() => {
+    fetchAllRooms();
+  }, 5000);
+});
+
+onUnmounted(() => {
+  if (roomsRefreshTimer) {
+    clearInterval(roomsRefreshTimer);
+    roomsRefreshTimer = null;
+  }
+  if (favoriteToastTimer) {
+    clearTimeout(favoriteToastTimer);
+    favoriteToastTimer = null;
+  }
 });
 </script>
+
+<style scoped>
+@media (max-width: 1280px) {
+  .lobby-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 140px;
+    gap: 28px;
+  }
+
+  .lobby-actions {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(92vw, 360px);
+    height: auto;
+    order: 2;
+  }
+
+  .lobby-roomlist {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(95vw, 720px);
+    height: auto;
+    order: 1;
+  }
+
+  .lobby-action-buttons {
+    position: static;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .lobby-action-buttons > button {
+    width: 100%;
+  }
+}
+</style>
