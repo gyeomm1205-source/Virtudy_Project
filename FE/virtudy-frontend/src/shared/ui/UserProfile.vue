@@ -69,6 +69,9 @@
         :studyTime="displayPureStudyTime" 
         :focusing="displayFocusDepth" 
       />
+      <!-- 백엔드에서 해결되면 다시 사용해야됨 -->
+      <!-- :studyTime="userInfo?.dailyPureStudyTime"
+           :focusing="userInfo?.dailyFocusDepth" -->
     </div>
   </div>
 </template>
