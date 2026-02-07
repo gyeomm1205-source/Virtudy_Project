@@ -46,20 +46,7 @@
     </div>
 
     <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem] report-content">
-      <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border report-card">
-        <div class="absolute right-[-1rem] bottom-[-3rem] w-[12rem] h-[14rem] z-10">
-          <CharacterAvatar
-            v-if="hasAvatarConfig"
-            :config="authStore.userInfo!.avatar!"
-            class="w-full h-full"
-          />
-          <img
-            v-else-if="authStore.userInfo?.avatarImageUrl"
-            :src="authStore.userInfo.avatarImageUrl"
-            alt="프로필"
-            class="w-full h-full object-cover"
-          />
-        </div>
+      <div class="bg-[#FFFDF5] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] relative shadow-[4px_4px_0px_0px_var(--color-choco)] p-8 box-border report-card flex flex-col overflow-hidden">
         <div
           v-if="!hasReport && !isLoading"
           class="absolute inset-0 z-20 flex items-center justify-center rounded-[1.25rem] bg-[rgba(255,253,245,0.75)] backdrop-blur-[2px]"
@@ -128,9 +115,9 @@
           </div>
         </div>
 
-        <h2 class="text-[var(--color-choco)] text-[2.5rem] font-['Ram'] mt-4 mb-6">주간리포트</h2>
+        <h2 class="text-[var(--color-choco)] text-[2.5rem] font-['Ram'] mt-4 mb-6 shrink-0">주간리포트</h2>
 
-        <div class="flex gap-6 mb-6 px-4">
+        <div class="flex gap-6 mb-6 px-4 shrink-0">
           <div class="flex-1 bg-[var(--color-choco)] rounded-[20px] px-6 py-5 text-center text-[var(--color-cream)] shadow-md flex flex-col justify-center">
             
             <p class="text-[2.25rem] font-['PfStardust30S'] mb-2 leading-tight">총 공부시간</p>
@@ -150,7 +137,7 @@
           </div>
         </div>
 
-        <div class="mb-6 px-4"> 
+        <div class="mb-6 px-4 shrink-0"> 
           <h3 class="w-full text-left text-[2rem] text-[var(--color-choco)] font-['Xcu'] mb-2">주간성취</h3>
           <PentagonChart 
             class="w-full"
@@ -162,10 +149,11 @@
           />
         </div>
 
-        <div class="px-4 pb-4">
-          <h3 class="text-[2rem] text-[var(--color-choco)] font-['Xcu'] mb-4">AI 코멘트</h3>
-          <div class="bg-[var(--color-cream)] border-2 border-[var(--color-syrup)] rounded-[20px] p-6 relative min-h-[8rem]">
-            <p class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.25rem] leading-relaxed pr-[4rem]">
+        <div class="px-4 pb-2 flex-1 min-h-0 flex flex-col">
+          <h3 class="text-[2rem] text-[var(--color-choco)] font-['Xcu'] mb-4 shrink-0">AI 코멘트</h3>
+          
+          <div class="bg-[var(--color-cream)] rounded-[20px] p-6 relative flex-1 w-full h-full overflow-y-auto custom-scroll">
+            <p class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.25rem] leading-relaxed pr-[1rem] whitespace-pre-wrap">
               {{ reportData?.aiComment || "열심히 공부한 당신에게 멋진 분석을 준비 중이에요..." }}
             </p>
           </div>
@@ -189,7 +177,6 @@ import { useWeeklyReport } from '../logic/useWeeklyReport';
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import PentagonChart from '@/shared/ui/PentagonChart.vue';
 import WeeklyCalendar from '../pages/WeeklyCalendar.vue';
-import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import { useAuthStore } from '@/stores/authStore';
 import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 
@@ -252,6 +239,53 @@ const goToMyPage = () => {
 </script>
 
 <style scoped>
+  
+.custom-scroll::-webkit-scrollbar {
+  width: 14px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--color-choco);
+  border-radius: 10px;
+  border: 3px solid var(--color-cream);
+  background-clip: content-box;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #6b4438;
+}
+
+.custom-scroll::-webkit-scrollbar-button:vertical:start:decrement {
+  display: block;
+  height: 20px; /* 버튼 높이 */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='%23805143'%3E%3Cpath d='M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px; /* 화살표 크기 살짝 키움 */
+
+  /* 부모 박스의 둥근 모서리에 맞춰서 버튼도 둥글게 */
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.custom-scroll::-webkit-scrollbar-button:vertical:end:increment {
+  display: block;
+  height: 20px;
+  background-color: transparent; /* 배경 투명 */
+
+  /* fill='%23805143' (초코색) 적용 */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='%23805143'%3E%3Cpath d='M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px; /* 화살표 크기 살짝 키움 */
+}
+.custom-scroll::-webkit-scrollbar-button:hover {
+  background-color: #6b4438;
+}
 @media (max-width: 1280px) {
   .report-root {
     display: flex;
@@ -268,6 +302,7 @@ const goToMyPage = () => {
     width: min(92vw, 360px);
     height: auto;
     order: 2;
+    margin-bottom: 3rem;
   }
 
   .report-content {

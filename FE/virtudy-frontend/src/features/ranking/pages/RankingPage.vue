@@ -16,7 +16,7 @@
     <div class="flex-1 flex flex-col pt-[4.5rem] pb-[6.5rem] w-full min-h-[calc(100vh-200px)] px-[4.75rem] rank-content">
       <div class="w-full max-w-[74rem] mx-auto relative rank-shell">
         <button @click="goBack"
-          class="absolute -left-13 top-[2rem] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform rank-back">
+          class="absolute -left-[2.78rem] top-[2.95rem] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform rank-back">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
             stroke="var(--color-choco)" class="w-full h-full">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
