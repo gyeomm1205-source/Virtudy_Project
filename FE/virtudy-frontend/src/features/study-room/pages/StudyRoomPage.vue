@@ -118,6 +118,46 @@ const { focusSeconds } = useFocusTimer(canRunFocusTimer);
 // 전체 공부시간 타이머: 연결만 되어 있으면 동작
 const canRunTotalTimer = computed(() => isConnected.value);
 const { focusSeconds: totalSeconds } = useFocusTimer(canRunTotalTimer);
+// 임시 누적값 저장용
+const sessionPureStudyTime = ref(0); // 집중 시간 누적 (분)
+const sessionTotalStudyTime = ref(0); // 전체 공부 시간 누적 (분)
+
+// 세션 종료 시 누적
+function accumulateSessionTimes() {
+    sessionPureStudyTime.value += Math.floor(focusSeconds.value / 60);
+    sessionTotalStudyTime.value += Math.floor(totalSeconds.value / 60);
+}
+
+// 방 나갈 때 누적
+onBeforeRouteLeave(() => {
+    accumulateSessionTimes();
+    // 누적값을 authStore.userInfo에 저장 (필수 필드 string 보장)
+    const prevPure = authStore.userInfo?.tempPureStudyTime ?? 0;
+    const prevTotal = authStore.userInfo?.tempTotalStudyTime ?? 0;
+    const newPure = prevPure + sessionPureStudyTime.value;
+    const newTotal = prevTotal + sessionTotalStudyTime.value;
+    authStore.userInfo = {
+        userId: authStore.userInfo?.userId ?? "",
+        nickName: authStore.userInfo?.nickName ?? "",
+        email: authStore.userInfo?.email ?? "",
+        jobType: authStore.userInfo?.jobType ?? "",
+        tier: authStore.userInfo?.tier ?? "",
+        avatar: authStore.userInfo?.avatar,
+        avatarImageUrl: authStore.userInfo?.avatarImageUrl,
+        tempPureStudyTime: newPure,
+        tempTotalStudyTime: newTotal,
+        tempFocusDepth: newTotal > 0 ? Math.round((newPure / newTotal) * 100) : 0
+    };
+    // 세션값 초기화
+    sessionPureStudyTime.value = 0;
+    sessionTotalStudyTime.value = 0;
+});
+
+// 방 입장 시 누적값 초기화
+onMounted(() => {
+    sessionPureStudyTime.value = 0;
+    sessionTotalStudyTime.value = 0;
+});
 
 // 상태 변수
 const localVideoRef = ref<HTMLVideoElement | null>(null);

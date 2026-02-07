@@ -20,4 +20,8 @@ export interface User {
     tier: string;
     avatar?: AvatarConfig;
     avatarImageUrl?: string;
+    // 임시 프론트엔드 누적값
+    tempPureStudyTime?: number;
+    tempTotalStudyTime?: number;
+    tempFocusDepth?: number;
 }

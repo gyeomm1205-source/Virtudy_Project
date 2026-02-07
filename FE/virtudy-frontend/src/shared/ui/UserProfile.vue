@@ -66,8 +66,8 @@
     <div class="stats-area">
       <MiniReport 
        class="w-full h-full gap-[6rem]"
-        :studyTime="pureStudyTime" 
-        :focusing="focusDepth" 
+        :studyTime="displayPureStudyTime" 
+        :focusing="displayFocusDepth" 
       />
     </div>
   </div>
@@ -78,7 +78,7 @@ import { computed } from 'vue';
 import MiniReport from '@/shared/ui/MiniReport.vue'; 
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
-
+import { useAuthStore } from '@/stores/authStore';
 
 // 클릭 이벤트
 const emit = defineEmits<{
@@ -128,7 +128,6 @@ interface UserProfileProps {
   avatarOffsetY?: string;   // 아바타 Y 오프셋
 }
 
-// 기본값 설정 (데이터가 없을 때 보여줄 값)
 const props = withDefaults(defineProps<UserProfileProps>(), {
   nickName: "닉네임",
   tierScore: 0,
@@ -139,6 +138,21 @@ const props = withDefaults(defineProps<UserProfileProps>(), {
   avatarImageUrl: "",
   avatarOffsetX: '-6%',
   avatarOffsetY: '-3%'
+});
+
+const authStore = useAuthStore();
+const displayPureStudyTime = computed(() => {
+  // 백엔드 값이 없으면 임시값 사용
+  if (props.pureStudyTime === undefined || props.pureStudyTime === 0) {
+    return authStore.userInfo?.tempPureStudyTime ?? 0;
+  }
+  return props.pureStudyTime;
+});
+const displayFocusDepth = computed(() => {
+  if (props.focusDepth === undefined || props.focusDepth === 0) {
+    return authStore.userInfo?.tempFocusDepth ?? 0;
+  }
+  return props.focusDepth;
 });
 
 const avatarOffsetX = computed(() => props.avatarOffsetX || '-15%');
