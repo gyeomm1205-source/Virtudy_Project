@@ -6,14 +6,19 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
+<<<<<<< HEAD
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+=======
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
 from pydantic import BaseModel
 import asyncio
 import multiprocessing
 import uvicorn
 import logging
+import time
 from run_livekit import run_bot
-import json
+from queue import Empty
 
 # Logger setup
 logging.basicConfig(level=logging.INFO)
@@ -36,7 +41,13 @@ app.add_middleware(
 # but for simplicity with uvicorn workers, we need a way to share.
 # However, since we spawn Process from here, we can pass the queue directly.
 # We need to store it to access it in websocket_endpoint.
-active_queues = {} 
+active_queues = {}
+active_bots = {}  # {room_id: multiprocessing.Process}
+active_connections = {}  # {room_id: {member_id: WebSocket}}
+dispatch_tasks = {}      # {room_id: asyncio.Task}
+last_ai_payloads = {}  # {room_id: {member_id: {"status": payload, "score": payload}}}
+room_empty_since = {}  # {room_id: timestamp}
+WS_EMPTY_GRACE_SEC = 5.0
 
 class JoinRequest(BaseModel):
     url: str
@@ -56,17 +67,44 @@ def bot_process(url: str, token: str, room_id: str, queue: multiprocessing.Queue
         print(f"[ERROR] Bot Process Crashed: {e}", flush=True)
         logger.error(f"Bot execution failed: {e}")
 
+def _terminate_room_bot(room_id: str):
+    task = dispatch_tasks.pop(room_id, None)
+    if task and task is not asyncio.current_task():
+        task.cancel()
+    bot = active_bots.pop(room_id, None)
+    if bot and bot.is_alive():
+        bot.terminate()
+        bot.join(timeout=2)
+    active_queues.pop(room_id, None)
+    active_connections.pop(room_id, None)
+    last_ai_payloads.pop(room_id, None)
+    room_empty_since.pop(room_id, None)
+
 @app.post("/bot/join")
+@app.post("/fastapi/bot/join")
 async def join_room(request: JoinRequest):
     """
     Triggers a new AI bot instance to join a LiveKit room.
     """
     logger.info(f"Received request to join room: {request.room_id}")
     
+<<<<<<< HEAD
+    existing_bot = active_bots.get(request.room_id)
+    if existing_bot and existing_bot.is_alive():
+        return {"status": "already_running", "pid": existing_bot.pid, "message": f"Bot already running for room {request.room_id}"}
+
+    if existing_bot:
+        active_bots.pop(request.room_id, None)
+        active_queues.pop(request.room_id, None)
+        last_ai_payloads.pop(request.room_id, None)
+        room_empty_since.pop(request.room_id, None)
+
+=======
     # [DEV] Check environment variable for debug mode
     # Usage: set DEBUG_VISUAL=1 && python server.py
     debug_visual = os.environ.get("DEBUG_VISUAL", "0") == "1"
     
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
     # Create a shared queue for this room using standard multiprocessing.Queue
     # (Since we are forking/spawning from this process, it works)
     queue = multiprocessing.Queue()
@@ -75,10 +113,63 @@ async def join_room(request: JoinRequest):
     # Spawn a new process for the bot so it doesn't block the API server
     p = multiprocessing.Process(target=bot_process, args=(request.url, request.token, request.room_id, queue, debug_visual))
     p.start()
+    active_bots[request.room_id] = p
+    last_ai_payloads.setdefault(request.room_id, {})
+    room_empty_since.pop(request.room_id, None)
     
     return {"status": "started", "pid": p.pid, "message": f"Bot joining room {request.room_id}"}
 
+async def dispatch_loop(room_id: str):
+    try:
+        while True:
+            queue = active_queues.get(room_id)
+            conns = active_connections.get(room_id, {})
+            if not conns:
+                now = time.time()
+                empty_since = room_empty_since.get(room_id)
+                if empty_since is None:
+                    room_empty_since[room_id] = now
+                elif now - empty_since >= WS_EMPTY_GRACE_SEC:
+                    logger.info(f"[RoomManager] No WS connections for {WS_EMPTY_GRACE_SEC}s. Terminating bot (room={room_id}).")
+                    _terminate_room_bot(room_id)
+                    return
+                await asyncio.sleep(0.2)
+                continue
+            room_empty_since.pop(room_id, None)
+            if queue:
+                try:
+                    data = queue.get_nowait()
+                except Empty:
+                    await asyncio.sleep(0.01)
+                    continue
+                participant_id = data.get("participantId")
+                event_type = data.get("eventType") or data.get("status")
+                if participant_id and event_type:
+                    room_cache = last_ai_payloads.setdefault(room_id, {})
+                    member_cache = room_cache.setdefault(participant_id, {})
+                    if event_type == "SCORE" or "score" in data:
+                        member_cache["score"] = data
+                    else:
+                        member_cache["status"] = data
+                if participant_id:
+                    targets = [(participant_id, conns.get(participant_id))]
+                else:
+                    targets = list(conns.items())
+                for pid, ws in targets:
+                    if not ws:
+                        continue
+                    try:
+                        await ws.send_json(data)
+                    except Exception as e:
+                        logger.warning(f"WS send failed (room={room_id}, member={pid}): {e}")
+                        conns.pop(pid, None)
+            else:
+                await asyncio.sleep(0.01)
+    except asyncio.CancelledError:
+        return
+
 @app.websocket("/ws/analysis/{room_id}/{member_id}")
+@app.websocket("/fastapi/ws/analysis/{room_id}/{member_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str):
     """
     Handles WebSocket connections from the frontend.
@@ -86,25 +177,40 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, member_id: str)
     await websocket.accept()
     logger.info(f"WebSocket connected: Room {room_id}, Member {member_id}")
     
-    queue = active_queues.get(room_id)
-    if not queue:
-        logger.warning(f"No active AI bot found for room {room_id}. Queue Missing!")
-    else:
-        logger.info(f"Queue found for room {room_id}. Listening for data...")
-    
     try:
+        # Register connection
+        room_conns = active_connections.setdefault(room_id, {})
+        room_conns[member_id] = websocket
+        room_empty_since.pop(room_id, None)
+
+        # Send last cached status/score to restore UI state on refresh
+        member_cache = last_ai_payloads.get(room_id, {}).get(member_id)
+        if member_cache:
+            for key in ("status", "score"):
+                payload = member_cache.get(key)
+                if payload:
+                    try:
+                        await websocket.send_json(payload)
+                    except Exception as e:
+                        logger.warning(f"WS send cached failed (room={room_id}, member={member_id}): {e}")
+
+        # Start dispatcher for this room if not running
+        if room_id not in dispatch_tasks:
+            dispatch_tasks[room_id] = asyncio.create_task(dispatch_loop(room_id))
+
+        # Keep the connection open; messages are pushed by dispatcher
         while True:
-            if queue and not queue.empty():
-                data = queue.get()
-                # logger.info(f"Sending data to WS: {data}") # Too noisy, uncomment if needed
-                print(f"[DEBUG] Sending to FE: {data['value']} ({data['eventType']})") # Explicit print for user
-                await websocket.send_json(data)
-            else:
-                await asyncio.sleep(0.01) # Faster polling
+            await asyncio.sleep(1.0)
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected: Room {room_id}, Member {member_id}")
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
+    finally:
+        # Cleanup connection
+        room_conns = active_connections.get(room_id, {})
+        room_conns.pop(member_id, None)
+        if not room_conns:
+            room_empty_since[room_id] = time.time()
 
 @app.get("/health")
 async def health_check():

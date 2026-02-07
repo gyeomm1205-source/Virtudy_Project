@@ -43,7 +43,8 @@ const DEFAULTS = {
 // 핵심 로직: 유효성 검사 및 폴백 함수
 // ----------------------------------------------------------------------
 const getSafeOption = (category: string, rawValue: string, prefix: string, fallback: string) => {
-  if (!rawValue || rawValue === 'none') return 'none';
+  if (rawValue === 'none') return 'none';
+  if (!rawValue) return fallback;
 
   // 접두사 제거
   let option = rawValue.startsWith(prefix) ? rawValue.replace(prefix, '') : rawValue;

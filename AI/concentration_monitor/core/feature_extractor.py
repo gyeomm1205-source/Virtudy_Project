@@ -13,6 +13,12 @@ class FeatureExtractor:
             max_num_faces=1, refine_landmarks=True,
             min_detection_confidence=0.85, min_tracking_confidence=0.85
         )
+<<<<<<< HEAD
+        self.mp_face_detection = mp.solutions.face_detection
+        self.face_detection = self.mp_face_detection.FaceDetection(
+            min_detection_confidence=0.5
+        )
+=======
         self.face_frame_index = 0
         self.last_face_detected = False
         self.last_ear = None
@@ -20,6 +26,7 @@ class FeatureExtractor:
         self.last_face_pixel_center = None
         self.last_face_updated = False
         self.last_face_bbox = None
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
         self.mp_hands = mp.solutions.hands
         self.hands = None
         if Config.ENABLE_HANDS:
@@ -30,9 +37,15 @@ class FeatureExtractor:
         self.last_hand_centers = []
         self.hand_cache_age = 0
         try:
+<<<<<<< HEAD
+            self.yolo = YOLO("bestv7.pt")
+=======
             # Use Nano for faster inference
             self.yolo = YOLO("yolov8n.pt")
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
             self.yolo_names = self.yolo.names
+            print(f"내 모델 클래스 목록: {self.yolo.names}")
+            # 출력 예시: {0: 'phone'} -> 이러면 0번이 맞음!
         except Exception as e:
             print(f"[WARN] YOLO Load Failed: {e}")
             self.yolo = None
@@ -65,6 +78,43 @@ class FeatureExtractor:
         denom = (chin_y - eye_mid_y)
         return (nose_y - eye_mid_y) / denom if denom > 1e-6 else 0.0
 
+<<<<<<< HEAD
+    def process(self, frame, detect_hands: bool = True, detect_phone: bool = True):
+        h, w, _ = frame.shape
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        face_res = self.face.process(rgb)
+        face_detected, ear, pitch, face_pixel_center = False, None, None, None
+        face_present = False
+        ghost_filtered = False
+        
+        if face_res.multi_face_landmarks:
+            face_detected = True
+            lm = face_res.multi_face_landmarks[0].landmark
+            ear, pitch = self._calc_ear(lm, w, h), self._calc_head_pitch(lm)
+            face_pixel_center = (int((lm[234].x + lm[454].x)/2 * w), int((lm[10].y + lm[152].y)/2 * h))
+            
+            # [Fix] Ghost Face Filter
+            # If EAR is suspiciously low (< 0.02), it's likely a non-human object (chair, wall pattern)
+            # incorrectly identified as a face. Real closed eyes are usually ~0.15-0.18.
+            # (User feedback: 0.05 was too high and filtered real sleep)
+            if ear < 0.02:
+                face_detected = False
+                ghost_filtered = True
+                # We interpret this as "No Face" (Absent) rather than "Sleep"
+            
+        hand_centers = []
+        if detect_hands:
+            hand_res = self.hands.process(rgb)
+            if hand_res.multi_hand_landmarks:
+                for hand in hand_res.multi_hand_landmarks:
+                    sx, sy = sum([l.x for l in hand.landmark]) / 21, sum([l.y for l in hand.landmark]) / 21
+                    hand_centers.append((int(sx*w), int(sy*h)))
+
+        phone_conf, phone_box = 0.0, None
+        if detect_phone and self.yolo:
+            # [Fix] Revert to Phone Only (Round 6)
+            results = self.yolo(frame, verbose=False, classes=[0], conf=0.4)
+=======
     def process(self, frame):
         self.frame_index += 1
         h, w, _ = frame.shape
@@ -171,10 +221,17 @@ class FeatureExtractor:
                 scale_y = h / new_h
             yolo_classes = [67] + list(Config.PHONE_DISTRACTOR_CLASSES)
             results = self.yolo(yolo_frame, verbose=False, classes=yolo_classes, conf=0.03)
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
             for r in results:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
                     conf = float(box.conf[0])
+<<<<<<< HEAD
+                    # [DEBUG_INTERNAL] Print what YOLO sees locally
+                    # print(f"[DEBUG_INTERNAL] YOLO saw class {cls_id} with conf {conf:.3f}")
+                    
+                    if cls_id == 0: # Cell phone
+=======
                     cls_name = self.yolo_names.get(cls_id, 'unknown')
                     detected_classes.append(cls_name)
                     if cls_id in Config.PHONE_DISTRACTOR_CLASSES:
@@ -185,6 +242,7 @@ class FeatureExtractor:
                             distractor_conf = conf
                             distractor_box = list(map(int, d_xyxy))
                     if cls_id == 67: # Cell phone only
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
                         if conf > phone_conf:
                             phone_conf = conf
                             xyxy = box.xyxy[0].tolist()
@@ -270,6 +328,11 @@ class FeatureExtractor:
                     self.static_frames += 1
             
             if self.static_frames > 100:
+<<<<<<< HEAD
+                face_detected = False # Treat as Ghost (Inanimate object)
+                ear, pitch = None, None
+                ghost_filtered = True
+=======
                 # [Fix] Enhanced Liveness: If eyes are even slightly closed or pitch is high,
                 # it's definitely a person. Never treat as ghost in these states.
                 if is_blinking or (pitch is not None and pitch > 0.3):
@@ -278,10 +341,19 @@ class FeatureExtractor:
                     face_detected = False 
                     ear, pitch = None, None
             self.prev_face_center = face_pixel_center if face_detected else None
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
         else:
             self.static_frames = 0
             self.prev_face_center = None
 
+<<<<<<< HEAD
+        if face_detected:
+            face_present = True
+        elif not ghost_filtered:
+            det_res = self.face_detection.process(rgb)
+            if det_res.detections:
+                face_present = True
+=======
         hand_near_face = False
         if face_pixel_center and hand_centers:
             fx, fy = face_pixel_center
@@ -290,9 +362,10 @@ class FeatureExtractor:
             for hx, hy in hand_centers:
                 if ((fx-hx)**2 + (fy-hy)**2)**0.5 < thresh:
                     hand_near_face = True; break
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
 
         hand_interaction = False
-        if phone_box and hand_centers:
+        if detect_phone and phone_box and hand_centers:
             px, py = (phone_box[0] + phone_box[2]) // 2, (phone_box[1] + phone_box[3]) // 2
             thresh = (w**2 + h**2)**0.5 * 0.2
             for hx, hy in hand_centers:
@@ -318,6 +391,12 @@ class FeatureExtractor:
             phone_area_ratio = (pw * ph) / float(w * h) if w > 0 and h > 0 else 0.0
 
         return {
+<<<<<<< HEAD
+            "face_detected": face_detected, "face_present": face_present,
+            "ear": ear, "pitch": pitch,
+            "phone_conf": phone_conf, "hand_interaction": hand_interaction,
+            "debug": {"face_center": face_pixel_center, "phone_box": phone_box, "hand_centers": hand_centers}
+=======
             "face_detected": face_detected, "face_updated": face_updated, "ear": ear, "pitch": pitch,
             "phone_conf": phone_conf, 
             "is_cell_phone": is_cell_phone,
@@ -326,4 +405,5 @@ class FeatureExtractor:
             "phone_near_face": phone_near_face,
             "phone_area_ratio": phone_area_ratio,
             "debug": {"face_center": face_pixel_center, "phone_box": phone_box, "hand_centers": hand_centers, "detected_classes": detected_classes}
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
         }

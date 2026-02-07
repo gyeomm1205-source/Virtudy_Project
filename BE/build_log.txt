@@ -1,0 +1,33 @@
+> Task :clean
+
+> Task :compileJava
+C:\Users\SSAFY\Desktop\fe_ai\S14P11A703\BE\src\main\java\com\ssafy\virtudy\rank\service\RankService.java:76: error: cannot find symbol
+            AvatarResponse avatarDto = avatarMap.get(userId);
+                                       ^
+  symbol:   variable avatarMap
+  location: class RankService
+1 error
+
+> Task :compileJava FAILED
+
+[Incubating] Problems report is available at: file:///C:/Users/SSAFY/Desktop/fe_ai/S14P11A703/BE/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler output below.
+  C:\Users\SSAFY\Desktop\fe_ai\S14P11A703\BE\src\main\java\com\ssafy\virtudy\rank\service\RankService.java:76: error: cannot find symbol
+              AvatarResponse avatarDto = avatarMap.get(userId);
+                                         ^
+    symbol:   variable avatarMap
+    location: class RankService
+  1 error
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights.
+
+BUILD FAILED in 6s
+2 actionable tasks: 2 executed
+

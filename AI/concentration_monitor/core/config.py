@@ -1,8 +1,16 @@
+import os
+
 # core/config.py
 class Config:
     # --- Absence ---
+<<<<<<< HEAD
+    ABSENT_WINDOW = 15          # Frame window size
+    ABSENT_TRUE_RATIO = 0.8     # Ratio of frames to confirm absence
+    ABSENT_GRACE_SEC = 3.0      # [TUNED] Grace period before absence triggers
+=======
     ABSENT_WINDOW = 20          # Heavy smoothing for 180p noise
     ABSENT_TRUE_RATIO = 0.8     
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
 
     # --- Drowsy ---
     EAR_DROWSY_TH = 0.18        # Threshold for Eye Aspect Ratio (Adjusted for user)
@@ -48,6 +56,7 @@ class Config:
     PHONE_DISTRACTOR_IOU_TH = 0.10           # Suppress only when boxes overlap
     # --- Scoring ---
     # Penalty/Reward per second
+    SCORE_RATE_SCALE = 5.0     # [NEW] Scale score change rate (1x -> 5x)
     REWARD_FOCUSED = 1.0        # [NEW] Reward for focusing
     PENALTY_FOCUSED = 0.0
     PENALTY_DROWSY = 1.0        # Match reward rate (1 point/sec)
@@ -56,11 +65,16 @@ class Config:
     PENALTY_UNKNOWN = 0.0
 
     # --- Kafka ---
+<<<<<<< HEAD
+    # KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092'] # Localhost execution
+    KAFKA_BOOTSTRAP_SERVERS = [os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')]
+=======
     
     # [Local 실행 시]
     KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092']
     # [Docker 배포 시 - 이걸로 변경 필요!]
     # KAFKA_BOOTSTRAP_SERVERS = ['kafka:29092']
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
     KAFKA_TOPIC = 'study-log-topic'
     LOG_COOLDOWN = 60.0  # Seconds
 

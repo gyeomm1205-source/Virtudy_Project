@@ -10,7 +10,13 @@ class PhoneDetector:
         self.fast_on_start = None
         self.phone_only_on_start = None
         self.off_start = None
+<<<<<<< HEAD
+
+        self._last_debug_time = 0.0
+        self._last_debug_state = None
+=======
         self.last_use_time = None
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
         
         # Configuration (Using centralized Config but logic from root)
         self.fast_on_hold_sec = 0.1
@@ -51,15 +57,30 @@ class PhoneDetector:
         phone_use_evidence = strict_use or no_hand_use
         
         # 2. Logic Conditions
+        face_missing = not face_detected
         # (A) Fast Condition: Candidate + (Hand or Head Down)
+<<<<<<< HEAD
+        fast_condition = phone_candidate and (hand_interaction or looking_down)
+        # (B) Face Occlusion: Confirmed phone with missing face
+        occlusion_condition = face_missing and phone_confirmed
+=======
         # [Fix] Removed proxy logic (hand_near_face + looking_down) to prevent false positives
         # Now requires actual phone detection
         # Require hand evidence (or hand-near + looking-down) for actual "use"
         fast_condition = phone_candidate and phone_use_evidence
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
         
         # (B) Phone Only Condition: Confirmed Phone
         phone_only_condition = phone_confirmed
         
+        # [DEBUG] Internal State Print (rate-limited)
+        if phone_candidate:
+           now = time.time()
+           if (self._last_debug_state != self.state) or (now - self._last_debug_time >= 1.0):
+               print(f"[DEBUG-PHONE] Conf={phone_conf:.2f} (Cand={phone_candidate}, Confirm={phone_confirmed}), HeadDown={looking_down}, Hand={hand_interaction} -> Fast={fast_condition}, Only={phone_only_condition}, State={self.state}", flush=True)
+               self._last_debug_time = now
+               self._last_debug_state = self.state
+
         now = time.time()
         if phone_use_evidence:
             self.last_use_time = now
@@ -69,7 +90,7 @@ class PhoneDetector:
             # ---> Try to turn ON
             
             # (A) Fast ON
-            if fast_condition:
+            if fast_condition or occlusion_condition:
                 if self.fast_on_start is None: self.fast_on_start = now
                 if now - self.fast_on_start >= self.fast_on_hold_sec:
                     self.state = "ON"
@@ -89,9 +110,14 @@ class PhoneDetector:
                 
         else: # State is ON
             # [NEW] Fast Focus (Recovery):
+<<<<<<< HEAD
+            # If no phone candidate signal, drop to OFF immediately.
+            if not phone_candidate:
+=======
             # If I look UP (not looking down) AND there is no strong phone signal -> Immediate OFF
             # This fixes the "slow recovery" issue.
             if (not looking_down_release) and (not phone_confirmed):
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
                  self.state = "OFF"
                  self._reset_timers()
                  return PhoneSignal(
@@ -102,9 +128,16 @@ class PhoneDetector:
                  )
 
             # ---> Try to turn OFF
+<<<<<<< HEAD
+            # OFF Condition: Phone candidate gone OR (No hand interaction AND No looking down)
+            # If even the weak candidate is gone, then it's definitely OFF.
+            # Keep ON as long as we have any phone signal, even if hand/looking_down flickers.
+            off_condition = (not phone_candidate) or (not (hand_interaction or looking_down or phone_confirmed))
+=======
             # OFF Condition: Phone candidate gone OR no hand evidence for a short while
             use_expired = (self.last_use_time is None) or ((now - self.last_use_time) > Config.PHONE_USE_RELEASE_SEC)
             off_condition = (not phone_candidate) or use_expired
+>>>>>>> 1d12e087b06e8ccc4de00953fd963920a5f14c00
             
             if off_condition:
                 if self.off_start is None: self.off_start = now
