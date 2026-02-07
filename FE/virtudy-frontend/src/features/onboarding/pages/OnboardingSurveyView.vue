@@ -24,12 +24,12 @@
             <div class="h-[0.75rem] rounded-full bg-[var(--color-cream2)] border-2 border-[var(--color-choco)] overflow-hidden shadow-[2px_2px_0px_0px_var(--color-choco)]"></div>
             
             <div class="absolute -top-[1.5rem] right-0 flex items-center gap-[0.5rem]">
-               <span class="text-[0.95rem] text-[var(--color-choco)] font-['PfStardust30S']">
-                 {{ currentStep }}단계
-               </span>
-               <span class="text-[0.9rem] text-[var(--color-choco)]/50 font-['PfStardust30S']">
-                 / 5단계
-               </span>
+              <span class="text-[0.95rem] text-[var(--color-choco)] font-['PfStardust30S']">
+                {{ currentStep }}단계
+              </span>
+              <span class="text-[0.9rem] text-[var(--color-choco)]/50 font-['PfStardust30S']">
+                / 6단계
+              </span>
             </div>
 
             <div
@@ -43,6 +43,7 @@
               <span>3단계</span>
               <span>4단계</span>
               <span>5단계</span>
+              <span>6단계</span>
             </div>
           </div>
         </div>
@@ -112,7 +113,7 @@
 
                 <section v-else-if="currentStep === 3" key="step-3" class="flex flex-col min-h-[18rem]">
                   <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">주 학습 시간대</p>
-                   <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">가장 집중이 잘 되는 시간대를 골라주세요.</p>
+                  <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">가장 집중이 잘 되는 시간대를 골라주세요.</p>
                   <div class="grid sm:grid-cols-2 gap-[0.75rem]">
                     <label v-for="slot in timeSlots" :key="slot.value" class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
                       <input type="radio" :value="slot.value" v-model="surveyData.preferredTimeSlots" name="preferredTimeSlotGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromTime" />
@@ -124,7 +125,7 @@
 
                 <section v-else-if="currentStep === 4" key="step-4" class="flex flex-col min-h-[18rem]">
                   <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">학습 스타일</p>
-                   <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">학습 루틴에 맞춘 추천을 제공해요.</p>
+                  <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">학습 루틴에 맞춘 추천을 제공해요.</p>
                   <div class="grid sm:grid-cols-2 gap-[0.75rem]">
                     <label class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
                       <input type="radio" value="MARATHON" v-model="surveyData.studyStyle" name="studyStyleGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromStyle" />
@@ -140,7 +141,7 @@
 
                 <section v-else-if="currentStep === 5" key="step-5" class="flex flex-col min-h-[18rem]">
                   <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">직업(신분)</p>
-                   <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">직업 정보로 추천 콘텐츠가 달라져요.</p>
+                  <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">직업 정보로 추천 콘텐츠가 달라져요.</p>
                   <div class="grid sm:grid-cols-2 gap-[0.75rem]">
                     <label v-for="option in jobOptions" :key="option.value" class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
                       <input type="radio" :value="option.value" v-model="surveyData.occupation" name="occupationGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromJob" />
@@ -149,6 +150,34 @@
                   </div>
                   <div class="mt-auto pt-[1.25rem] flex justify-end"><button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button></div>
                 </section>
+
+                <section v-else-if="currentStep === 6" key="step-6" class="flex flex-col min-h-[18rem] items-center justify-center text-center">
+                  <p class="text-[1.5rem] sm:text-[1.75rem] mb-[2rem] text-[#ff4444] font-['PfStardust30S'] font-bold drop-shadow-[1px_1px_0px_rgba(0,0,0,0.1)]">
+                    주의사항
+                  </p>
+                  
+                  <div class="bg-[var(--color-cream)] border border-[var(--color-choco)] rounded-[0.5rem] p-[1.5rem] mb-[2.5rem] w-full max-w-[24rem]">
+                    <p class="text-[1.1rem] text-[var(--color-choco)] font-['PfStardust30S'] leading-relaxed break-keep">
+                      해당 플랫폼의 일부 기능<span class="text-[var(--color-syrup)]">(섬광탄)</span>은<br>
+                      <span class="text-[#ff4444] font-bold">광과민성 반응</span>을 유발할 수 있습니다.
+                    </p>
+                  </div>
+
+                  <button 
+                    type="button" 
+                    class="bg-[var(--color-butter)] border-2 border-[var(--color-choco)] rounded-[0.5rem] px-[2rem] py-[0.75rem] shadow-[4px_4px_0px_0px_var(--color-choco)] active:shadow-[2px_2px_0px_0px_var(--color-choco)] active:translate-y-[2px] transition-all"
+                    @click="submitSurvey"
+                  >
+                    <span class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.2rem] font-bold">
+                      확인했습니다
+                    </span>
+                  </button>
+                  
+                  <div class="mt-auto pt-[1.25rem] w-full flex justify-end">
+                    <button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button>
+                  </div>
+                </section>
+
             </Transition>
         </form>
       </div>
@@ -160,11 +189,13 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
 import api from '@/shared/api/axios.config.ts';
 import bgBrick from '@/assets/bg_brick.png';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const uiStore = useUiStore();
 
 const studyTimeOptions = [
   { text: '1~2시간', value: 'ONE_TO_TWO' },
@@ -210,12 +241,14 @@ const surveyData = ref<SurveyData>({
 });
 
 const currentStep = ref(1);
-const progressWidth = computed(() => `${Math.min(currentStep.value, 5) * (100 / 5)}%`);
+// 6단계 기준으로 퍼센트 계산
+const progressWidth = computed(() => `${Math.min(currentStep.value, 6) * (100 / 6)}%`);
 const isSubmitting = ref(false);
 const isSubmitted = ref(false);
 
 const goToStep = (step: number) => {
-  currentStep.value = Math.min(Math.max(step, 1), 5);
+  // 최대 6단계
+  currentStep.value = Math.min(Math.max(step, 1), 6);
 };
 
 // 뒤로가기 로직
@@ -244,9 +277,10 @@ const goNextFromStyle = () => {
   if (surveyData.value.studyStyle) goToStep(5);
 };
 
+// 수정: 직업 선택 시 바로 제출하지 않고 6단계(주의사항)로 이동
 const goNextFromJob = () => {
-  if (!surveyData.value.occupation || isSubmitting.value) return;
-  submitSurvey();
+  if (!surveyData.value.occupation) return;
+  goToStep(6);
 };
 
 const submitSurvey = async () => {
@@ -267,7 +301,10 @@ const submitSurvey = async () => {
   }
 
   if (!signupInfo) {
-    alert('비정상적인 접근입니다. 가입 정보가 유실되었습니다.');
+    await uiStore.openAlert(
+      '비정상적인 접근입니다.\n가입 정보가 유실되었습니다.', 
+      '오류'
+    );
     router.push({ name: 'guest' });
     isSubmitting.value = false;
     return;
@@ -281,7 +318,7 @@ const submitSurvey = async () => {
       !surveyData.value.studyStyle ||
       !surveyData.value.occupation
     ) {
-      alert('모든 항목을 선택해주세요.');
+      await uiStore.openAlert('모든 항목을 선택해주세요.', '알림');
       isSubmitting.value = false;
       return;
     }
@@ -315,7 +352,10 @@ const submitSurvey = async () => {
 
   } catch (error) {
     console.error('최종 회원가입 실패:', error);
-    alert('회원가입 중 오류가 발생했습니다. 다시 시도해주세요.');
+    await uiStore.openAlert(
+      '회원가입 중 오류가 발생했습니다.\n다시 시도해주세요.',
+      '오류'
+    );
     isSubmitting.value = false;
   }
 };

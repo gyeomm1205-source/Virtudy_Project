@@ -2,14 +2,12 @@
   <GlobalBackground :skyType="3">
   <div class="relative min-h-[85rem] w-full pb-[8rem] mypage-root">
     
-    <!-- 마이페이지 제목 -->
     <div class="absolute left-[4.75rem] top-[22.25rem] -translate-y-1/2">
       <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[9.75rem] font-['Ram'] font-medium leading-none tracking-[-1.17rem] whitespace-nowrap">
         마이<br />페이지
       </h1>
     </div>
 
-    <!-- 뒤로가기 버튼 -->
     <button 
       @click="goBack"
       class="absolute left-[4.75rem] top-[7.4375rem] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform"
@@ -26,9 +24,7 @@
       </svg>
     </button>
 
-    <!-- 왼쪽 프로필과 메뉴 -->
     <div class="absolute left-[calc(8.33%+5.875rem)] top-[16.875rem] w-[15.9375rem] h-[30.25rem] mypage-menu">
-      <!-- 메뉴 버튼들 -->
       <div class="absolute top-[16.25rem] left-0 w-full flex flex-col gap-[12px] mypage-menu-buttons">
         <button 
           @click="activeTab = 'profile'"
@@ -55,10 +51,8 @@
       </div>
     </div>
 
-    <!-- 오른쪽 메인 콘텐츠 -->
     <div class="absolute left-[calc(33.33%+0.3125rem)] top-[6.8125rem] w-[45.75rem] h-[62.5625rem] mypage-content">
       <div class="bg-[var(--color-syrup)] border-2 border-[var(--color-choco)] border-solid h-full w-full rounded-[1.25rem] overflow-hidden relative shadow-[4px_4px_0px_0px_var(--color-choco)] mypage-card">
-        <!-- 회원정보수정 버튼 -->
         <button 
           @click="openEditModal"
           class="absolute right-[3rem] top-[1.1875rem] bg-[var(--color-cream2)] border-2 border-[var(--color-choco)] border-solid px-[2.2rem] py-[0.8rem] rounded-[1.875rem] shadow-[4px_4px_0px_0px_var(--color-choco)] cursor-pointer hover:scale-105 transition-transform"
@@ -67,9 +61,7 @@
             회원정보수정
           </span>
         </button>
-        <!-- 프로필 영역 -->
         <div class="absolute left-0 top-[4.5rem] w-full flex flex-col items-center">
-          <!-- 아바타 -->
           <div class="flex items-center justify-center text-[2rem] relative w-[10.5rem] h-[10.5rem] mb-[0.5rem] translate-y-[-0.1rem] translate-x-[0.2rem]">
             <div class="w-[9rem] h-[9rem] rounded-full bg-[var(--color-butter)] relative overflow-hidden shadow-md mx-auto mt-[1.5rem] transform-gpu">
               <CharacterAvatar 
@@ -91,12 +83,10 @@
             </div>
           </div>
           
-          <!-- 닉네임 -->
           <h2 class="text-[var(--color-choco)] text-[1.75rem] font-['Xcu'] font-medium leading-none mb-[0.3rem] text-center max-w-[24rem] break-words">
             {{ userInfo?.nickName || '닉네임' }}
           </h2>
           
-          <!-- 점수와 티어 -->
           <div class="flex items-center gap-[1rem] mb-[-0.2rem] justify-center">
             <span class="text-[var(--color-pancake)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none">
               {{ userInfo?.tierScore || 0 }}p
@@ -106,22 +96,18 @@
             </span>
           </div>
           
-          <!-- 최애 스터디 -->
           <p class="text-[var(--color-choco)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none text-center max-w-[28rem] break-words">
             &lt;{{ userInfo?.favoriteRoomTitle || '최애 스터디 없음' }}&gt;
           </p>
         </div>
 
-        <!-- 미니 리포트 섹션 -->
         <div class="absolute left-0 top-[22.625rem] w-full px-[1.25rem]">
-          <!-- 미니 리포트 제목 -->
           <div class="flex items-end justify-between mb-[0.5rem]">
             <h3 class="text-[var(--color-butter)] text-[2.625rem] font-['Ram'] font-medium leading-[3rem] tracking-[-0.0525rem] ml-[1rem]">
             미니 리포트
           </h3>
           </div>
     
-          <!-- 공부시간/집중도 카드 -->
           <div class="mb-[1.25rem] mini-report-wrapper">
             <MiniReport 
               class="gap-[12.5rem] h-[8.9375rem] px-[12.75rem] py-[1.125rem]"
@@ -130,7 +116,6 @@
             />
           </div>
           
-          <!-- 오각형 그래프 -->
           <div class="mb-[1.25rem] relative">
             <PentagonChart 
               :endurance="reportData?.endurance || 0"
@@ -152,7 +137,6 @@
       </div>
     </div>
 
-    <!-- 회원탈퇴 링크 -->
     <button
       @click="handleWithdraw"
       class="absolute left-[calc(83.33%-38px)] top-[70.2rem] text-[var(--color-syrup)] text-[0.75rem] font-['Pretendard'] font-normal leading-none tracking-[-0.03rem] underline cursor-pointer"
@@ -160,12 +144,10 @@
       회원탈퇴
     </button>
 
-    <!-- Global Footer -->
     <div class="absolute bottom-0 left-0 w-full z-50">
       <GlobalFooter />
     </div>
     
-    <!-- 프로필 수정 모달 -->
     <ProfileEditModal 
       v-if="isEditModalOpen"
       :email="userInfo?.email || ''"
@@ -194,10 +176,13 @@ import ProfileEditModal from '../ui/ProfileEditModal.vue';
 import { useWeeklyReport } from  '@/features/report/logic/useWeeklyReport';
 import { authAPI } from '@/features/auth/api/authAPI';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
 import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const uiStore = useUiStore(); // [추가]
+
 const { 
   userInfo, activeTab, isEditModalOpen, editForm, 
   openEditModal, closeEditModal, submitEdit 
@@ -220,17 +205,22 @@ const goToReport = () => {
 };
 
 const handleWithdraw = async () => {
-  const confirmed = confirm('정말로 회원탈퇴 하시겠습니까? 이 작업은 되돌릴 수 없습니다.');
+  const confirmed = await uiStore.openAlert(
+    '정말로 회원탈퇴 하시겠습니까?\n이 작업은 되돌릴 수 없습니다.', 
+    '탈퇴 확인'
+  );
   if (!confirmed) return;
 
   try {
     await authAPI.withdraw();
     authStore.clearAuth();
-    alert('회원탈퇴가 완료되었습니다.');
+    
+    await uiStore.openAlert('회원탈퇴가 완료되었습니다.', '알림');
+    
     router.push('/guest');
   } catch (error) {
     console.error('회원탈퇴 실패:', error);
-    alert('회원탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    await uiStore.openAlert('회원탈퇴에 실패했습니다.\n잠시 후 다시 시도해주세요.', '오류');
   }
 };
 
@@ -281,4 +271,3 @@ const goToAvatarCreate = () => {
 
 }
 </style>
-

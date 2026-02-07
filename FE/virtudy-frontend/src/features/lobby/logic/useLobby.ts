@@ -6,6 +6,7 @@ import type { RoomData, CreateRoomReq, UpdateRoomReq, ApiErrorResponse } from '.
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
 import { useStudyStore } from '@/stores/studyStore';
+import { useUiStore } from '@/stores/uiStore'; 
 
 // 사용자 정보 스토어
 
@@ -14,6 +15,7 @@ export function useLobby() {
 
   const authStore = useAuthStore();
   const studyStore = useStudyStore();
+  const uiStore = useUiStore(); 
   const { userId } = storeToRefs(authStore);
 
   // 상태 (State)
@@ -50,16 +52,18 @@ export function useLobby() {
   // 방 생성
   const createRoom = async (reqData: CreateRoomReq) => {
     if (!userId.value) {
-      alert('로그인이 필요한 서비스입니다.');
+      await uiStore.openAlert('로그인이 필요한 서비스입니다.', '알림');
       return false;
     }
     try {
       await lobbyAPI.createRoom(userId.value, reqData);
       await fetchAllRooms(); // 목록 갱신
-      alert('스터디방이 생성되었습니다!');
+      
+      await uiStore.openAlert('스터디방이 생성되었습니다!', '성공');
+      
       return true; // 성공 시 true 반환 (모달 닫기용)
     } catch (e: any) {
-      handleApiError(e);
+      await handleApiError(e); 
       return false;
     }
   };
@@ -67,16 +71,18 @@ export function useLobby() {
   // 방 수정
   const updateRoom = async (roomId: string, reqData: UpdateRoomReq) => {
     if (!userId.value) {
-      alert('로그인이 필요한 서비스입니다.');
+      await uiStore.openAlert('로그인이 필요한 서비스입니다.', '알림');
       return false;
     }
     try {
       await lobbyAPI.updateRoom(userId.value, roomId, reqData);
       await fetchAllRooms(); // 목록 갱신 (수정된 제목/설명 반영)
-      alert('스터디방 정보가 수정되었습니다.');
+      
+      await uiStore.openAlert('스터디방 정보가 수정되었습니다.', '성공');
+      
       return true; // 성공
     } catch (e: any) {
-      handleApiError(e);
+      await handleApiError(e);
       return false;
     }
   };
@@ -84,27 +90,30 @@ export function useLobby() {
 
   // 방 삭제
   const deleteRoom = async (roomId: string) => {
-    if (!confirm('정말 이 스터디방을 삭제하시겠습니까?')) return;
+    // confirm -> custom modal (boolean 반환 이용)
+    // 확인 누르면 true, 닫기 누르면 false
+    const confirmed = await uiStore.openAlert('정말 이 스터디방을 삭제하시겠습니까?', '삭제 확인');
+    if (!confirmed) return;
     
     if (!userId.value) {
-      alert('로그인이 필요한 서비스입니다.');
+      await uiStore.openAlert('로그인이 필요한 서비스입니다.', '알림');
       return;
     }
 
     try {
       await lobbyAPI.deleteRoom(userId.value, roomId);
-      alert('삭제되었습니다.');
+      await uiStore.openAlert('삭제되었습니다.', '알림');
       await fetchAllRooms(); // 목록 갱신
     } catch (e: any) {
-      handleApiError(e);
+      await handleApiError(e);
     }
   };
 
   // 방 입장 (토큰 발급 -> 페이지 이동)
-  const joinRoom = async (roomId: string, password?: string): Promise<boolean> => {
+  const joinRoom = async (roomId: string, password?: string): Promise<void> => {
     if (!userId.value) {
-      alert('로그인이 필요한 서비스입니다.');
-      return false;
+      await uiStore.openAlert('로그인이 필요한 서비스입니다.', '알림');
+      return;
     }
     try {
       // 입장 API 호출
@@ -121,15 +130,14 @@ export function useLobby() {
       });
       return true;
     } catch (e: any) {
-      handleApiError(e);
-      return false;
+      await handleApiError(e);
     }
   };
 
-  // ✅ [NEW] 최애방 설정 토글
+  // ✅ 최애방 설정 토글
   const toggleFavoriteRoom = async (roomId: string) => {
     if (!userId.value) {
-      alert('로그인이 필요한 서비스입니다.');
+      await uiStore.openAlert('로그인이 필요한 서비스입니다.', '알림');
       return;
     }
 
@@ -149,17 +157,17 @@ export function useLobby() {
       });
       // await fetchAllRooms();
     } catch (e: any) {
-      handleApiError(e);
+      await handleApiError(e);
     }
   };
 
-  // 공통 에러 핸들러
-  const handleApiError = (error: any) => {
+  // 공통 에러 핸들러 (async로 변경)
+  const handleApiError = async (error: any) => {
     const errRes = error.response?.data as ApiErrorResponse;
     if (errRes) {
-      alert(`[${errRes.code}] ${errRes.message}`);
+      await uiStore.openAlert(`[${errRes.code}] ${errRes.message}`, '오류');
     } else {
-      alert('알 수 없는 오류가 발생했습니다.');
+      await uiStore.openAlert('알 수 없는 오류가 발생했습니다.', '오류');
     }
   };
 

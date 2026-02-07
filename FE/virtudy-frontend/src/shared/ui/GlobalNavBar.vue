@@ -41,15 +41,27 @@
     <div class="hidden xl:flex items-center gap-[var(--spacing-m)] navbar-links">
       
       
-      <router-link 
+    <router-link 
       v-if="isLoggedIn"
       to="/ranking" 
       class="group intro-btn relative flex items-center justify-center cursor-pointer hover:opacity-80 transition-all duration-100 ease-in-out w-[6.5rem] h-[2.7rem] text-[#FFC954] mt-[4px] active:translate-x-[4px] active:translate-y-[4px] text-[24px] font-['PfStardust30S'] font-normal leading-none"
       style="--btn-highlight: #FFD966;"
       >
       <IntroButtonBg class="absolute inset-0 w-full h-full drop-shadow-[4px_4px_0_#fff2cc] transition-all duration-100 group-active:drop-shadow-none" />
+        <span class="relative z-10 pt-0.9 text-[var(--color-choco)]">
+          랭킹
+        </span>
+    </router-link>
+
+    <router-link 
+    v-if="isLoggedIn"
+    to="/lobby" 
+    class="group intro-btn relative flex items-center justify-center cursor-pointer hover:opacity-80 transition-all duration-100 ease-in-out w-[8rem] h-[2.7rem] text-[#FFC954] mt-[4px] active:translate-x-[4px] active:translate-y-[4px] text-[24px] font-['PfStardust30S'] font-normal leading-none"
+    style="--btn-highlight: #FFD966;"
+    >
+    <IntroButtonBg class="absolute inset-0 w-full h-full drop-shadow-[4px_4px_0_#fff2cc] transition-all duration-100 group-active:drop-shadow-none" />
       <span class="relative z-10 pt-0.9 text-[var(--color-choco)]">
-        랭킹
+        방목록
       </span>
     </router-link>
     
@@ -60,22 +72,10 @@
     style="--btn-highlight: #FFD966;"
     >
     <IntroButtonBg class="absolute inset-0 w-full h-full drop-shadow-[4px_4px_0_#fff2cc] transition-all duration-100 group-active:drop-shadow-none" />
-    <span class="relative z-10 pt-0.9 text-[var(--color-choco)]">
-      마이페이지
-    </span>
-  </router-link>
-
-  <router-link 
-    v-if="isLoggedIn"
-    to="/lobby" 
-    class="group intro-btn relative flex items-center justify-center cursor-pointer hover:opacity-80 transition-all duration-100 ease-in-out w-[8rem] h-[2.7rem] text-[#FFC954] mt-[4px] active:translate-x-[4px] active:translate-y-[4px] text-[24px] font-['PfStardust30S'] font-normal leading-none"
-    style="--btn-highlight: #FFD966;"
-  >
-    <IntroButtonBg class="absolute inset-0 w-full h-full drop-shadow-[4px_4px_0_#fff2cc] transition-all duration-100 group-active:drop-shadow-none" />
-    <span class="relative z-10 pt-0.9 text-[var(--color-choco)]">
-      방목록
-    </span>
-  </router-link>
+      <span class="relative z-10 pt-0.9 text-[var(--color-choco)]">
+        마이페이지
+      </span>
+    </router-link>
 
       <button 
         v-if="!isLoggedIn" 

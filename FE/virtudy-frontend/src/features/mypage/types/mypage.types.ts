@@ -19,6 +19,5 @@ export const JOB_OPTIONS = [
   { value: 'SCHOOL_STUDENT', label: '초/중/고등학생' },
   { value: 'UNIVERSITY_STUDENT', label: '대학생' },
   { value: 'JOB_SEEKER', label: '취업준비생' },
-  { value: 'OFFICE_WORKER', label: '직장인' },
-  { value: 'ETC', label: '기타' },
+  { value: 'OFFICE_WORKER', label: '직장인' }
 ];
