@@ -422,26 +422,11 @@ const bgHeartStyle = computed(() => {
     return getHeartStyle(30);
 });
 
-<<<<<<< HEAD
 // ==========================================================// 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
 // ==========================================================
 onMounted(async () => {
     if (!roomId) { alert('잘못된 접근입니다.'); router.replace('/lobby'); return; }
     aiStore.setRoomId(roomId);
-=======
-const TEAM_AVG_INTERVAL_MS = 5000;
-let teamAverageInterval: number | undefined;
-
-// ==========================================================// 
-// 🚀 핵심 로직 (입장, 비디오 연결, 채팅)
-// ==========================================================
-onMounted(async () => {
-    if (!roomId) { 
-        await uiStore.openAlert('잘못된 접근입니다.', '오류'); 
-        router.replace('/lobby'); 
-        return; 
-    }
->>>>>>> 6e5df04c862f99ca7f21322c341ce8d2559d68f1
 
     const validToken = getValidStudyToken();
     if (!validToken) return;
