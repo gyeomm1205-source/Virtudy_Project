@@ -110,8 +110,14 @@ const validRemoteTracks = computed(() => {
 useAiHandler();
 const { startLocalAi, stopLocalAi } = useLocalAiRunner();
 const aiStore = useStudyRoomAiStore();
+
+// 집중 타이머: 집중 상태일 때만 동작
 const canRunFocusTimer = computed(() => isConnected.value && !isDistracted.value);
 const { focusSeconds } = useFocusTimer(canRunFocusTimer);
+
+// 전체 공부시간 타이머: 연결만 되어 있으면 동작
+const canRunTotalTimer = computed(() => isConnected.value);
+const { focusSeconds: totalSeconds } = useFocusTimer(canRunTotalTimer);
 
 // 상태 변수
 const localVideoRef = ref<HTMLVideoElement | null>(null);
@@ -697,20 +703,6 @@ onUnmounted(() => {
                             </span>
                         </h2>
                         <p v-if="roomDescription" class="room-description">{{ roomDescription }}</p>
-                        <div class="ai-score-debug">
-                            <span>🤖 AI Score: {{ Math.round(aiStore.concentrationScore) }}점</span>
-                            <div class="mini-bar">
-                                <div class="fill" :style="{ width: aiStore.concentrationScore + '%', background: aiStore.concentrationScore < 50 ? 'red' : 'green' }"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <DebugControls 
-                                :scores="remoteParticipantScores"
-                                :names="remoteParticipantNames"
-                                :isStunned="isStunned"
-                                :onTriggerStun="triggerStunEffect"
-                            />
-                        </div>
                     </div>
 
                     <div class="room-controls-overlay">
@@ -776,7 +768,7 @@ onUnmounted(() => {
                         
                         <div class="timer-display">
                             <FocusTimer :seconds="focusSeconds" />
-                            <StudyTimer :seconds="focusSeconds"/>
+                            <StudyTimer :seconds="totalSeconds"/>
                         </div>
                         
                         <div class="pip-btn-area">

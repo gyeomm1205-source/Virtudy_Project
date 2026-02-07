@@ -117,7 +117,7 @@
           </div>
           
           <div class="mb-[1.25rem] relative">
-            <PentagonChart 
+            <PentagonChart
               :endurance="reportData?.endurance || 0"
               :focusDepth="reportData?.focusDepth || 0"
               :regularity="reportData?.regularity || 0"
@@ -246,6 +246,7 @@ const goToAvatarCreate = () => {
     width: min(92vw, 360px);
     height: auto;
     order: 2;
+    margin-bottom: 3rem;
   }
 
   .mypage-content {
@@ -268,6 +269,5 @@ const goToAvatarCreate = () => {
     margin-top: 16px;
     flex-direction: row;
   }
-
 }
 </style>

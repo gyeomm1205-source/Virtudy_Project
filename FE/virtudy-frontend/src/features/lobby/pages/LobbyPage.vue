@@ -4,11 +4,17 @@
     
     <main class="flex-1 w-full relative min-h-[850px] lobby-main">
       
-      <div class="absolute left-[76px] top-[119px] w-[54px] h-[54px] cursor-pointer hover:scale-110 transition-transform" @click="goBack">
-        <svg viewBox="0 0 54 54" class="w-full h-full" fill="var(--color-choco)">
-          <path d="M40 22H18.8L29.4 11.4L27 9L13 23L27 37L29.4 34.6L18.8 24H40V22Z"/>
+      <button
+        class="absolute left-[76px] top-[119px] w-[4rem] h-[4rem] cursor-pointer hover:scale-110 transition-transform flex items-center justify-center bg-transparent border-none p-0"
+        @click="goBack"
+        style="z-index:10;"
+        aria-label="뒤로가기"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+          stroke="var(--color-choco)" class="w-full h-full">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
         </svg>
-      </div>
+      </button>
       
       <div class="absolute left-[58px] top-[324px] transform -translate-y-1/2">
         <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[156px] font-['Ram'] font-medium leading-none tracking-[-18.72px]">
@@ -17,17 +23,11 @@
       </div>
       
       <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px] lobby-actions">
-        <div class="absolute left-[100px] top-[140px] w-[200px] h-[200px]">
+        <div class="absolute left-[100px] top-[140px] w-[200px] h-[200px] hidden md:block">
           <CharacterAvatar
             v-if="hasAvatarConfig"
             :config="authStore.userInfo!.avatar!"
-            class="w-full h-full"
-          />
-          <img
-            v-else-if="authStore.userInfo?.avatarImageUrl"
-            :src="authStore.userInfo.avatarImageUrl"
-            alt="프로필"
-            class="w-full h-full object-cover"
+            class="scale-[1.128] origin-center translate-x-[-12%] translate-y-[5.2%]"
           />
         </div>
         
@@ -274,10 +274,7 @@ const handleRoomClick = async (room: any) => {
   if (room.owner || !room.lockIcon) {
     isEntering.value = true;
     try {
-      const success = await joinRoom(room.roomId);
-      if (!success) {
-        isEntering.value = false;
-      }
+      await joinRoom(room.roomId);
     } catch {
       isEntering.value = false;
     }

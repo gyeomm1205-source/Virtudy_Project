@@ -144,22 +144,20 @@
         <button 
           @click="goToFirstPage" 
           :disabled="currentPage === 1 || !hasRooms"
-          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform"
+          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform flex items-center justify-center overflow-hidden"
         >
-          <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
-            <path d="M13 5L8 10L13 15L12 16L6 10L12 4L13 5Z" />
-            <path d="M9 5L4 10L9 15L8 16L2 10L8 4L9 5Z" />
-          </svg>
+          <div class="flex items-center justify-center -space-x-2.5">
+            <LeftArrowIcon class="w-[1.5rem] h-[1.5rem] text-[var(--color-choco)] relative z-10" />
+            <LeftArrowIcon class="w-[1.5rem] h-[1.5rem] text-[var(--color-choco)] relative z-0" />
+          </div>
         </button>
         
         <button 
           @click="goToPrevPage" 
           :disabled="currentPage === 1 || !hasRooms"
-          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform"
+          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform flex items-center justify-center"
         >
-          <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
-            <path d="M13 5L8 10L13 15L12 16L6 10L12 4L13 5Z" />
-          </svg>
+          <LeftArrowIcon class="w-[1.5rem] h-[1.5rem] text-[var(--color-choco)]" />
         </button>
         
         <div class="flex items-center gap-[0.75rem]">
@@ -180,22 +178,20 @@
         <button 
           @click="goToNextPage" 
           :disabled="currentPage >= maxNavigablePage || !hasRooms"
-          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform"
+          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform flex items-center justify-center"
         >
-          <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
-            <path d="M7 5L12 10L7 15L8 16L14 10L8 4L7 5Z" />
-          </svg>
+          <RightArrowIcon class="w-[1.5rem] h-[1.5rem] text-[var(--color-choco)]" />
         </button>
         
         <button 
           @click="goToLastPage" 
           :disabled="currentPage >= maxNavigablePage || !hasRooms"
-          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform"
+          class="w-[2rem] h-[2rem] disabled:opacity-30 hover:scale-110 transition-transform flex items-center justify-center overflow-hidden"
         >
-          <svg viewBox="0 0 20 20" class="w-full h-full fill-[var(--color-choco)]">
-            <path d="M7 5L12 10L7 15L8 16L14 10L8 4L7 5Z" />
-            <path d="M11 5L16 10L11 15L12 16L18 10L12 4L11 5Z" />
-          </svg>
+          <div class="flex items-center justify-center -space-x-2.5">
+            <RightArrowIcon class="w-[1.5rem] h-[1.5rem] text-[var(--color-choco)] relative z-0" />
+            <RightArrowIcon class="w-[1.5rem] h-[1.5rem] text-[var(--color-choco)] relative z-10" />
+          </div>
         </button>
       </div>
     </div>
@@ -204,6 +200,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import LeftArrowIcon from '@/assets/icons/leftArrow.svg?component';
+import RightArrowIcon from '@/assets/icons/rightArrow.svg?component';
 
 interface Room {
   roomId?: string;

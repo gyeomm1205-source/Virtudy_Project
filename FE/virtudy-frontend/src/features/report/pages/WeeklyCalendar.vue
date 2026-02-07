@@ -51,7 +51,7 @@
             <ellipse cx="5.54327" cy="5.83522" rx="5.54327" ry="5.83522" fill="#FFEAAC"/>
           </svg>
         </span>
-        <p class="font-['PfStardust30S'] leading-normal text-[#805143] text-[1.25rem] tracking-[-0.05rem]">
+        <p class="font-['PfStardust30S'] leading-normal text-[#805143] text-[1.25rem] tracking-[-0.05rem] whitespace-nowrap">
           Selected Week
         </p>
       </div>
@@ -139,38 +139,61 @@ const getDayClasses = (dateObj: { date: Date; isCurrentMonth: boolean }, dayIdx:
   const isSelected = isSameWeek(dateObj.date, props.selectedDate);
   const isHovered = isHoveredWeek(dateObj.date);
 
-  // 선택되지 않았고 마우스 호버도 아니면 기본 흰색 배경
-  if (!isSelected && !isHovered) {
-    return dateObj.isCurrentMonth ? 'bg-white' : 'bg-white opacity-30';
-  }
-
-
   // 선택된 주의 시작/끝 날짜 계산 (달이 바뀌어도 전체 달력에서 찾음)
   const allDates = calendarWeeks.value.flat();
   const selectedWeekDates = allDates.filter(d => isSameWeek(d.date, props.selectedDate));
   const weekStartDate = selectedWeekDates[0]?.date;
   const weekEndDate = selectedWeekDates[selectedWeekDates.length - 1]?.date;
 
+  // 호버된 주의 시작/끝 날짜 계산
+  let hoveredWeekStartDate: Date | undefined, hoveredWeekEndDate: Date | undefined;
+  if (hoveredDate.value) {
+    const hoveredWeekDates = allDates.filter(d => isSameWeek(d.date, hoveredDate.value!));
+    hoveredWeekStartDate = hoveredWeekDates[0]?.date;
+    hoveredWeekEndDate = hoveredWeekDates[hoveredWeekDates.length - 1]?.date;
+  }
+
   let classes = '';
 
-  // 실제 선택된 주의 시작/끝 날짜에만 노란색+둥근 모서리
-  if (weekStartDate && dateObj.date.getTime() === weekStartDate.getTime()) {
-    classes += ' bg-[#FFF2CC] rounded-l-full';
-  } else if (
-    weekEndDate && dateObj.date.getTime() === weekEndDate.getTime() &&
-    isSameWeek(dateObj.date, props.selectedDate)
-  ) {
-    classes += ' bg-[#FFF2CC] rounded-r-full';
-  } else if (
-    weekStartDate && weekEndDate &&
-    dateObj.date > weekStartDate && dateObj.date < weekEndDate &&
-    isSameWeek(dateObj.date, props.selectedDate)
-  ) {
-    // 선택된 주의 중간 날짜는 회색, 둥근 모서리 없음
-    classes += ' bg-[#F3F4F6] rounded-none';
+  // 선택된 주 표시(노란색)
+  if (isSelected) {
+    if (weekStartDate && dateObj.date.getTime() === weekStartDate.getTime()) {
+      classes += ' bg-[#FFF2CC] rounded-l-full';
+    } else if (
+      weekEndDate && dateObj.date.getTime() === weekEndDate.getTime() &&
+      isSameWeek(dateObj.date, props.selectedDate)
+    ) {
+      classes += ' bg-[#FFF2CC] rounded-r-full';
+    } else if (
+      weekStartDate && weekEndDate &&
+      dateObj.date > weekStartDate && dateObj.date < weekEndDate &&
+      isSameWeek(dateObj.date, props.selectedDate)
+    ) {
+      classes += ' bg-[#F3F4F6] rounded-none';
+    } else {
+      classes += ' bg-white';
+    }
+  }
+  // 호버된 주 표시(회색, 선택된 주가 아닐 때만)
+  else if (isHovered) {
+    if (hoveredWeekStartDate && dateObj.date.getTime() === hoveredWeekStartDate.getTime()) {
+      classes += ' bg-[#F3F4F6] rounded-l-full';
+    } else if (
+      hoveredWeekEndDate && dateObj.date.getTime() === hoveredWeekEndDate.getTime() &&
+      isSameWeek(dateObj.date, hoveredDate.value!)
+    ) {
+      classes += ' bg-[#F3F4F6] rounded-r-full';
+    } else if (
+      hoveredWeekStartDate && hoveredWeekEndDate &&
+      dateObj.date > hoveredWeekStartDate && dateObj.date < hoveredWeekEndDate &&
+      isSameWeek(dateObj.date, hoveredDate.value!)
+    ) {
+      classes += ' bg-[#F3F4F6] rounded-none';
+    } else {
+      classes += ' bg-white';
+    }
   } else {
-    // 나머지는 흰색
-    classes += ' bg-white';
+    classes += dateObj.isCurrentMonth ? ' bg-white' : ' bg-white opacity-30';
   }
 
   // 이번 달이 아닌 날짜 투명도 처리

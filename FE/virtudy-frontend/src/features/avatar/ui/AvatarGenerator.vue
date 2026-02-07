@@ -231,7 +231,7 @@ const handleConfirm = () => {
           <video ref="videoRef" autoplay playsinline muted></video>
         </div>
 
-        <button class="capture-btn butter-btn" @click="handleCapture">
+        <button class="capture-btn butter-btn" @click="handleCapture" :disabled="remainingChances <= 0">
           <span class="butter-btn-text">촬영</span>
         </button>
       </template>
@@ -243,9 +243,8 @@ const handleConfirm = () => {
         </p>
       </template>
 
-      <button class="capture-btn butter-btn" @click="handleCapture" :disabled="remainingChances <= 0">
-        <span class="butter-btn-text">촬영</span>
-      </button>
+
+
     </div>
 
     <template v-if="step === 'loading'">
@@ -270,6 +269,7 @@ const handleConfirm = () => {
             v-if="generatedAvatar"
             :config="generatedAvatar"
             :aiDrowsy="0" :aiPhone="0" :aiAbsent="0"
+            class="origin-center translate-x-[15%] translate-y-[40%]"
           />
         </div>
       </div>
