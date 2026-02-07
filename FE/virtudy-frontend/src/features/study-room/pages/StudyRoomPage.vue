@@ -397,8 +397,8 @@ const getHeartStyle = (score: number) => {
 type BgState = 'GREEN' | 'YELLOW' | 'RED';
 
 const getStateFromScore = (score: number): BgState => {
-    if (score > 79) return 'GREEN';
-    if (score > 59) return 'YELLOW';
+    if (score > 59) return 'GREEN';
+    if (score > 29) return 'YELLOW';
     return 'RED';
 };
 
