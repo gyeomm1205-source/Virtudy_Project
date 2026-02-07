@@ -111,9 +111,12 @@
           <div class="mb-[1.25rem] mini-report-wrapper">
             <MiniReport 
               class="gap-[12.5rem] h-[8.9375rem] px-[12.75rem] py-[1.125rem]"
-              :studyTime="userInfo?.dailyPureStudyTime" 
-              :focusing="userInfo?.dailyFocusDepth" 
+              :studyTime="displayPureStudyTime" 
+              :focusing="displayFocusDepth" 
             />
+            <!-- 백엔드에서 해결되면 다시 사용해야됨 -->
+            <!-- :studyTime="userInfo?.dailyPureStudyTime"
+            :focusing="userInfo?.dailyFocusDepth" -->
           </div>
           
           <div class="mb-[1.25rem] relative">
@@ -227,6 +230,20 @@ const handleWithdraw = async () => {
 const goToAvatarCreate = () => {
   router.push('/avatar/create'); 
 };
+
+const displayPureStudyTime = computed(() => {
+  // 백엔드 값이 없으면 임시값 사용
+  if (!userInfo.value?.dailyPureStudyTime || userInfo.value.dailyPureStudyTime === 0) {
+    return authStore.userInfo?.tempPureStudyTime ?? 0;
+  }
+  return userInfo.value.dailyPureStudyTime;
+});
+const displayFocusDepth = computed(() => {
+  if (!userInfo.value?.dailyFocusDepth || userInfo.value.dailyFocusDepth === 0) {
+    return authStore.userInfo?.tempFocusDepth ?? 0;
+  }
+  return userInfo.value.dailyFocusDepth;
+});
 </script>
 
 <style scoped>
