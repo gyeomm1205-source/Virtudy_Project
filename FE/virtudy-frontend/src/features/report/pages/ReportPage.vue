@@ -102,16 +102,39 @@
         </div>
 
         <div class="mb-6 px-4 shrink-0"> 
-          <h3 class="w-full text-left text-[2rem] text-[var(--color-choco)] font-['Xcu'] mb-2">주간성취</h3>
-          <PentagonChart 
-            class="w-full"
-            :endurance="reportData?.endurance || 0"
-            :focusDepth="reportData?.focusDepth || 0"
-            :regularity="reportData?.regularity || 0"
-            :stability="reportData?.stability || 0"
-            :willPower="reportData?.willPower || 0"
-          />
-        </div>
+            <h3 class="w-full text-left text-[2rem] text-[var(--color-choco)] font-['Xcu'] mb-2">주간성취</h3>
+            
+<PentagonChart 
+              class="w-full"
+              :endurance="reportData?.endurance || 0"
+              :focusDepth="reportData?.focusDepth || 0"
+              :regularity="reportData?.regularity || 0"
+              :stability="reportData?.stability || 0"
+              :willPower="reportData?.willPower || 0"
+              :layout="{
+                /* [리포트 페이지 레이아웃 전략]
+                   마이페이지와 동일한 로직을 적용하되, 리포트 페이지의 너비에 맞게 미세 조정합니다.
+                   1. 모바일(기본): 글씨 작게(1.1rem), 위아래/양옆으로 바짝 붙임(top-25%, right-0)
+                   2. 데스크탑(xl): 글씨 크게(2rem), 여유 있게 배치
+                */
+
+                // 지구력
+                endurance: 'top-[-1%] left-1/2 -translate-x-1/2 text-[1.5rem] xl:text-[2rem] xl:top-[-4%]',
+                
+                // 집중력
+                focusDepth: 'top-[32%] right-[-5%] sm:right-[15%] text-[1.5rem] xl:right-20 xl:text-[2rem] xl:top-[30%]',
+                
+                // 규칙성
+                regularity: 'bottom-5 right-7 sm:right-[22%] text-[1.5rem] xl:bottom-[1.5%] xl:right-34 xl:text-[2rem]',
+                
+                // 안정감
+                stability: 'bottom-5 left-7 sm:left-[22%] text-[1.5rem] xl:bottom-[1.5%] xl:left-34 xl:text-[2rem]',
+                
+                // 의지력
+                willPower: 'top-[32%] left-[-5%] sm:left-[15%] text-[1.5rem] xl:left-20 xl:text-[2rem] xl:top-[30%]'
+              }"
+            />
+          </div>
 
         <div class="px-4 pb-2 flex-1 min-h-0 flex flex-col">
           <h3 class="text-[2rem] text-[var(--color-choco)] font-['Xcu'] mb-4 shrink-0">AI 코멘트</h3>

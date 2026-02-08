@@ -87,7 +87,7 @@
             {{ userInfo?.nickName || '닉네임' }}
           </h2>
           
-          <div class="flex items-center gap-[1rem] mb-[-0.2rem] justify-center">
+          <div class="flex items-center gap-[1rem] mb-[0rem] justify-center">
             <span class="text-[var(--color-pancake)] text-[1.5rem] font-['PfStardust30S'] font-normal leading-none">
               {{ userInfo?.tierScore || 0 }}p
             </span>
@@ -126,6 +126,18 @@
               :regularity="reportData?.regularity || 0"
               :stability="reportData?.stability || 0"
               :willPower="reportData?.willPower || 0"
+              :layout="{
+                // 지구력 
+                endurance: 'top-[-2%] left-1/2 -translate-x-1/2 text-[1.5rem] xl:text-[2rem] xl:top-[-4%]',
+                // 집중력
+                focusDepth: 'top-[31.5%] right-0 sm:right-[20%] text-[1.5rem] xl:right-28 xl:text-[2rem]',
+                // 규칙성
+                regularity: 'bottom-[5%] right-[12%] sm:right-[25%] text-[1.5rem] xl:bottom-[1%] xl:right-41 xl:text-[2rem]',
+                // 안정감
+                stability: 'bottom-[5%] left-[12%] sm:left-[25%] text-[1.5rem] xl:bottom-[1%] xl:left-41 xl:text-[2rem]',
+                // 의지력 
+                willPower: 'top-[31.5%] left-0 sm:left-[20%] text-[1.5rem] xl:left-28 xl:text-[2rem]'
+              }"
             />
             <div
               v-if="!hasReport && !isLoading"
