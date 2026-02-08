@@ -19,7 +19,8 @@ const router = useRouter();
 // 생성된 아바타 데이터 임시 저장
 const generatedAvatar = ref<any>(null);
 const isCapturing = ref(false);
-
+// 촬영 진행 중임을 나타내는 플래그
+const isProcessing = ref(false);
 
 // 아바타 생성 횟수 제한 관련 (하루 3번, 날짜별 카운트)
 const AVATAR_CREATE_LIMIT = 3;
@@ -79,11 +80,13 @@ onMounted(() => {
 const hasSavedCurrentAvatar = ref(false);
 
 const handleCapture = async () => {
-  if (remainingChances.value <= 0) {
+  if (remainingChances.value <= 0 && !isProcessing.value) {
     await uiStore.openAlert(getChanceMessage(), '알림');
     return;
   }
 
+  // 프로세스 시작 플래그 ON (이게 켜져 있으면 횟수가 0이어도 카메라 유지)
+  isProcessing.value = true;
   // 촬영 버튼을 누르는 순간 횟수 차감
   incrementAvatarCreateCount(); 
   
@@ -142,6 +145,11 @@ const handleCapture = async () => {
     // 에러나면 다시 카메라 화면으로
     step.value = 'camera';
     startCamera();
+  }
+  finally {
+    // 모든 작업이 끝나면 플래그 OFF
+    // (성공해서 result로 갔든, 실패해서 camera로 왔든 해제)
+    isProcessing.value = false;
   }
 };
 
@@ -220,9 +228,9 @@ const handleConfirm = () => {
     <div v-if="step === 'camera'" class="camera-view">
       <h2 class="title">나만의 아바타 만들기</h2>
       
-      <template v-if="remainingChances > 0">
+      <template v-if="remainingChances > 0 || isProcessing">
         <p class="guide-text">정면을 바라보고 촬영 버튼을 눌러주세요!</p>
-        <p v-if="remainingChances < AVATAR_CREATE_LIMIT" class="guide-text" style="color: #b85c00; font-size: 20px; margin-bottom: 0;">
+        <p v-if="remainingChances < AVATAR_CREATE_LIMIT && !isProcessing" class="guide-text" style="color: #b85c00; font-size: 20px; margin-bottom: 0;">
           {{ getChanceMessage() }}
         </p>
 
@@ -231,7 +239,7 @@ const handleConfirm = () => {
           <video ref="videoRef" autoplay playsinline muted></video>
         </div>
 
-        <button class="capture-btn butter-btn" @click="handleCapture" :disabled="remainingChances <= 0">
+        <button class="capture-btn butter-btn" @click="handleCapture" :disabled="remainingChances <= 0 && !isProcessing">
           <span class="butter-btn-text">촬영</span>
         </button>
       </template>
@@ -248,12 +256,17 @@ const handleConfirm = () => {
     </div>
 
     <template v-if="step === 'loading'">
-      <div class="avatar-loading-overlay"></div>
-      <MatchingModal
-        :titleText="'아바타 생성 중...'"
-        :subtitleText="'AI가 열심히 아바타를 만들고 있어요!'"
-        style="z-index: 1000;"
-      />
+      <Teleport to="body">
+        <div class="fixed inset-0 z-[9999]">
+          <div class="avatar-loading-overlay"></div>
+          <MatchingModal
+            :titleText="'아바타 생성 중...'"
+            :subtitleText="'AI가 열심히 아바타를 만들고 있어요!'"
+            :showCloseButton="false"
+            style="z-index: 1000;"
+          />
+        </div>
+      </Teleport>
     </template>
 
     <div v-else-if="step === 'result'" class="result-view">
@@ -275,44 +288,59 @@ const handleConfirm = () => {
       </div>
 
       <div class="btn-group">
-        <button class="retry-btn" @click="handleRetryClick" :disabled="remainingChances <= 0">
+        <button 
+          class="retry-btn" 
+          @click="handleRetryClick" 
+          :disabled="remainingChances <= 0"
+          :class="{ 'opacity-50 cursor-not-allowed': remainingChances <= 0 }"
+        >
           다시 찍기
         </button>
-        <button class="confirm-btn" @click="handleConfirm">
+
+        <button 
+          class="confirm-btn" 
+          @click="handleConfirm"
+        >
           저장하기
         </button>
       </div>
+      <p v-if="remainingChances <= 0" class="mt-2 text-[#b85c00] font-['PfStardust30S'] text-lg">
+        마지막 기회였어요! 이 아바타를 저장해주세요. 📸
+      </p>
     </div>
-
-    <div v-if="showRetryConfirmModal" class="fixed inset-0 bg-[rgba(255,253,245,0.65)] backdrop-blur-md flex items-center justify-center z-50">
-      <div class="bg-[var(--color-cream2)] p-[2.5rem] rounded-[0.75rem] shadow-[4px_4px_0px_0px_var(--color-choco)] relative max-w-[26rem] w-full mx-[1rem] flex flex-col items-center gap-[1.5rem] text-center">
-        <div>
-          <div class="text-[var(--color-choco)] text-[2rem] font-['Xcu'] font-medium leading-none mb-2">
-            다시 찍으시겠어요?
+    <Teleport to="body">
+      <div v-if="showRetryConfirmModal" class="fixed inset-0 bg-[rgba(255,253,245,0.65)] backdrop-blur-md flex items-center justify-center z-50">
+        <div class="bg-[var(--color-cream2)] p-[2.5rem] rounded-[0.75rem] shadow-[4px_4px_0px_0px_var(--color-choco)] relative max-w-[26rem] w-full mx-[1rem] flex flex-col items-center gap-[1.5rem] text-center">
+          <div>
+            <div class="text-[var(--color-choco)] text-[2rem] font-['Xcu'] font-medium leading-none mb-2">
+              다시 찍으시겠어요?
+            </div>
+            <div class="text-[var(--color-syrup)] text-[1.125rem] font-['PfStardust30S'] leading-snug">
+              촬영 횟수가 차감돼요!
+            </div>
           </div>
-          <div class="text-[var(--color-syrup)] text-[1.125rem] font-['PfStardust30S'] leading-snug">
-            촬영 횟수가 차감돼요!
+          <div class="flex gap-4">
+            <button @click="handleRetryConfirm" class="px-6 py-2 border-2 border-[var(--color-choco)] bg-[var(--color-butter)] text-[var(--color-choco)] font-['PfStardust30S'] text-xl rounded shadow-[2px_2px_0px_0px_var(--color-choco)] active:translate-y-1 active:shadow-none transition-all">
+              네
+            </button>
+            <button @click="handleRetryCancel" class="px-6 py-2 border-2 border-[var(--color-choco)] bg-white text-[var(--color-choco)] font-['PfStardust30S'] text-xl rounded shadow-[2px_2px_0px_0px_var(--color-choco)] active:translate-y-1 active:shadow-none transition-all">
+              아니오
+            </button>
           </div>
-        </div>
-        <div class="flex gap-4">
-          <button @click="handleRetryConfirm" class="px-6 py-2 border-2 border-[var(--color-choco)] bg-[var(--color-butter)] text-[var(--color-choco)] font-['PfStardust30S'] text-xl rounded shadow-[2px_2px_0px_0px_var(--color-choco)] active:translate-y-1 active:shadow-none transition-all">
-            네
-          </button>
-          <button @click="handleRetryCancel" class="px-6 py-2 border-2 border-[var(--color-choco)] bg-white text-[var(--color-choco)] font-['PfStardust30S'] text-xl rounded shadow-[2px_2px_0px_0px_var(--color-choco)] active:translate-y-1 active:shadow-none transition-all">
-            아니오
-          </button>
         </div>
       </div>
-    </div>
-
-    <div v-if="saveModalState.visible" class="fixed inset-0 z-[9999]">
-      <div class="avatar-loading-overlay"></div>
-      <MatchingModal
-        :titleText="saveModalState.title"
-        :subtitleText="saveModalState.subtitle"
-        @close="saveModalState.visible = false" 
-      />
-    </div>
+    </Teleport>
+    <Teleport to="body">
+      <div v-if="saveModalState.visible" class="fixed inset-0 z-[9999]">
+        <div class="avatar-loading-overlay"></div>
+        <MatchingModal
+          :titleText="saveModalState.title"
+          :subtitleText="saveModalState.subtitle"
+          :showCloseButton="false"
+          @close="saveModalState.visible = false"
+        />
+      </div>
+    </Teleport>
 
   </div>
 </template>
@@ -327,15 +355,20 @@ const handleConfirm = () => {
   height: auto;
   padding: 96px 20px 40px;
   box-sizing: border-box;
-  
   /* 배경 설정 */
   background-image: url('@/assets/bg_brick.png');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
-  
   text-align: center;
+  position: relative;
+  z-index: 1; /* Ensure page content is below overlays */
 }
+
+/* If your logo/menu/header is a separate component, ensure it has a lower z-index, e.g.:
+   .header, .logo, .menu { z-index: 10; position: relative; }
+   (You may need to update those components/styles separately if not already set.)
+*/
 
 .camera-view {
   display: flex;
@@ -355,10 +388,8 @@ const handleConfirm = () => {
   width: min(300px, 75vw);
   height: auto;
   background-color: white;
-  
   /* 폴라로이드 여백 */
   padding: 12px 12px 60px 12px; 
-  
   /* 그림자 */
   box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 6px 20px rgba(0,0,0,0.19);
   border-radius: 2px;
@@ -367,7 +398,6 @@ const handleConfirm = () => {
   align-items: center;
   justify-content: center;
   margin: 15px 0;
-  
   transition: transform 120ms ease;
   position: relative;
   box-sizing: border-box;
@@ -395,19 +425,15 @@ video {
   width: 100%;
   aspect-ratio: 1/1;
   display: flex;
-  
   /* 아바타 하단 중앙 정렬 */
   align-items: flex-end; 
   justify-content: center;
-  
   /* 배경 이미지 설정 */
   background-image: url('@/assets/bg_sky_1.png');
   background-size: cover;
   background-position: center bottom;
   background-repeat: no-repeat;
-
   box-sizing: border-box;
-
   /* 아바타 컴포넌트 강제 오프셋 초기화 */
   --avatar-offset-x: 0% !important;
   --avatar-offset-y: 0% !important;
@@ -534,11 +560,24 @@ video {
   100% { transform: rotate(0deg); }
 }
 
+/* Overlay and modal stacking fix */
 .avatar-loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(255, 253, 245, 0.32);
-  backdrop-filter: blur(4px);
-  z-index: 999;
+  /* background: rgba(255, 253, 245, 0.05); */
+  /* backdrop-filter: blur(1px); */
+  z-index: 2000;
+}
+
+
+.fixed.inset-0.bg-\[rgba\(255\,253\,245\,0\.65\)\].backdrop-blur-md {
+  z-index: 2100 !important;
+}
+
+.MatchingModal,
+.matching-modal,
+.modal {
+  z-index: 2200 !important;
+  position: relative;
 }
 </style>

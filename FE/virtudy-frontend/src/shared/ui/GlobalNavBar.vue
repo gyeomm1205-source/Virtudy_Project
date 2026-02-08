@@ -1,7 +1,7 @@
 <template>
   <button
     @click="toggleMenu"
-    class="xl:hidden fixed top-6 right-6 z-[999] w-10 h-10 flex items-center justify-center bg-transparent border-none"
+    class="xl:hidden fixed top-6 right-6 z-[999] w-10 h-10 flex items-center justify-center bg-transparent border-none global-navbar-menu-btn"
     :aria-label="isMenuOpen ? '메뉴 닫기' : '메뉴 열기'"
   >
     <svg v-if="isMenuOpen" width="40" height="40" viewBox="0 0 32 32" fill="none">
@@ -16,7 +16,7 @@
     </div>
   </button>
 
-  <nav class="h-[87px] fixed top-0 left-0 w-full flex items-center justify-between px-[20px] xl:px-[78px] py-[28px] z-50 navbar backdrop-blur-[4px] transition-colors duration-300">
+  <nav class="h-[87px] fixed top-0 left-0 w-full flex items-center justify-between px-[20px] xl:px-[78px] py-[28px] z-50 navbar backdrop-blur-[4px] transition-colors duration-300 global-navbar">
     
     <div class="flex items-center gap-[var(--spacing-m)] navbar-links">
       <router-link 
@@ -107,8 +107,9 @@
       class="absolute top-[87px] left-0 w-full
             bg-white/80 backdrop-blur-md
             flex flex-col items-center gap-4 py-8
-            xl:hidden shadow-lg border-t border-[var(--color-choco)]/10"
-    >
+            xl:hidden shadow-lg border-t border-[var(--color-choco)]/10
+            mobile-menu"
+      >
       <router-link 
         to="/introduction" 
         @click="isMenuOpen = false"
@@ -215,3 +216,13 @@ const logout = () => {
   router.push('/guest');
 };
 </script>
+
+<style scoped>
+/* 강제로 헤더/메뉴/로고가 오버레이보다 아래에 있도록 z-index 낮춤 */
+.global-navbar {
+  z-index: 100 !important;
+}
+.global-navbar-menu-btn {
+  z-index: 101 !important;
+}
+</style>

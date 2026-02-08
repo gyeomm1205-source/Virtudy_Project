@@ -445,6 +445,7 @@ onUnmounted(() => {
     display: flex;
     flex-direction: row;
     gap: 12px;
+    margin-bottom: 2.5rem;
   }
 
   .lobby-action-buttons > button {

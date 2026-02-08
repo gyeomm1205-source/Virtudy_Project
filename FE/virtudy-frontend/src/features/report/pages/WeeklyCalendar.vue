@@ -91,9 +91,10 @@ const calendarWeeks = computed(() => {
   
   const days = [];
   
-  // 지난달 채우기
+  // 지난달 채우기 (1일이 일요일이어도 앞의 6칸을 채움)
   const startPad = firstDay.getDay();
-  for (let i = startPad - 1; i >= 0; i--) {
+  const padCount = startPad === 0 ? 7 : startPad;
+  for (let i = padCount - 1; i >= 0; i--) {
     days.push({ date: new Date(year, month, -i), isCurrentMonth: false });
   }
   

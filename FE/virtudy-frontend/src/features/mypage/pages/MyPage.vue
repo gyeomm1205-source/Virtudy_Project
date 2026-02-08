@@ -108,9 +108,9 @@
           </h3>
           </div>
     
-          <div class="mb-[1.25rem] mini-report-wrapper">
+          <div class="mb-[1.25rem] h-[10rem] mini-report-wrapper">
             <MiniReport 
-              class="gap-[12.5rem] h-[8.9375rem] px-[12.75rem] py-[1.125rem]"
+              class="gap-[10rem]"
               :studyTime="displayPureStudyTime" 
               :focusing="displayFocusDepth" 
             />

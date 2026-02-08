@@ -148,15 +148,22 @@ onBeforeRouteLeave(() => {
         tempTotalStudyTime: newTotal,
         tempFocusDepth: newTotal > 0 ? Math.round((newPure / newTotal) * 100) : 0
     };
+    // 임시 누적값을 localStorage에도 저장
+    authStore.setTempStudyMetrics({
+      tempPureStudyTime: newPure,
+      tempTotalStudyTime: newTotal,
+      tempFocusDepth: newTotal > 0 ? Math.round((newPure / newTotal) * 100) : 0
+    });
     // 세션값 초기화
     sessionPureStudyTime.value = 0;
     sessionTotalStudyTime.value = 0;
 });
 
-// 방 입장 시 누적값 초기화
+// 방 입장 시 누적값 초기화 및 localStorage에서 불러오기
 onMounted(() => {
     sessionPureStudyTime.value = 0;
     sessionTotalStudyTime.value = 0;
+    authStore.loadTempStudyMetrics();
 });
 
 // 상태 변수
