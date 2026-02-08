@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,27 +44,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
-<<<<<<< HEAD
-                        .requestMatchers("actuator/**").permitAll()
-                        .anyRequest().permitAll()); // TODO : 추후 정상 인증 로직 아래 버전으로 수정 필요
-//                        .requestMatchers(
-//                                            "/swagger-ui.html",
-//                                            "/swagger-ui/**",
-//                                            "/v3/api-docs/**",
-//                                            "/api/auth/login",
-//                                            "/api/auth/signup",
-//                                            "/api/auth/reissue"
-//                ).permitAll()
-//                .anyRequest().authenticated())
-//                .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
-//                UsernamePasswordAuthenticationFilter.class)
-=======
 //                        .anyRequest().permitAll()); // TODO : 추후 정상 인증 로직 아래 버전으로 수정 필요
                         .requestMatchers(
                                             "/swagger-ui.html",
@@ -72,12 +59,13 @@ public class SecurityConfig {
                                             "/api/auth/login",
                                             "/api/auth/signup",
                                             "/api/auth/reissue",
-                                            "/api/auth/kakao/callback"
+                                            "/api/auth/kakao/callback",
+                                            "/ws/**",
+                                            "/ws/info/**"
                 ).permitAll()
                 .anyRequest().authenticated())
                 .addFilterBefore(new JwtAuthFilter(jwtUtil, principalDetailsService, redisTemplate, objectMapper),
                 UsernamePasswordAuthenticationFilter.class);
->>>>>>> b79a292fe8273c75ec698b04c88cfe11cdeaf31d
 
         return http.build();
     }
@@ -92,7 +80,8 @@ public class SecurityConfig {
                 "http://localhost:3030", // (혹시 포트 다르면 추가)
                 "http://localhost:3031", // Vite dev server
                 "http://localhost:3032", // User's current port
-                "http://www.virtudy.com" // 운영 프론트엔드
+                "http://i14a703.p.ssafy.io", // ✅ [필수 추가] 현재 요청이 들어오는 도메인
+                "https://i14a703.p.ssafy.io"
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

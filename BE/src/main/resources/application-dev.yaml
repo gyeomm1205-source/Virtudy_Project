@@ -50,7 +50,7 @@ server:
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret-id: ${KAKAO_CLIENT_SECRET_ID}
-  redirect-uri: "http://i14a703.p.ssafy.io:80/login/callback/kakao"
+  redirect-uri: "https://i14a703.p.ssafy.io/auth/kakao/callback"
   token-uri: "https://kauth.kakao.com/oauth/token"
   user-info-uri: "https://kapi.kakao.com/v2/user/me"
 
@@ -74,12 +74,13 @@ management:
   metrics:
     tags:
       application: 'virtudy-server'
-<<<<<<< HEAD
+      include: "health, prometheus"  # 또는 "*" 로 전체 허용
   endpoint:
+    prometheus:
+      enabled: true
     health:
       show-details: "always"
-=======
+
 
 gms:
   key: ${GMS_KEY}
->>>>>>> b79a292fe8273c75ec698b04c88cfe11cdeaf31d

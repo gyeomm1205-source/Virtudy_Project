@@ -9,35 +9,46 @@ import com.ssafy.virtudy.member.dto.MemberProfileResponse;
 import com.ssafy.virtudy.member.dto.MemberProfileUpdateRequest;
 import com.ssafy.virtudy.member.repository.MemberGameStatRepository;
 import com.ssafy.virtudy.rank.service.RankService;
-import com.ssafy.virtudy.report.domain.Report;
-import com.ssafy.virtudy.report.repository.ReportRepository;
+import com.ssafy.virtudy.report.service.ReportService;
+import com.ssafy.virtudy.study.domain.StudySession;
+import com.ssafy.virtudy.study.repository.StudySessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MemberService {
 
-    private final ReportRepository reportRepository;
     private final MemberGameStatRepository memberGameStatRepository;
     private final RankService rankService;
+    private final StudySessionRepository studySessionRepository;
+    private final ReportService reportService;
 
     public MemberProfileResponse getProfile(Member member) {
-        // 매 호출 시점의 어제 날짜 계산
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        Report todayReport = reportRepository.findByMemberAndReportDate(member, yesterday)
-                .orElse(null);
+        // 오늘 날짜의 시작과 끝 시간 계산
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(23, 59, 59);
 
-        MemberGameStat gameStat = memberGameStatRepository.findByMemberId(member.getId())
+        // 오늘 날짜의 StudySession 조회
+        List<StudySession> todaySessions = studySessionRepository.findAllByMemberAndStartTimeBetween(member, startOfDay, endOfDay);
+
+        // 일일 순공부시간 및 집중도 계산
+        int dailyPureStudyTime = reportService.calculateTotalStudyTime(todaySessions);
+        int dailyFocusDepth = reportService.calculateFocusDepth(todaySessions);
+
+        MemberGameStat gameStat = memberGameStatRepository.findByMember(member)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_GAME_STAT_NOT_FOUND_ERROR));
         int tierScore = gameStat.getTierScore();
         String tier = rankService.calculateTier(tierScore).name();
 
-        return MemberProfileResponse.from(member, todayReport, tierScore, tier);
+        return MemberProfileResponse.from(member, dailyPureStudyTime, dailyFocusDepth, tierScore, tier);
     }
 
     @Transactional

@@ -20,6 +20,7 @@ import java.util.List;
 public class ReportController {
 
     private final ReportService reportService;
+    private final com.ssafy.virtudy.report.service.ReportPreparationService reportPreparationService;
 
     /**
      * 주간 리포트 조회 API
@@ -39,5 +40,12 @@ public class ReportController {
         
         List<ReportResponse> response = reportService.getWeeklyReport(userPrincipal.getUsername(), startDate, endDate);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "주간 리포트 생성 강제 트리거 (테스트용)", description = "주간 리포트 생성 로직을 강제로 실행합니다.")
+    @GetMapping("/test/generate-weekly")
+    public ResponseEntity<String> triggerWeeklyReport() {
+        reportPreparationService.createWeeklyReports();
+        return ResponseEntity.ok("Weekly report generation triggered.");
     }
 }

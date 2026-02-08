@@ -67,15 +67,13 @@ dependencies {
 
 	// WebClient
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
 }
 
-// build.gradle 맨 아래 추가
+
 jar {
 	enabled = false
 }
-

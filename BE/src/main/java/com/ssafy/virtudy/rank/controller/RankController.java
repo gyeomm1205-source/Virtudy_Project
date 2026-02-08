@@ -1,5 +1,6 @@
 package com.ssafy.virtudy.rank.controller;
 
+import com.ssafy.virtudy.global.aop.RateLimit;
 import com.ssafy.virtudy.rank.dto.RankDTO;
 import com.ssafy.virtudy.rank.service.RankService;
 import io.swagger.v3.oas.annotations.Operation;
