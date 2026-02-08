@@ -25,7 +25,6 @@ export function useLobby() {
 
   // 데이터 불러오기 (전체 & 내 방 동시 조회)
   const fetchAllRooms = async () => {
-
     if (!userId.value) return;
 
     isLoading.value = true;
@@ -36,8 +35,12 @@ export function useLobby() {
         lobbyAPI.getMyRooms(userId.value),
         getMyProfile().catch(() => null)
       ]);
-      publicRooms.value = pubRes.data;
       const favoriteTitle = profileRes?.favoriteRoomTitle;
+      // 전체 방에도 favorite 표시 추가
+      publicRooms.value = pubRes.data.map(room => ({
+        ...room,
+        favorite: Boolean(favoriteTitle && room.title === favoriteTitle)
+      }));
       myRooms.value = myRes.data.map(room => ({
         ...room,
         favorite: Boolean(favoriteTitle && room.title === favoriteTitle)
@@ -128,7 +131,7 @@ export function useLobby() {
         params: { roomId },
         query: { from: 'lobby' }
       });
-      return true;
+      return;
     } catch (e: any) {
       await handleApiError(e);
     }

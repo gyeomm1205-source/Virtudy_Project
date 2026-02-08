@@ -99,17 +99,12 @@
           </div>
 
           <button 
-            v-if="isMyRoomTab && (selectingFavorite || room.favorite)" 
+            v-if="(isMyRoomTab && selectingFavorite) || room.favorite" 
             @click.stop="onFavoriteClick(room.roomId!)"
-            class="absolute right-[20px] bottom-[20px] w-[24px] h-[24px] flex items-center justify-center hover:scale-110 transition-transform z-20"
+            class="absolute right-[20px] bottom-[10px] w-[24px] h-[24px] flex items-center justify-center hover:scale-110 transition-transform z-20"
             title="최애 스터디방 설정"
           >
-            <svg v-if="room.favorite" viewBox="0 0 24 24" class="w-full h-full fill-[var(--color-choco)]">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-            <svg v-else viewBox="0 0 24 24" class="w-full h-full fill-none stroke-[var(--color-choco)] stroke-2">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
+            <div class="w-full h-full" v-html="getHeartSvg(room.favorite)"></div>
           </button>
           
           <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full px-[24px]">
@@ -240,6 +235,64 @@ const selectingFavorite = ref(false);
 const searchQuery = ref<string>('');
 const currentPage = ref<number>(1);
 const ITEMS_PER_PAGE = 6;
+
+// SVG 데이터 분리
+// 1. 테두리 (항상 표시될 부분)
+const outlineVector = `
+<g id="Vector_4">
+<path d="M0 4H2V6H0V4Z" fill="#805143"/>
+<path d="M0 6H2V8H0V6Z" fill="#805143"/>
+<path d="M2 8H4V10H2V8Z" fill="#805143"/>
+<path d="M4 10H6V12H4V10Z" fill="#805143"/>
+<path d="M8 10H10V12H8V10Z" fill="#805143"/>
+<path d="M10 8H12V10H10V8Z" fill="#805143"/>
+<path d="M12 6H14V8H12V6Z" fill="#805143"/>
+<path d="M12 4H14V6H12V4Z" fill="#805143"/>
+<path d="M12 2H14V4H12V2Z" fill="#805143"/>
+<path d="M10 0H12V2H10V0Z" fill="#805143"/>
+<path d="M8 0H10V2H8V0Z" fill="#805143"/>
+<path d="M6 2H8V4H6V2Z" fill="#805143"/>
+<path d="M4 0H6V2H4V0Z" fill="#805143"/>
+<path d="M2 0H4V2H2V0Z" fill="#805143"/>
+<path d="M0 2H2V4H0V2Z" fill="#805143"/>
+<path d="M0 2H2V4H0V2Z" fill="#805143"/>
+<path d="M6 12H8V14H6V12Z" fill="#805143"/>
+</g>`;
+
+// 2. 채움 (선택되었을 때만 표시될 부분)
+const fillVectors = `
+<g id="Vector">
+<path d="M10 2H12V4H10V2Z" fill="#FFF8E5"/>
+<path d="M4 2H6V4H4V2Z" fill="#FFF8E5"/>
+</g>
+<g id="Vector_2">
+<path d="M2 2H4V4H2V2Z" fill="#FFD966"/>
+<path d="M2 4H4V6H2V4Z" fill="#FFD966"/>
+<path d="M4 6H6V8H4V6Z" fill="#FFD966"/>
+<path d="M6 8H8V10H6V8Z" fill="#FFD966"/>
+<path d="M8 8H10V10H8V8Z" fill="#FFD966"/>
+<path d="M8 6H10V8H8V6Z" fill="#FFD966"/>
+<path d="M10 6H12V8H10V6Z" fill="#FFD966"/>
+<path d="M10 4H12V6H10V4Z" fill="#FFD966"/>
+<path d="M8 4H10V6H8V4Z" fill="#FFD966"/>
+<path d="M6 4H8V6H6V4Z" fill="#FFD966"/>
+<path d="M4 4H6V6H4V4Z" fill="#FFD966"/>
+<path d="M6 6H8V8H6V6Z" fill="#FFD966"/>
+<path d="M8 2H10V4H8V2Z" fill="#FFD966"/>
+</g>
+<g id="Vector_3">
+<path d="M2 6H4V8H2V6Z" fill="#EBAB6A"/>
+<path d="M4 8H6V10H4V8Z" fill="#EBAB6A"/>
+<path d="M6 10H8V12H6V10Z" fill="#EBAB6A"/>
+</g>`;
+
+// SVG 문자열 생성 함수
+const getHeartSvg = (isFavorite: boolean | undefined) => {
+  // 선택됨(favorite): 테두리 + 내부 색상 모두 표시
+  // 선택안됨(!favorite): 테두리만 표시
+  const content = isFavorite ? fillVectors + outlineVector : outlineVector;
+  return `<svg width="100%" height="100%" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">${content}</svg>`;
+};
 
 
 const totalRooms = computed(() => filteredRooms.value.length);
