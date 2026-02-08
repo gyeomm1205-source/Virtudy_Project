@@ -10,7 +10,7 @@
       
       <div class="max-w-[46rem] w-full mx-[1.25rem] sm:mx-[2rem] bg-white border-2 border-[var(--color-choco)] rounded-[0.75rem] p-[1.5rem] sm:p-[3rem] shadow-[6px_6px_0px_0px_var(--color-choco)]">
         
-        <div class="text-center mb-[2.5rem]">
+        <div v-if="currentStep <= 5" class="text-center mb-[2.5rem]">
           <h1 class="text-[var(--color-syrup)] text-[2.625rem] sm:text-[3rem] font-['Ram'] leading-[3rem] font-medium tracking-[-0.0525rem]">
             학습 성향 조사
           </h1>
@@ -19,7 +19,7 @@
           </p>
         </div>
 
-        <div class="flex flex-col items-center mb-[2.5rem]">
+        <div v-if="currentStep <= 5" class="flex flex-col items-center mb-[2.5rem]">
           <div class="relative w-full max-w-[28rem]">
             <div class="h-[0.75rem] rounded-full bg-[var(--color-cream2)] border-2 border-[var(--color-choco)] overflow-hidden shadow-[2px_2px_0px_0px_var(--color-choco)]"></div>
             
@@ -28,7 +28,7 @@
                 {{ currentStep }}단계
               </span>
               <span class="text-[0.9rem] text-[var(--color-choco)]/50 font-['PfStardust30S']">
-                / 6단계
+                / 5단계
               </span>
             </div>
 
@@ -43,7 +43,6 @@
               <span>3단계</span>
               <span>4단계</span>
               <span>5단계</span>
-              <span>6단계</span>
             </div>
           </div>
         </div>
@@ -72,7 +71,7 @@
                   key="step-1"
                   class="flex flex-col min-h-[18rem]"
                 >
-                  <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">일 평균 공부 시간</p>
+                   <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">일 평균 공부 시간</p>
                   <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">
                     아래에서 하나를 선택하면 다음 단계로 넘어가요.
                   </p>
@@ -100,66 +99,66 @@
                 </section>
 
                 <section v-else-if="currentStep === 2" key="step-2" class="flex flex-col min-h-[18rem]">
-                  <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">일 목표 공부 시간</p>
-                  <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">목표를 정하면 맞춤 추천에 도움이 돼요.</p>
-                  <div class="grid sm:grid-cols-2 gap-[0.75rem]">
-                    <label v-for="option in studyTimeOptions" :key="option.value" class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
-                      <input type="radio" :value="option.value" v-model="surveyData.goalStudyTime" name="goalStudyTimeGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromGoal" />
-                      <span class="text-[var(--color-choco)] text-[1.05rem] font-['PfStardust30S']">{{ option.text }}</span>
-                    </label>
-                  </div>
-                  <div class="mt-auto pt-[1.25rem] flex justify-end"><button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button></div>
+                    <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">일 목표 공부 시간</p>
+                    <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">목표를 정하면 맞춤 추천에 도움이 돼요.</p>
+                    <div class="grid sm:grid-cols-2 gap-[0.75rem]">
+                      <label v-for="option in studyTimeOptions" :key="option.value" class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
+                        <input type="radio" :value="option.value" v-model="surveyData.goalStudyTime" name="goalStudyTimeGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromGoal" />
+                        <span class="text-[var(--color-choco)] text-[1.05rem] font-['PfStardust30S']">{{ option.text }}</span>
+                      </label>
+                    </div>
+                    <div class="mt-auto pt-[1.25rem] flex justify-end"><button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button></div>
                 </section>
 
                 <section v-else-if="currentStep === 3" key="step-3" class="flex flex-col min-h-[18rem]">
-                  <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">주 학습 시간대</p>
-                  <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">가장 집중이 잘 되는 시간대를 골라주세요.</p>
-                  <div class="grid sm:grid-cols-2 gap-[0.75rem]">
-                    <label v-for="slot in timeSlots" :key="slot.value" class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
-                      <input type="radio" :value="slot.value" v-model="surveyData.preferredTimeSlots" name="preferredTimeSlotGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromTime" />
-                      <span class="text-[var(--color-choco)] text-[1.05rem] font-['PfStardust30S']">{{ slot.text }}</span>
-                    </label>
-                  </div>
-                  <div class="mt-auto pt-[1.25rem] flex justify-end"><button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button></div>
+                    <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">주 학습 시간대</p>
+                    <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">가장 집중이 잘 되는 시간대를 골라주세요.</p>
+                    <div class="grid sm:grid-cols-2 gap-[0.75rem]">
+                      <label v-for="slot in timeSlots" :key="slot.value" class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
+                        <input type="radio" :value="slot.value" v-model="surveyData.preferredTimeSlots" name="preferredTimeSlotGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromTime" />
+                        <span class="text-[var(--color-choco)] text-[1.05rem] font-['PfStardust30S']">{{ slot.text }}</span>
+                      </label>
+                    </div>
+                    <div class="mt-auto pt-[1.25rem] flex justify-end"><button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button></div>
                 </section>
 
                 <section v-else-if="currentStep === 4" key="step-4" class="flex flex-col min-h-[18rem]">
-                  <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">학습 스타일</p>
-                  <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">학습 루틴에 맞춘 추천을 제공해요.</p>
-                  <div class="grid sm:grid-cols-2 gap-[0.75rem]">
-                    <label class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
-                      <input type="radio" value="MARATHON" v-model="surveyData.studyStyle" name="studyStyleGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromStyle" />
-                      <span class="text-[var(--color-choco)] text-[1.05rem] font-['PfStardust30S']">마라톤형 (꾸준히 길게)</span>
-                    </label>
-                    <label class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
-                      <input type="radio" value="SPRINTER" v-model="surveyData.studyStyle" name="studyStyleGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromStyle" />
-                      <span class="text-[var(--color-choco)] text-[1.05rem] font-['PfStardust30S']">스프린터형 (짧고 굵게)</span>
-                    </label>
-                  </div>
-                  <div class="mt-auto pt-[1.25rem] flex justify-end"><button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button></div>
+                    <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">학습 스타일</p>
+                    <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">학습 루틴에 맞춘 추천을 제공해요.</p>
+                    <div class="grid sm:grid-cols-2 gap-[0.75rem]">
+                      <label class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
+                        <input type="radio" value="MARATHON" v-model="surveyData.studyStyle" name="studyStyleGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromStyle" />
+                        <span class="text-[var(--color-choco)] text-[1.05rem] font-['PfStardust30S']">마라톤형 (꾸준히 길게)</span>
+                      </label>
+                      <label class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
+                        <input type="radio" value="SPRINTER" v-model="surveyData.studyStyle" name="studyStyleGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromStyle" />
+                        <span class="text-[var(--color-choco)] text-[1.05rem] font-['PfStardust30S']">스프린터형 (짧고 굵게)</span>
+                      </label>
+                    </div>
+                    <div class="mt-auto pt-[1.25rem] flex justify-end"><button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button></div>
                 </section>
 
                 <section v-else-if="currentStep === 5" key="step-5" class="flex flex-col min-h-[18rem]">
-                  <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">직업(신분)</p>
-                  <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">직업 정보로 추천 콘텐츠가 달라져요.</p>
-                  <div class="grid sm:grid-cols-2 gap-[0.75rem]">
-                    <label v-for="option in jobOptions" :key="option.value" class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
-                      <input type="radio" :value="option.value" v-model="surveyData.occupation" name="occupationGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromJob" />
-                      <span class="text-[var(--color-choco)] text-[1.05rem] font-['PfStardust30S']">{{ option.text }}</span>
-                    </label>
-                  </div>
-                  <div class="mt-auto pt-[1.25rem] flex justify-end"><button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button></div>
+                    <p class="text-[1.5rem] sm:text-[1.75rem] mb-[0.35rem] text-[var(--color-choco)] font-['PfStardust30S']">직업(신분)</p>
+                    <p class="text-[0.9rem] text-[var(--color-choco)]/70 font-['PfStardust30S'] mb-[1.5rem]">직업 정보로 추천 콘텐츠가 달라져요.</p>
+                    <div class="grid sm:grid-cols-2 gap-[0.75rem]">
+                      <label v-for="option in jobOptions" :key="option.value" class="flex items-center gap-[0.75rem] cursor-pointer select-none border border-[var(--color-choco)] rounded-[0.5rem] px-[1rem] py-[0.75rem] hover:bg-[var(--color-cream2)] transition-colors">
+                        <input type="radio" :value="option.value" v-model="surveyData.occupation" name="occupationGroup" class="w-[1.125rem] h-[1.125rem] accent-[var(--color-choco)] cursor-pointer" @change="goNextFromJob" />
+                        <span class="text-[var(--color-choco)] text-[1.05rem] font-['PfStardust30S']">{{ option.text }}</span>
+                      </label>
+                    </div>
+                    <div class="mt-auto pt-[1.25rem] flex justify-end"><button type="button" class="text-[var(--color-choco)] font-['PfStardust30S'] underline opacity-80" @click="goPrev">뒤로가기</button></div>
                 </section>
-
-                <section v-else-if="currentStep === 6" key="step-6" class="flex flex-col min-h-[18rem] items-center justify-center text-center">
-                  <p class="text-[1.5rem] sm:text-[1.75rem] mb-[2rem] text-[#ff4444] font-['PfStardust30S'] font-bold drop-shadow-[1px_1px_0px_rgba(0,0,0,0.1)]">
+                
+                <section v-else-if="currentStep === 6" key="step-6" class="flex flex-col min-h-[18rem] items-center text-center">
+                  <h1 class="text-[var(--color-jam)] text-[2.625rem] sm:text-[3rem] font-['Ram'] leading-[3rem] font-medium tracking-[-0.0525rem] mb-[2.5rem]">
                     주의사항
-                  </p>
+                  </h1>
                   
                   <div class="bg-[var(--color-cream)] border border-[var(--color-choco)] rounded-[0.5rem] p-[1.5rem] mb-[2.5rem] w-full max-w-[24rem]">
                     <p class="text-[1.1rem] text-[var(--color-choco)] font-['PfStardust30S'] leading-relaxed break-keep">
                       해당 플랫폼의 일부 기능<span class="text-[var(--color-syrup)]">(섬광탄)</span>은<br>
-                      <span class="text-[#ff4444] font-bold">광과민성 반응</span>을 유발할 수 있습니다.
+                      <span class="text-[var(--color-jam)] font-bold">광과민성 반응</span>을 유발할 수 있습니다.
                     </p>
                   </div>
 
@@ -241,13 +240,13 @@ const surveyData = ref<SurveyData>({
 });
 
 const currentStep = ref(1);
-// 6단계 기준으로 퍼센트 계산
-const progressWidth = computed(() => `${Math.min(currentStep.value, 6) * (100 / 6)}%`);
+// 변경 5: 5단계 기준으로 퍼센트 계산 (6단계가 되어도 100%를 넘지 않도록 min 처리)
+const progressWidth = computed(() => `${Math.min(currentStep.value, 5) * (100 / 5)}%`);
 const isSubmitting = ref(false);
 const isSubmitted = ref(false);
 
 const goToStep = (step: number) => {
-  // 최대 6단계
+  // 최대 6단계 (내부적으로는 6단계가 주의사항 뷰)
   currentStep.value = Math.min(Math.max(step, 1), 6);
 };
 
@@ -277,9 +276,9 @@ const goNextFromStyle = () => {
   if (surveyData.value.studyStyle) goToStep(5);
 };
 
-// 수정: 직업 선택 시 바로 제출하지 않고 6단계(주의사항)로 이동
 const goNextFromJob = () => {
   if (!surveyData.value.occupation) return;
+  // 5단계 선택 완료 시 6단계(주의사항 화면)로 이동
   goToStep(6);
 };
 
