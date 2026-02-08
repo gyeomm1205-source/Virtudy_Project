@@ -1,5 +1,4 @@
 # fusion/state_fuser.py
-<<<<<<< HEAD
 from typing import Optional
 
 from core.types import FrameSignals, FocusDecision, FocusState
@@ -36,22 +35,6 @@ class StateFuser:
         if sig.absent.absent:
             return FocusDecision(FocusState.ABSENT, 1.0, "Face missing")
 
-=======
-from core.types import FrameSignals, FocusDecision, FocusState
-
-class StateFuser:
-    def decide(self, sig: FrameSignals) -> FocusDecision:
-        # Priority: ABSENT > DROWSY > PHONE > FOCUSED
-        
-        # 1) ABSENT
-        if sig.absent.absent:
-            return FocusDecision(FocusState.ABSENT, 1.0, "Face missing")
-
-        # 2) PHONE (Prioritize over Drowsy because looking down + phone = Phone Use)
-        if sig.phone.phone_in_use:
-            return FocusDecision(FocusState.PHONE, sig.phone.phone_in_use_score, "Phone use detected")
-
->>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
         # 3) DROWSY
         if sig.drowsy.drowsy_score >= 0.9:
             return FocusDecision(FocusState.DROWSY, sig.drowsy.drowsy_score, "Eyes closed")
@@ -62,7 +45,6 @@ class StateFuser:
             return FocusDecision(FocusState.FOCUSED, 0.8, "Normal")
 
         return FocusDecision(FocusState.UNKNOWN, 0.0, "Insufficient signals")
-<<<<<<< HEAD
 
     def _switch(self, decision: FocusDecision) -> FocusDecision:
         self.last_state = decision.state
@@ -112,5 +94,3 @@ class StateFuser:
             return self.last_decision
 
         return self._switch(raw)
-=======
->>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
