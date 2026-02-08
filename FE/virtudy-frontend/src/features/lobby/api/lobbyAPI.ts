@@ -87,25 +87,23 @@ export const lobbyAPI = {
    * 8. 특정 스터디방 입장
    * POST /api/sessions/enter/{roomId}
    */
-  enterRoom: async (userId: string, roomId: string, password?: string) => {
-    const body: EnterRoomReq = { password };
-    
-    // 1. Axios 응답을 변수에 받음
-    const response = await api.post<EnterSessionRes>(
-      `/sessions/enter/${roomId}`, 
-      body, 
-      { headers: { 'X-MEMBER-ID': userId } }
-    );
+    enterRoom: async (userId: string, roomId: string, password?: string) => {
+      // password를 query parameter로 전달
+      const query = password ? `?password=${encodeURIComponent(password)}` : '';
+      const response = await api.post<EnterSessionRes>(
+        `/sessions/enter/${roomId}${query}`,
+        {},
+        { headers: { 'X-MEMBER-ID': userId } }
+      );
 
-    // 2. data만 꺼내서 + memberId 매핑까지 해서 반환
-    return {
-      userId: response.data.memberId,
-      roomId: response.data.roomId,
-      nickName: response.data.nickName,
-      avatar: response.data.avatar,
-      liveKitToken: response.data.liveKitToken
-    };
-  },
+      return {
+        userId: response.data.memberId,
+        roomId: response.data.roomId,
+        nickName: response.data.nickName,
+        avatar: response.data.avatar,
+        liveKitToken: response.data.liveKitToken
+      };
+    },
   /**
    * 9. 랜덤 스터디방 입장
    * POST /api/sessions/enter/random

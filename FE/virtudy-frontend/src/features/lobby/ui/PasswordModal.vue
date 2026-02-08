@@ -32,7 +32,7 @@
             class="border-2 border-[var(--color-choco)] rounded-[0.5rem] pl-4 pr-12 py-3 w-full text-[1.25rem] text-[var(--color-choco)] font-['PfStardust30S'] bg-[var(--color-cream)] focus:outline-none focus:border-[var(--color-choco)]"
             placeholder="비밀번호를 입력하세요"
             @keyup.enter="submit"
-            autocomplete="off"
+            autocomplete="new-password"
             autofocus
           />
           <!-- 입력값이 있을 때만 아이콘 노출 -->
