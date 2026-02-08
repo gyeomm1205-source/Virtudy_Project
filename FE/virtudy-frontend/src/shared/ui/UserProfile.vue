@@ -166,7 +166,6 @@ const hasAvatarConfig = computed(() => {
   return Object.values(props.avatar).some((value) => Boolean(value));
 });
 
-
 </script>
 
 <style scoped>

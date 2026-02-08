@@ -59,4 +59,14 @@ public class StudyRoom extends BaseTimeEntity {
     public void close() {
         this.status = RoomStatType.CLOSED;
     }
+
+    /**
+     * 티어 점수 변동분을 누적합니다.
+     */
+    public void addTierScore(int delta) {
+        this.roomTierScore += delta;
+        if (this.roomTierScore < 0) {
+            this.roomTierScore = 0;
+        }
+    }
 }

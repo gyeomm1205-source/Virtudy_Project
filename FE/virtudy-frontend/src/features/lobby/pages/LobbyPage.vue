@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
   <GlobalBackground :skyType="2">
   <div class="w-full min-h-screen flex flex-col relative">
     
@@ -18,10 +19,29 @@
       
       <div class="absolute left-[58px] top-[324px] transform -translate-y-1/2">
         <h1 class="text-[var(--color-pancake)] [text-shadow:4px_4px_0px_var(--color-choco)] text-[156px] font-['Ram'] font-medium leading-none tracking-[-18.72px]">
+=======
+  <div class="bg-[var(--color-syrup)] w-full min-h-screen flex flex-col relative">
+    
+    <div class="flex-none z-50">
+      <GlobalNavBar />
+    </div>
+    
+    <main class="flex-1 w-full relative min-h-[850px]">
+      
+      <div class="absolute left-[76px] top-[119px] w-[54px] h-[54px] cursor-pointer hover:scale-110 transition-transform" @click="goBack">
+        <svg viewBox="0 0 54 54" class="w-full h-full" fill="var(--color-choco)">
+          <path d="M40 22H18.8L29.4 11.4L27 9L13 23L27 37L29.4 34.6L18.8 24H40V22Z"/>
+        </svg>
+      </div>
+      
+      <div class="absolute left-[58px] top-[324px] transform -translate-y-1/2">
+        <h1 class="text-[var(--color-pancake)] text-[156px] font-['Ram'] font-medium leading-none tracking-[-18.72px]">
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
           방목록
         </h1>
       </div>
       
+<<<<<<< HEAD
       <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px] lobby-actions">
         <div class="absolute left-[100px] top-[140px] w-[200px] h-[200px] hidden md:block">
           <CharacterAvatar
@@ -32,6 +52,24 @@
         </div>
         
         <div class="absolute top-[260px] w-full flex flex-col gap-[10px] lobby-action-buttons">
+=======
+      <div class="absolute left-[calc(8.33%+107px)] top-[361px] w-[255px] h-[406px]">
+        <div class="absolute left-[94px] top-[119px] w-[200px] h-[243px]">
+          <CharacterAvatar
+            v-if="hasAvatarConfig"
+            :config="authStore.userInfo!.avatar!"
+            class="w-full h-full"
+          />
+          <img
+            v-else-if="authStore.userInfo?.avatarImageUrl"
+            :src="authStore.userInfo.avatarImageUrl"
+            alt="프로필"
+            class="w-full h-full object-cover"
+          />
+        </div>
+        
+        <div class="absolute top-[260px] w-full flex flex-col gap-[10px]">
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
           <button class="butter-btn bg-[var(--color-butter)] w-full" @click="handleRandomMatch">
             <span class="text-[var(--color-choco)] text-[28px] font-['Xcu'] font-medium leading-none">
               랜덤매칭
@@ -46,6 +84,7 @@
         </div>
       </div>
       
+<<<<<<< HEAD
       <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px] lobby-roomlist">
         <RoomList 
           :rooms="displayedRooms"
@@ -53,6 +92,12 @@
           :tutorialMode="props.tutorialMode"
           :tutorialTab="props.tutorialTab"
           @roomClick="handleRoomClick"
+=======
+      <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px]">
+        <RoomList 
+          :rooms="displayedRooms"
+          :isMyRoomTab="currentFilter === 'myRooms'"  @roomClick="handleRoomClick"
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
           @filterChange="setFilter"
           @search="onSearchInput"
           @edit="handleEditRoom"      
@@ -83,6 +128,7 @@
     @success="fetchAllRooms" 
   />
 
+<<<<<<< HEAD
   <PasswordModal
     v-if="showPasswordModal"
     :error="passwordError"
@@ -106,6 +152,9 @@
 
   </div>
   </GlobalBackground>
+=======
+  </div>
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 </template>
 
 <script setup lang="ts">
@@ -113,6 +162,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
+<<<<<<< HEAD
 // 튜토리얼 모드 props 정의
 interface Props {
   tutorialMode?: boolean;
@@ -128,10 +178,15 @@ const props = withDefaults(defineProps<Props>(), {
 import { useAuthStore } from '@/stores/authStore';
 import { useStudyStore } from '@/stores/studyStore'; 
 import { useUiStore } from '@/stores/uiStore'; // UI 스토어
+=======
+// ✅ FSD 모듈 import
+import { useAuthStore } from '@/stores/authStore';
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 import { useLobby } from '@/features/lobby/logic/useLobby';
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI'; // 랜덤매칭용
 import type { RoomData } from '@/features/lobby/types/lobby.types'; // 방 데이터 타입
 // ✅ UI 컴포넌트 import
+<<<<<<< HEAD
 import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
 import RoomList from '@/shared/ui/RoomList.vue';
 import CreateRoomModal from '../ui/CreateRoomModal.vue'; 
@@ -144,12 +199,25 @@ import { maxMembers } from '@/shared/config/constants'; // 상수 import
 import GlobalBackground from '@/shared/ui/GlobalBackground.vue';
 
 
+=======
+import GlobalNavBar from '@/shared/ui/GlobalNavBar.vue';
+import GlobalFooter from '@/shared/ui/GlobalFooter.vue';
+import RoomList from '@/shared/ui/RoomList.vue';
+import CreateRoomModal from '../ui/CreateRoomModal.vue'; // 새로 만든 모달
+import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
+
+import { maxMembers } from '@/shared/config/constants'; // 상수 import
+
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 const router = useRouter();
 
 // 1. Store & Hook 연결
 const authStore = useAuthStore();
+<<<<<<< HEAD
 const studyStore = useStudyStore();
 const uiStore = useUiStore(); // UI 스토어
+=======
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 const { userId } = storeToRefs(authStore);
 
 const hasAvatarConfig = computed(() => {

@@ -15,8 +15,11 @@ import java.util.Optional;
 @Repository
 public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
     List<StudyRoom> findAllByStatus(RoomStatType status);
+
     Optional<StudyRoom> findByRoomIdAndStatus(String roomId, RoomStatType status);
+
     int countByOwnerIdAndStatus(Long ownerId, RoomStatType status);
+
     List<StudyRoom> findAllByOwnerIdAndStatus(Long ownerId, RoomStatType status);
     List<StudyRoom> findStudyRoomsByRoomIdIn(List<String> roomIds);
     List<StudyRoom> findByTitle(String title);
@@ -26,6 +29,7 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
     // 랜덤 매칭을 위한 쿼리: OPEN 상태이고 인원이 6명 미만인 방을 랜덤하게 조회
     @Query("SELECT r FROM StudyRoom r " +
             "WHERE r.status = 'OPEN' " +
+            "AND r.type = 'PUBLIC' " +
             "AND (SELECT COUNT(s) FROM StudySession s WHERE s.room = r AND s.endTime IS NULL) < 6 " +
             "ORDER BY function('rand')")
     List<StudyRoom> findAvailableRoomsRandomly(Pageable pageable);

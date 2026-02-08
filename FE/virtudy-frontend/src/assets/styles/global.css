@@ -91,6 +91,7 @@ html, body, #app {
   @apply bg-[var(--color-cream)];
 }
 
+<<<<<<< HEAD
 /* Edge, IE */
 input[type='password']::-ms-reveal,
 input[type='password']::-ms-clear {
@@ -101,3 +102,5 @@ input[type='password']::-ms-clear {
 input[type='password']::-webkit-textfield-decoration-container {
   display: none;
 }
+=======
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186

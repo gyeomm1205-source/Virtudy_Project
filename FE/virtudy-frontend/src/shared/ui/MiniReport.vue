@@ -18,7 +18,6 @@
         집중도
       </div>
     </div>
-
   </div>
 </template>
 

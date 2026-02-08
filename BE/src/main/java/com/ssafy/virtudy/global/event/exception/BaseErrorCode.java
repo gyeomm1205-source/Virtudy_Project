@@ -66,6 +66,7 @@ public enum BaseErrorCode {
     ROOM_PRIVATE_EMPTY_PASSWORD_ERROR(HttpStatus.BAD_REQUEST, "ROOM_006","비공개 방은 비밀번호가 필수입니다."),
     ROOM_PUBLIC_FILLED_PASSWORD_ERROR(HttpStatus.BAD_REQUEST, "ROOM_007","공개 방은 비밀번호가 존재하지 않아야 합니다."),
     ROOM_NOT_OWNER_ERROR(HttpStatus.BAD_REQUEST, "ROOM_008","방장만 접근할 수 있습니다."),
+    ROOM_PASSWORD_MISMATCH_ERROR(HttpStatus.BAD_REQUEST, "ROOM_009", "비밀번호가 일치하지 않습니다."),
 
     /**
      * 500 : 응답 실패

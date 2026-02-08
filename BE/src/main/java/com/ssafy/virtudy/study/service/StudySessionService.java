@@ -8,6 +8,7 @@ import com.ssafy.virtudy.group.repository.RoomMemberRepository;
 import com.ssafy.virtudy.member.domain.*;
 import com.ssafy.virtudy.member.repository.MemberRepository;
 import com.ssafy.virtudy.study.domain.RoomStatType;
+import com.ssafy.virtudy.study.domain.RoomType;
 import com.ssafy.virtudy.study.domain.StudyRoom;
 import com.ssafy.virtudy.study.domain.StudySession;
 import com.ssafy.virtudy.study.dto.SessionMemberInfoResponse;
@@ -49,16 +50,39 @@ public class StudySessionService {
     // 랜덤 샘플링의 다양성을 확보하여 더 나은 매칭 품질을 기대할 수 있는 적절한 타협점입니다.
     private final static int RANDOM_POOL_SIZE = 200;
 
-    public SessionMemberInfoResponse enterRoom(Member member, String roomId) {
+    public SessionMemberInfoResponse enterRoom(Member member, String roomId, String password) {
         StudyRoom room = studyRoomRepository.findByRoomIdAndStatus(roomId, RoomStatType.OPEN)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_FOUND_ERROR));
 
+        // 방장 여부 확인
+        boolean isOwner = room.getOwner().getMemberId().equals(member.getMemberId());
+
+        // 비밀번호 검증 로직 추가 (방장이 아닌 경우에만 검증)
+        if (!isOwner) {
+            if (password != null && !password.isEmpty()) {
+                if (room.getType() != RoomType.PRIVATE) {
+                    throw new BaseException(BaseErrorCode.ROOM_PUBLIC_FILLED_PASSWORD_ERROR);
+                }
+                if (!room.getPassword().equals(password)) {
+                    throw new BaseException(BaseErrorCode.ROOM_PASSWORD_MISMATCH_ERROR);
+                }
+            } else {
+                if (room.getType() == RoomType.PRIVATE) {
+                    throw new BaseException(BaseErrorCode.ROOM_PRIVATE_EMPTY_PASSWORD_ERROR);
+                }
+            }
+        }
+
         // [Fix] Ghost Session Logic: 기존 세션이 있다면 강제 종료 후 재입장 허용
         studySessionRepository.findByMemberAndEndTimeIsNull(member)
+<<<<<<< HEAD
                 .ifPresent(
                         studySession -> {
                             studySession.close(0);
                         });
+=======
+                .ifPresent(StudySession::close);
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 
         int currentUsers = studySessionRepository.findByRoomAndEndTimeIsNull(room).size();
         if (currentUsers >= MAX_USER) {
@@ -118,9 +142,10 @@ public class StudySessionService {
         AccessToken token = new AccessToken(liveKitConfig.getLiveKitApiKey(), liveKitConfig.getLiveKitApiSecret());
         token.setName(member.getNickName());
         token.setIdentity(member.getMemberId());
+        token.setMetadata(newSession.getSessionId());
         token.addGrants(new RoomJoin(true), new RoomName(roomId));
 
-        return new SessionMemberInfoResponse(member, token.toJwt());
+        return new SessionMemberInfoResponse(member, token.toJwt(), roomId);
     }
 
     public SessionMemberInfoResponse enterRandomRoom(Member member) {
@@ -138,7 +163,7 @@ public class StudySessionService {
         // 사용자 정보가 없으면 후보군 중 하나 랜덤 선택
         if (userPref == null || userStat == null) {
             StudyRoom randomRoom = candidateRooms.get(ThreadLocalRandom.current().nextInt(candidateRooms.size()));
-            return enterRoom(member, randomRoom.getRoomId());
+            return enterRoom(member, randomRoom.getRoomId(), null);
         }
 
         // 2. 후보군 내에서만 거리 계산 수행
@@ -165,17 +190,17 @@ public class StudySessionService {
         // 동률인 방 중 랜덤 선택
         StudyRoom selectedRoom = bestRooms.get(ThreadLocalRandom.current().nextInt(bestRooms.size()));
 
-        return enterRoom(member, selectedRoom.getRoomId());
+        return enterRoom(member, selectedRoom.getRoomId(), null);
     }
 
-    public void exitRoom(String memberId, int sessionRealStudyTime) {
+    public void exitRoom(String memberId) {
         Member member = memberRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.MEMBER_NOT_FOUND_ERROR));
 
         StudySession session = studySessionRepository.findByMemberAndEndTimeIsNull(member)
                 .orElseThrow(() -> new BaseException(BaseErrorCode.ROOM_NOT_PARTICIPATE_ERROR));
 
-        session.close(sessionRealStudyTime);
+        session.close();
     }
 
     private double calculateRoomDistance(MemberPreference userPref, MemberGameStat userStat, StudyRoom room, List<Member> roomMembers) {

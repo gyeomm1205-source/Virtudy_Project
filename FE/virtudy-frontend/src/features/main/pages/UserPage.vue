@@ -166,7 +166,6 @@ const handleCreateRoom = async () => {
   }
   isCreateRoomModalOpen.value = true;
 };
-
 const handleShowRoomList = () => {
   router.push('/lobby');
 };

@@ -40,7 +40,6 @@ const loadAvatarCreateCount = () => {
   remainingChances.value = AVATAR_CREATE_LIMIT - avatarCreateCount.value;
 };
 
-
 const incrementAvatarCreateCount = () => {
   const data = JSON.parse(localStorage.getItem(AVATAR_CREATE_KEY) || '{}');
   const todayKey = getTodayKey();
