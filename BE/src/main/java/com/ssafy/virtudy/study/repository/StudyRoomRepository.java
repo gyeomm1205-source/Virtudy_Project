@@ -33,4 +33,3 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
             "AND (SELECT COUNT(s) FROM StudySession s WHERE s.room = r AND s.endTime IS NULL) < 6 " +
             "ORDER BY function('rand')")
     List<StudyRoom> findAvailableRoomsRandomly(Pageable pageable);
-}
