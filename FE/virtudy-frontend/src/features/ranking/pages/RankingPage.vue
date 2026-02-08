@@ -126,9 +126,6 @@
               /* 배경색 (짝수: 초코, 홀수: 크림) */
               index % 2 === 0 ? 'bg-[var(--color-choco)]' : 'bg-[var(--color-cream)]',
               
-              /* 본인 강조: 테두리(그림자)만 유지 */
-              { 'shadow-[inset_0_0_0_4px_var(--color-butter)] relative z-10': isMyself(item) },
-              
               /* 모서리 둥글기 */
               { 'rounded-t-[1.125rem]': index === 0 },
               { 'rounded-b-[1.25rem]': index === rankList.length - 1 }
@@ -143,11 +140,19 @@
             </div>
 
             <div class="flex-1 text-center px-[1rem]">
-              <span class="text-[1.5rem] font-['PfStardust30S'] truncate block" :class="[
-                  (index % 2 === 0) ? 'text-[var(--color-cream)]' : 'text-[var(--color-pancake)]'
-              ]">
+              <span 
+                class="text-[1.5rem] font-['PfStardust30S'] truncate block" 
+                :class="[
+                  isMyself(item) 
+                    ? 'text-[var(--color-butter)] font-bold' 
+                    : ((index % 2 === 0) ? 'text-[var(--color-cream)]' : 'text-[var(--color-pancake)]')
+                ]"
+              >
                 {{ item.nickName }}
-                <span v-if="isMyself(item)" class="text-[0.8rem] ml-1 align-top">(나)</span>
+                
+                <span v-if="isMyself(item)" class="text-[0.8rem] ml-1 align-top font-bold text-[var(--color-butter)]">
+                  (나)
+                </span>
               </span>
             </div>
 

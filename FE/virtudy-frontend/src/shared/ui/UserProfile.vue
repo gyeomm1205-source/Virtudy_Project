@@ -213,25 +213,6 @@ const hasAvatarConfig = computed(() => {
 
 :deep(.study-stats-container) {
   background-color: var(--color-choco);
-  border-radius: 20px;
-  height: 100%;
-  width: 100%;
-  padding: 0; /* 내부 패딩 조정 */
-  display: flex;
-  align-items: center;
-  justify-content: center; /* 중앙 정렬 */
 }
 
-:deep(.value) {
-  color: var(--color-cream);
-  font-size: 42px;
-  font-family: 'Ram', sans-serif;
-}
-
-:deep(.label) {
-  color: var(--color-syrup);
-  font-size: 24px;
-  font-family: 'PfStardust30S', sans-serif;
-  margin-top: 5px;
-}
 </style>

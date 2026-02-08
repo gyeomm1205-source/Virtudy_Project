@@ -2,6 +2,7 @@
   <div class="fixed inset-0 bg-[rgba(255,253,245,0.65)] backdrop-blur-md flex items-center justify-center z-50">
     <div class="bg-[var(--color-cream2)] p-[2.5rem] rounded-[0.75rem] shadow-[4px_4px_0px_0px_var(--color-choco)] relative max-w-[26rem] w-full mx-[1rem]">
       <button 
+        v-if="showCloseButton"
         @click="$emit('close')"
         class="absolute top-[1rem] right-[1rem] w-[2.625rem] h-[2.625rem] cursor-pointer hover:scale-110 transition-transform flex items-center justify-center"
       >
@@ -40,9 +41,13 @@
 const props = withDefaults(defineProps<{
   titleText?: string;
   subtitleText?: string;
+  // 닫기 버튼 표시 여부 (기본값 true)
+  showCloseButton?: boolean;
 }>(), {
   titleText: '매칭 중...',
-  subtitleText: '잠시만 기다려주세요...'
+  subtitleText: '잠시만 기다려주세요...',
+  //기본값을 true로 설정하여 랜덤매칭 등 다른 곳에서는 보이게 함
+  showCloseButton: true
 });
 
 defineEmits(['close']);

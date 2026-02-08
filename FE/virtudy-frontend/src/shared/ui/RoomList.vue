@@ -16,7 +16,7 @@
         <button 
           @click="setFilter('myRooms')"
           :class="[
-            'filter-tab border-2 border-[var(--color-choco)] border-solid px-[32px] py-[20px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
+            'filter-tab border-2 border-[var(--color-choco)] border-solid px-[32px] py-[20px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]g ml-[-2px]',
             currentFilter === 'myRooms' ? 'bg-[var(--color-butter)] tab-active' : 'bg-[var(--color-cream)] tab-inactive'
           ]"
         >

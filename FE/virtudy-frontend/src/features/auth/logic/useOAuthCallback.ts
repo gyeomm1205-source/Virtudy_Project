@@ -76,6 +76,8 @@ export const useOAuthCallback = () => {
 
         // 로그인 직후 전체 프로필(아바타 포함) 다시 조회
         await authStore.fetchUserInfo();
+        // 임시 누적값을 userInfo에 즉시 반영
+        authStore.loadTempStudyMetrics();
 
         // fetchUserInfo 실패/미지원 대비 최소 정보 세팅
         if (!authStore.userInfo && nickName) {
