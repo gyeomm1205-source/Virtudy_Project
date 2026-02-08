@@ -251,7 +251,7 @@ const togglePip = async () => {
     try {
         // 이미지 비율 고려하여 세로형 창 생성
         const minPipWidth = 200;
-        const minPipHeight = 300;
+        const minPipHeight = 330;
         // @ts-ignore
         pipWindow = await window.documentPictureInPicture.requestWindow({
         width: minPipWidth, 
@@ -393,7 +393,8 @@ const checkRoomOwner = async () => {
     }
 };
 
-// ==========================================================// 🧪 [테스트/아바타] 설정
+// ==========================================================
+// // 🧪 [테스트/아바타] 설정
 // ==========================================================
 // 내 아바타 설정 (실사용: 스토어에서 가져오기)
 const myAvatarConfig = computed<AvatarConfig>(() => {

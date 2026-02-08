@@ -14,7 +14,8 @@ import MyPage from '@/features/mypage/pages/MyPage.vue';
 import LobbyPage from '@/features/lobby/pages/LobbyPage.vue';
 import ReportPage from '@/features/report/pages/ReportPage.vue';
 import AvatarCreationPage from '@/features/avatar/pages/AvatarCreationPage.vue';
-import { useUiStore } from '@/stores/uiStore'; // uiStore import 필수
+import TutorialPage from '@/features/introduction/pages/TutorialPage.vue';
+import { useUiStore } from '@/stores/uiStore';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -130,6 +131,14 @@ const router = createRouter({
       path: '/introduction',
       name: 'introduction',
       component: IntroductionPage
+    },
+    {
+      path: '/tutorial',
+      name: 'tutorial',
+      component: TutorialPage,
+      meta: {
+        hideGlobalNav: true,
+      }
     },
     {
       path: '/ranking',

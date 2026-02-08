@@ -49,7 +49,10 @@
       <div class="absolute left-[calc(33.33%+38px)] top-[95px] w-[691px] h-[686px] lobby-roomlist">
         <RoomList 
           :rooms="displayedRooms"
-          :isMyRoomTab="currentFilter === 'myRooms'"  @roomClick="handleRoomClick"
+          :isMyRoomTab="effectiveFilter === 'myRooms'"
+          :tutorialMode="props.tutorialMode"
+          :tutorialTab="props.tutorialTab"
+          @roomClick="handleRoomClick"
           @filterChange="setFilter"
           @search="onSearchInput"
           @edit="handleEditRoom"      
@@ -110,6 +113,17 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
+// 튜토리얼 모드 props 정의
+interface Props {
+  tutorialMode?: boolean;
+  tutorialTab?: 'all' | 'myRooms';
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  tutorialMode: false,
+  tutorialTab: 'all'
+});
+
 // ✅ FSD 모듈 import
 import { useAuthStore } from '@/stores/authStore';
 import { useStudyStore } from '@/stores/studyStore'; 
@@ -161,6 +175,11 @@ const passwordRoom = ref<RoomData | null>(null); // 비밀번호 입력 대상 �
 const passwordError = ref('');
 const currentFilter = ref<string>('all'); // 'all' | 'my'
 const searchQuery = ref<string>('');
+
+// 튜토리얼 모드일 때 탭 상태 동기화
+const effectiveFilter = computed(() => {
+  return props.tutorialMode ? props.tutorialTab : currentFilter.value;
+});
 const showFavoriteToast = ref(false);
 const favoriteToastMessage = ref('');
 let favoriteToastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -305,6 +324,7 @@ const handlePasswordSubmit = async (password: string) => {
 
 // 탭 변경 (전체 <-> 내 스터디)
 const setFilter = (filter: string) => {
+  if (props.tutorialMode) return; // 튜토리얼 모드에서는 무시
   currentFilter.value = filter;
   searchQuery.value = '';
   fetchAllRooms(); // 탭 바꿀 때 데이터 갱신
@@ -318,7 +338,7 @@ const onSearchInput = (query: string) => {
 
 // 현재 탭에 맞는 데이터 소스 선택
 const targetSourceRooms = computed(() => {
-  return currentFilter.value === 'all' ? publicRooms.value : myRooms.value;
+  return effectiveFilter.value === 'all' ? publicRooms.value : myRooms.value;
 });
 
 // 필터링 및 정렬 로직

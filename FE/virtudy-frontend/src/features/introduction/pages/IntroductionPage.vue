@@ -1,3 +1,34 @@
+<script setup lang="ts">
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore';
+import bgBrick from '@/assets/bg_brick.png';
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+const startTutorial = () => {
+  // name: 'tutorial'로 이동
+  router.push({ name: 'tutorial' });
+};
+
+const kakaoLogin = () => {
+  const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID;
+  const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI;
+  const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`;
+  
+  // 카카오 인증 페이지로 리다이렉트
+  window.location.href = kakaoAuthUrl;
+};
+
+const handleButtonClick = () => {
+  if (authStore.isLoggedIn) {
+    startTutorial();
+  } else {
+    kakaoLogin();
+  }
+};
+</script>
+
 <template>
   <div 
     class="min-h-screen"
@@ -16,7 +47,7 @@
             Virtudy
           </h1>
           <p class="text-[var(--color-choco)] text-[1.8rem] sm:text-[2.2rem] font-['PfStardust30S'] font-bold">
-            버튜디에 어서오세요!
+            버터디에 어서오세요!
           </p>
         </div>
 
@@ -41,7 +72,7 @@
           <p>
             같은 스터디룸에서 딴짓하는 친구에게는<br />
             <span class="inline-block bg-[var(--color-cream2)] border border-[var(--color-choco)] rounded px-2 py-0.5 mx-1 text-[0.9em]">&lt;깨우기&gt;</span> 버튼으로 
-            <span class="text-[#ff4444] text-[1.5rem] font-bold mx-1 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.1)]">섬광탄</span>을<br class="sm:hidden" />
+            <span class="text-[var(--color-jam)] text-[1.5rem] font-bold mx-1 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.1)]">섬광탄</span>을<br class="sm:hidden" />
             던질 수 있어요.<br />
             <span class="text-[0.9rem] opacity-70">(물론 나도 맞을 수 있으니 주의하세요!)</span>
           </p>
@@ -58,11 +89,11 @@
 
         <div class="mt-[3rem]">
           <button 
-            @click="startTutorial"
+            @click="handleButtonClick"
             class="group relative inline-flex items-center justify-center px-[2rem] py-[1rem] bg-[var(--color-butter)] border-2 border-[var(--color-choco)] rounded-[0.5rem] shadow-[4px_4px_0px_0px_var(--color-choco)] active:shadow-[2px_2px_0px_0px_var(--color-choco)] active:translate-y-[2px] transition-all cursor-pointer hover:bg-[#ffeb99]"
           >
             <span class="text-[var(--color-choco)] font-['PfStardust30S'] text-[1.4rem] font-bold group-hover:scale-105 transition-transform">
-              튜토리얼 시작하기
+              {{ authStore.isLoggedIn ? '튜토리얼 시작하기' : '카카오로 시작하기' }}
             </span>
             <span class="absolute -top-2 -right-2 flex h-4 w-4">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-syrup)] opacity-75"></span>
@@ -76,18 +107,6 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { useRouter } from 'vue-router';
-import bgBrick from '@/assets/bg_brick.png'; // 이미지 경로 확인 필요
-
-const router = useRouter();
-
-const startTutorial = () => {
-  // 튜토리얼 페이지 경로에 맞춰 수정해주세요 (예: /tutorial)
-  router.push('/tutorial'); 
-};
-</script>
-
 <style scoped>
-
+/* 필요한 경우 추가 스타일 작성 */
 </style>

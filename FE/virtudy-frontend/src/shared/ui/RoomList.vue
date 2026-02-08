@@ -6,8 +6,9 @@
           @click="setFilter('all')"
           :class="[
             'filter-tab border-2 border-[var(--color-choco)] border-solid px-[32px] py-[20px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]',
-            currentFilter === 'all' ? 'bg-[var(--color-butter)] tab-active' : 'bg-[var(--color-cream)] tab-inactive'
+            effectiveFilter === 'all' ? 'bg-[var(--color-butter)] tab-active' : 'bg-[var(--color-cream)] tab-inactive'
           ]"
+          :disabled="props.tutorialMode"
         >
           <span class="text-[var(--color-choco)] text-[24px] font-[PfStardust30S] font-normal leading-none">
             전체
@@ -19,6 +20,7 @@
             'filter-tab border-2 border-[var(--color-choco)] border-solid px-[32px] py-[20px] rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[2px] rounded-br-[2px]g ml-[-2px]',
             currentFilter === 'myRooms' ? 'bg-[var(--color-butter)] tab-active' : 'bg-[var(--color-cream)] tab-inactive'
           ]"
+          :disabled="props.tutorialMode"
         >
           <span class="text-[var(--color-choco)] text-[24px] font-[PfStardust30S] font-normal leading-none">
             내 방
@@ -27,9 +29,10 @@
       </div>
 
       <button
-        v-if="currentFilter === 'myRooms'"
+        v-if="effectiveFilter === 'myRooms'"
         @click="toggleFavoriteSelect"
-        class="absolute right-3 top-[40px] h-[2.0625rem] border-2 border-[var(--color-choco)] border-solid px-[18px] py-[6px] rounded-[20px] bg-[var(--color-butter2)] shadow-[4px_4px_0px_0px_var(--color-choco)] hover:scale-105 transition-transform"
+        class="favorite-select-btn absolute right-3 top-[40px] h-[2.0625rem] border-2 border-[var(--color-choco)] border-solid px-[18px] py-[6px] rounded-[20px] bg-[var(--color-butter2)] shadow-[4px_4px_0px_0px_var(--color-choco)] hover:scale-105 transition-transform"
+        :disabled="props.tutorialMode"
       >
         <span class="text-[var(--color-choco)] text-[20px] font-[PfStardust30S] font-normal leading-none inline-flex items-center translate-y-[-2px]">
           최애방 선택하기
@@ -37,7 +40,7 @@
       </button>
       
       <div 
-        v-if="currentFilter === 'all'"
+        v-if="effectiveFilter === 'all'"
         class="absolute right-3 top-[40px] w-[219px] border-2 border-[var(--color-choco)] border-solid bg-[var(--color-cream2)] flex items-center h-[2.0625rem] p-[0.45831rem] gap-[0.625rem]" 
         style="box-shadow: 3.667px 3.667px 0px 0px var(--color-choco);"
       >
@@ -65,7 +68,8 @@
           :key="`room-${room.roomId || index}`"
           :class="[
             'border-2 border-[var(--color-choco)] border-solid rounded-[20px] relative cursor-pointer hover:scale-105 transition-transform w-[315.5px] h-full group',
-            isMyRoomTab && room.owner ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-butter2)]'
+            isMyRoomTab && room.owner ? 'bg-[var(--color-butter)]' : 'bg-[var(--color-butter2)]',
+            index === 0 ? 'first-room-card' : ''
           ]"
           style="box-shadow: 4px 4px 0px 0px var(--color-choco);"
           @click="onRoomClick(room)"
@@ -214,10 +218,14 @@ interface Room {
 interface RoomListProps {
   rooms?: Room[];
   isMyRoomTab?: boolean;
+  tutorialMode?: boolean;
+  tutorialTab?: 'all' | 'myRooms';
 }
 
 const props = withDefaults(defineProps<RoomListProps>(), {
-  rooms: () => []
+  rooms: () => [],
+  tutorialMode: false,
+  tutorialTab: 'all'
 });
 
 const emit = defineEmits<{
@@ -235,6 +243,12 @@ const selectingFavorite = ref(false);
 const searchQuery = ref<string>('');
 const currentPage = ref<number>(1);
 const ITEMS_PER_PAGE = 6;
+
+
+// 튜토리얼 모드일 때 탭 상태 동기화
+const effectiveFilter = computed(() => {
+  return props.tutorialMode ? props.tutorialTab : currentFilter.value;
+});
 
 // SVG 데이터 분리
 // 1. 테두리 (항상 표시될 부분)
@@ -295,6 +309,7 @@ const getHeartSvg = (isFavorite: boolean | undefined) => {
 };
 
 
+
 const totalRooms = computed(() => filteredRooms.value.length);
 const hasRooms = computed(() => totalRooms.value > 0);
 const maxNavigablePage = computed(() => Math.max(1, Math.ceil(totalRooms.value / ITEMS_PER_PAGE)));
@@ -302,7 +317,7 @@ const maxNavigablePage = computed(() => Math.max(1, Math.ceil(totalRooms.value /
 const filteredRooms = computed(() => {
   let filtered = [...props.rooms];
   
-  if (currentFilter.value === 'all' && searchQuery.value.trim()) {
+  if (effectiveFilter.value === 'all' && searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(room => 
       room.title.toLowerCase().includes(query) ||
@@ -346,6 +361,7 @@ const visiblePages = computed(() => {
 
 // Methods
 const setFilter = (filter: string) => {
+  if (props.tutorialMode) return; // 튜토리얼 모드에서는 무시
   currentFilter.value = filter;
   currentPage.value = 1;
   if (filter !== 'myRooms') {
@@ -355,6 +371,7 @@ const setFilter = (filter: string) => {
 };
 
 const onSearch = () => {
+  if (props.tutorialMode) return; // 튜토리얼 모드에서는 무시
   if (currentFilter.value !== 'all') {
     currentFilter.value = 'all';
     emit('filterChange', 'all');
