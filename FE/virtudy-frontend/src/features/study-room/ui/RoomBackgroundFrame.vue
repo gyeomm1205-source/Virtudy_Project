@@ -281,7 +281,7 @@ onUnmounted(() => {
 
     <div v-if="bgState === 'RED'" class="effect-layer warning-layer" key="warning-layer">
         <div class="warning-bar top"></div>
-        <div class="warning-text">WARNING!</div>
+        <div class="warning-text">WARNING!!</div>
         <div class="warning-bar bottom"></div>
         <div class="red-flash-overlay"></div>
     </div>
@@ -435,7 +435,7 @@ onUnmounted(() => {
     transform: translate(-50%, -50%);
     z-index: 8;
     
-    font-size: clamp(4rem, 9vw, 10rem); /* 반응형 폰트 크기 */
+    font-size: clamp(3rem, 8vw, 9rem); /* 반응형 폰트 크기 */
     font-weight: 800;
     color: #c7212c;
     text-transform: uppercase;

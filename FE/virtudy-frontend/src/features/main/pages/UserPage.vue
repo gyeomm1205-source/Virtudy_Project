@@ -15,7 +15,8 @@
             :favorite-room-title="userInfo.favoriteRoomTitle || '최애 스터디 없음'"
             :pure-study-time="userInfo.dailyPureStudyTime"
             :focus-depth="userInfo.dailyFocusDepth"
-            @click-profile="handleProfileClick"
+            @click-profile="handleProfileImageClick"
+            @click-card="handleCardClick"
             :avatar-image-url="userInfo.avatarImageUrl"
             :avatar="userInfo.avatar"
           />
@@ -170,8 +171,13 @@ const handleShowRoomList = () => {
   router.push('/lobby');
 };
 
-// 아바타 클릭 핸들러 (async 변경)
-const handleProfileClick = async () => {
+// 카드 전체 클릭 핸들러 - 항상 마이페이지로 이동
+const handleCardClick = () => {
+  router.push('/mypage');
+};
+
+// 프로필 이미지 클릭 핸들러 - 아바타 없을 때만 작동
+const handleProfileImageClick = async () => {
   // 아바타 데이터가 비어있는지 확인
   // (필수 파츠인 hairFront가 없으면 아바타가 없는 것으로 간주)
   const hasAvatar = userInfo.value.avatar && userInfo.value.avatar.hairFront;
@@ -185,9 +191,8 @@ const handleProfileClick = async () => {
     if (confirmed) {
         router.push('/avatar/create');
     }
-  } else {
-    console.log("이미 아바타가 있습니다.");
   }
+  // 아바타가 있을 때는 아무것도 하지 않음 (카드 클릭 이벤트가 처리됨)
 };
 
 

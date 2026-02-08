@@ -23,9 +23,6 @@ import MatchingModal from '@/shared/ui/MatchingModal.vue';
 import CreateRoomModal from '@/features/lobby/ui/CreateRoomModal.vue';
 import RoomBackgroundFrame from '@/features/study-room/ui/RoomBackgroundFrame.vue';
 
-// 디버그 패널 임포트 (배포 시 제거 권장)
-import DebugControls from '../ui/DebugControls.vue';
-
 // API 임포트
 import { lobbyAPI } from '@/features/lobby/api/lobbyAPI';
 import type { AvatarConfig } from '@/shared/types/common.types';
@@ -37,6 +34,10 @@ import { useLocalAiRunner } from '../logic/useLocalAiRunner';
 import { useStudyRoomAiStore } from '@/features/study-room/logic/useAiStore';
 import { getScoreColor } from '../logic/scoreUtils'; 
 import { useFlashbang } from '../logic/useFlashbang';
+
+import imgSleep from '@/assets/status_sleep.png';
+import imgPhone from '@/assets/status_phone.png';
+import imgAway from '@/assets/status_away.png';
 
 // ==========================================================
 // 라우터 및 스토어 설정
@@ -150,9 +151,9 @@ onBeforeRouteLeave(() => {
     };
     // 임시 누적값을 localStorage에도 저장
     authStore.setTempStudyMetrics({
-      tempPureStudyTime: newPure,
-      tempTotalStudyTime: newTotal,
-      tempFocusDepth: newTotal > 0 ? Math.round((newPure / newTotal) * 100) : 0
+    tempPureStudyTime: newPure,
+    tempTotalStudyTime: newTotal,
+    tempFocusDepth: newTotal > 0 ? Math.round((newPure / newTotal) * 100) : 0
     });
     // 세션값 초기화
     sessionPureStudyTime.value = 0;
@@ -203,8 +204,18 @@ const {
     openModal, 
     closeModal, 
     sendFlashbang,
-    triggerStunEffect, // 테스트용 공개 메서드 (배포 시에는 제거 권장)
 } = useFlashbang(remoteParticipantScores, remoteParticipantNames);
+
+// 상태 이미지 매핑 함수
+const getStatusImage = (status: string | undefined) => {
+    if (!status) return null;
+    switch (status) {
+        case 'SLEEP': return imgSleep;
+        case 'PHONE': return imgPhone;
+        case 'AWAY': return imgAway;
+        default: return null;
+    }
+};
 
 // -------------------------------------------------------------
 // 🪟 Document PIP 관련 로직
@@ -840,6 +851,12 @@ onUnmounted(() => {
                             <video ref="localVideoRef" autoplay muted playsinline class="hidden-video"></video>
                             
                             <div class="avatar-display">
+                                <img 
+                                    v-if="getStatusImage(aiStore.focusStatus)"
+                                    :src="getStatusImage(aiStore.focusStatus)"
+                                    class="status-icon floating-animation"
+                                    alt="status"
+                                />
                                 <CharacterAvatar 
                                     :config="myAvatarConfig"
                                     :aiDrowsy="getAiDrowsy(aiStore.focusStatus)"
@@ -869,6 +886,13 @@ onUnmounted(() => {
                             ></video>
                             
                             <div class="avatar-display">
+
+                                <img 
+                                    v-if="getStatusImage(remoteParticipantStates[rt?.participantId])"
+                                    :src="getStatusImage(remoteParticipantStates[rt?.participantId])"
+                                    class="status-icon floating-animation"
+                                    alt="status"
+                                />
                                 <CharacterAvatar 
                                     :config="remoteParticipantAvatars?.[rt?.participantId] || {
                                         hairFront: 'none', hairBack: 'none', outfit: 'none', hairColor: '', clothesColor: '', eyes: 'default', glasses: 'none'
@@ -1474,5 +1498,35 @@ onUnmounted(() => {
     display: none; /* Chrome/Safari */
 }
 
+
+/* 상태 아이콘 스타일 */
+.status-icon {
+    position: absolute;
+    /* 아바타 머리 위 위치 조정 */
+    top: -80px;
+    left: 43%;
+    /* 이미지 크기 */
+    width: 150px; 
+    height: auto;
+    z-index: 20; /* 아바타보다 위에 뜨도록 설정 */
+    pointer-events: none; /* 클릭 방지 */
+}
+
+/* 둥둥 떠다니는 애니메이션 정의 */
+@keyframes floatBob {
+    0% {
+        transform: translate(-50%, 0px);
+    }
+    50% {
+        transform: translate(-50%, -10px); /* 위로 15px 이동 */
+    }
+    100% {
+        transform: translate(-50%, 0px);
+    }
+}
+
+.floating-animation {
+    animation: floatBob 2s ease-in-out infinite;
+}
 
 </style>
