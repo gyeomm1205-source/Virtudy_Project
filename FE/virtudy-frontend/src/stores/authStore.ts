@@ -10,7 +10,14 @@ export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref(localStorage.getItem('accessToken') || null);
   const userId = ref<string | null>(localStorage.getItem('userId') || null); // userId 토큰에서 추출해 저장
   const signupInfo = ref(localStorage.getItem('signupInfo') ? JSON.parse(localStorage.getItem('signupInfo')!) : null); // 신규 유저 임시 정보
-  const userInfo = ref<User | null>(localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')!) : null); // 추가 정보(닉네임 등) 저장용
+  // 임시 누적값 로컬스토리지에서 불러오기
+  const tempStudyMetrics = localStorage.getItem('tempStudyMetrics') ? JSON.parse(localStorage.getItem('tempStudyMetrics')!) : null;
+  const userInfo = ref<User | null>(localStorage.getItem('userInfo') ? {
+    ...JSON.parse(localStorage.getItem('userInfo')!),
+    tempPureStudyTime: tempStudyMetrics?.tempPureStudyTime ?? 0,
+    tempTotalStudyTime: tempStudyMetrics?.tempTotalStudyTime ?? 0,
+    tempFocusDepth: tempStudyMetrics?.tempFocusDepth ?? 0
+  } : null);
 
   const hasAvatarConfig = (avatar?: AvatarConfig | null) => {
     if (!avatar) return false;
@@ -63,6 +70,14 @@ export const useAuthStore = defineStore('auth', () => {
   const setUserInfo = (user: User) => {
     userInfo.value = user;
     localStorage.setItem('userInfo', JSON.stringify(user));
+    // 임시 누적값도 저장
+    if ('tempPureStudyTime' in user || 'tempTotalStudyTime' in user || 'tempFocusDepth' in user) {
+      localStorage.setItem('tempStudyMetrics', JSON.stringify({
+        tempPureStudyTime: user.tempPureStudyTime ?? 0,
+        tempTotalStudyTime: user.tempTotalStudyTime ?? 0,
+        tempFocusDepth: user.tempFocusDepth ?? 0
+      }));
+    }
   };
 
   // 5. 로그아웃 또는 전체 인증 정보 초기화
@@ -75,6 +90,25 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('userId'); // userId 함께 삭제
     localStorage.removeItem('signupInfo');
     localStorage.removeItem('userInfo');
+    // 임시 누적값은 삭제하지 않음 (로그아웃 후에도 유지)
+  };
+  // 임시 누적값만 별도로 저장하는 함수 (스터디룸에서 누적 시 호출)
+  const setTempStudyMetrics = (metrics: { tempPureStudyTime: number; tempTotalStudyTime: number; tempFocusDepth: number }) => {
+    if (userInfo.value) {
+      userInfo.value.tempPureStudyTime = metrics.tempPureStudyTime;
+      userInfo.value.tempTotalStudyTime = metrics.tempTotalStudyTime;
+      userInfo.value.tempFocusDepth = metrics.tempFocusDepth;
+      localStorage.setItem('tempStudyMetrics', JSON.stringify(metrics));
+    }
+  };
+  // 로그인/앱 시작 시 임시 누적값을 userInfo에 다시 적용
+  const loadTempStudyMetrics = () => {
+    const metrics = localStorage.getItem('tempStudyMetrics') ? JSON.parse(localStorage.getItem('tempStudyMetrics')!) : null;
+    if (userInfo.value && metrics) {
+      userInfo.value.tempPureStudyTime = metrics.tempPureStudyTime ?? 0;
+      userInfo.value.tempTotalStudyTime = metrics.tempTotalStudyTime ?? 0;
+      userInfo.value.tempFocusDepth = metrics.tempFocusDepth ?? 0;
+    }
   };
 
   // 아바타 설정 부분 업데이트 
@@ -149,5 +183,7 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUserInfo,
     validateToken,
     setAvatarConfig,
+    setTempStudyMetrics,
+    loadTempStudyMetrics,
   };
 });

@@ -34,7 +34,7 @@ const formattedTime = computed(() => {
 }
 
 .time {
-  font-family: 'exqt', sans-serif;
+  font-family: 'Xcu', sans-serif;
   font-size: 4.5rem;
   color: #ffd966;
   font-weight: 100;

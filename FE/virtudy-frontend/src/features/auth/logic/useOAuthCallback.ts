@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore'; // uiStore import 추가
 import { authAPI } from '../api/authAPI';
 
 /**
@@ -15,6 +16,7 @@ export const useOAuthCallback = () => {
   const route = useRoute();
   const router = useRouter();
   const authStore = useAuthStore();
+  const uiStore = useUiStore(); // uiStore 사용
 
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -47,7 +49,12 @@ export const useOAuthCallback = () => {
       if (isNewUser) {
         // 신규 유저 → 임시 가입 정보 저장 후 약관 페이지로
         authStore.setSignupInfo(signupInfo);
-        alert('Virtudy에 오신 것을 환영합니다! 몇 가지 추가 정보만 입력해주세요.');
+        
+        await uiStore.openAlert(
+          'Virtudy에 오신 것을 환영합니다!\n몇 가지 추가 정보만 입력해주세요.',
+          '환영합니다'
+        );
+        
         await router.push({ name: 'terms' });
       } else {
         // 기존 유저
@@ -60,8 +67,8 @@ export const useOAuthCallback = () => {
         }
 
         // 디버깅 코드 (나중에 지워야함)-------------------
-      console.log('DEBUG 2 : ', response)
-      // -----------------------------
+        console.log('DEBUG 2 : ', response)
+        // -----------------------------
 
       
         // 토큰 저장 후 유저 페이지로
@@ -69,6 +76,8 @@ export const useOAuthCallback = () => {
 
         // 로그인 직후 전체 프로필(아바타 포함) 다시 조회
         await authStore.fetchUserInfo();
+        // 임시 누적값을 userInfo에 즉시 반영
+        authStore.loadTempStudyMetrics();
 
         // fetchUserInfo 실패/미지원 대비 최소 정보 세팅
         if (!authStore.userInfo && nickName) {
@@ -89,7 +98,11 @@ export const useOAuthCallback = () => {
       error.value = message;
       console.error('OAuth 콜백 처리 실패:', err);
 
-      alert(`${message}\n문제가 지속되면 관리자에게 문의하세요.`);
+      await uiStore.openAlert(
+        `${message}\n문제가 지속되면 관리자에게 문의하세요.`,
+        '로그인 오류'
+      );
+      
       await router.push({ name: 'guest' });
     } finally {
       loading.value = false;
@@ -102,4 +115,3 @@ export const useOAuthCallback = () => {
     handleOAuthCallback,
   };
 };
-

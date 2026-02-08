@@ -24,7 +24,7 @@ AVATAR_ANALYSIS_PROMPT = """
 [선택지 옵션]
 - 앞머리: "hair_front_none", "center_part", "bang", "hair_front_side_part", "hair_front_short" 중 택1
 - 뒷머리: "hair_back_short", "hair_back_bob", "hair_back_long_straight", "hair_back_long_curly", "hair_back_long_lowtail" 중 택1
-- 눈: "eyes_cat", "eyes_droopy", "eyes_round" 중 택1
+- 눈: "eyes_cat", "eyes_droopy", "eyes_round", "eye_small" 중 택1
 - 얼굴 : "face_shape_default" 고정
 - 안경 유무: "accessory_glasses" (안경을 썼으면 선택, 아니면 "none")
 - 옷 종류: "outfit_shirt", "outfit_knit", "outfit_round_neck" 중 택1 (가장 비슷한 것)

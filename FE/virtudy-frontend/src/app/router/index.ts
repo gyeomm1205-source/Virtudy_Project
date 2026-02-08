@@ -14,6 +14,8 @@ import MyPage from '@/features/mypage/pages/MyPage.vue';
 import LobbyPage from '@/features/lobby/pages/LobbyPage.vue';
 import ReportPage from '@/features/report/pages/ReportPage.vue';
 import AvatarCreationPage from '@/features/avatar/pages/AvatarCreationPage.vue';
+import TutorialPage from '@/features/introduction/pages/TutorialPage.vue';
+import { useUiStore } from '@/stores/uiStore';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,10 +35,8 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      // 로그인 상태에 따라 GuestPage 또는 UserPage로 리다이렉트
       redirect: () => {
         const authStore = useAuthStore();
-        // 로그인 상태면 UserPage('/user')로, 아니면 GuestPage('/guest')로 보냄
         if (authStore.isLoggedIn) {
           return { name: 'user' };
         } else {
@@ -50,7 +50,6 @@ const router = createRouter({
       component: GuestPage,
       beforeEnter: (to, from, next) => {
         const authStore = useAuthStore();
-        // 이미 로그인한 유저가 /guest로 오면 /user로 보냄
         if (authStore.isLoggedIn) {
           return next({ name: 'user' });
         }
@@ -63,7 +62,6 @@ const router = createRouter({
       component: UserPage,
       beforeEnter: (to, from, next) => {
         const authStore = useAuthStore();
-        // 로그인 안 한 유저가 /user로 오면 /guest로 보냄
         if (!authStore.isLoggedIn) {
           return next({ name: 'guest' });
         }
@@ -79,32 +77,31 @@ const router = createRouter({
       path: '/onboarding/terms',
       name: 'terms',
       component: TermsOfServicePage,
-      beforeEnter: (to, from, next) => {
+      beforeEnter: async (to, from, next) => {
         const authStore = useAuthStore();
+        const uiStore = useUiStore();
 
-        // 1. Pinia store에 정보가 있으면 통과
-        if (authStore.signupInfo) {
-          return next();
-        }
+        // 1. Pinia 통과
+        if (authStore.signupInfo) return next();
 
-        // 2. Pinia에 없으면 localStorage 확인 (새로고침 대비)
+        // 2. localStorage 확인
         const storedInfo = localStorage.getItem('signupInfo');
         if (storedInfo && storedInfo !== 'undefined') {
           try {
-            // localStorage 정보를 다시 Pinia에 저장하고 통과
             authStore.setSignupInfo(JSON.parse(storedInfo));
             return next();
           } catch (e) {
-            console.error(
-              'signupInfo 파싱 오류. 게스트 페이지로 리디렉션합니다.',
-              e
-            );
-            return next({ name: 'guest' }); // 파싱 실패 시 접근 거부
+            console.error('파싱 오류', e);
+            return next({ name: 'guest' });
           }
         }
 
-        // 3. 둘 다 없으면 비정상 접근으로 간주, 게스트 페이지로 리디렉션
-        alert('비정상적인 접근입니다. 로그인부터 다시 진행해주세요.');
+        // 3. 커스텀 모달 호출 (await로 대기)
+        await uiStore.openAlert(
+          '비정상적인 접근입니다.\n로그인부터 다시 진행해주세요.',
+          '접근 제한'
+        );
+
         return next({ name: 'guest' });
       }
     },
@@ -112,23 +109,36 @@ const router = createRouter({
       path: '/onboarding/survey',
       name: 'survey',
       component: OnboardingSurveyPage,
-      beforeEnter: (to, from, next) => {
+      // async 키워드 추가
+      beforeEnter: async (to, from, next) => {
         const authStore = useAuthStore();
-        // 1. Pinia나 LocalStorage에 가입 정보가 있는지 확인
+        const uiStore = useUiStore(); // uiStore 사용
+
         const hasInfo = authStore.signupInfo || localStorage.getItem('signupInfo');
 
-        // 2. 정보가 없으면 내쫓기
         if (!hasInfo) {
-          alert("잘못된 접근입니다. 처음부터 다시 시도해주세요.");
+          // alert 대체 -> await uiStore.openAlert
+          await uiStore.openAlert(
+            "잘못된 접근입니다.\n처음부터 다시 시도해주세요.",
+            "접근 오류"
+          );
           return next({ name: 'guest' });
         }
-        return next(); // 통과
+        return next();
       }
     },
     {
       path: '/introduction',
       name: 'introduction',
       component: IntroductionPage
+    },
+    {
+      path: '/tutorial',
+      name: 'tutorial',
+      component: TutorialPage,
+      meta: {
+        hideGlobalNav: true,
+      }
     },
     {
       path: '/ranking',
@@ -139,23 +149,29 @@ const router = createRouter({
       path: '/mypage',
       name: 'mypage',
       component: MyPage,
-      beforeEnter: () => {
+      beforeEnter: (to, from, next) => {
         const authStore = useAuthStore();
         if (!authStore.isLoggedIn) {
-          return { name: 'guest' };
+          return next({ name: 'guest' });
         }
+        return next();
       }
     },
-    // 아바타 생성 라우트
     {
       path: '/avatar/create',
       name: 'avatar-create',
       component: AvatarCreationPage,
-      // 로그인한 유저만 접근 가능하도록 설정
-      beforeEnter: (to, from, next) => {
+      // async 키워드 추가
+      beforeEnter: async (to, from, next) => {
         const authStore = useAuthStore();
+        const uiStore = useUiStore(); // uiStore 사용
+
         if (!authStore.isLoggedIn) {
-          alert('로그인이 필요한 서비스입니다.');
+          // alert 대체 -> await uiStore.openAlert
+          await uiStore.openAlert(
+            '로그인이 필요한 서비스입니다.', 
+            '알림'
+          );
           return next({ name: 'guest' });
         }
         return next();

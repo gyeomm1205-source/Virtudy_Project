@@ -81,7 +81,12 @@ public class SecurityConfig {
                 "http://localhost:3031", // Vite dev server
                 "http://localhost:3032", // User's current port
                 "http://i14a703.p.ssafy.io", // ✅ [필수 추가] 현재 요청이 들어오는 도메인
-                "https://i14a703.p.ssafy.io"
+                "https://i14a703.p.ssafy.io",
+                "http://localhost:5173", // Vite Default Port
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:3030",
+                "http://127.0.0.1:3000",
+                "http://www.virtudy.com" // 운영 프론트엔드
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

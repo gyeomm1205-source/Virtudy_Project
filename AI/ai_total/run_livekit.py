@@ -2,7 +2,6 @@ import asyncio
 import argparse
 import cv2
 import numpy as np
-import json
 import time
 import multiprocessing
 import livekit
@@ -26,9 +25,25 @@ from fusion.state_fuser import StateFuser
 from scoring.focus_scorer import FocusScorer
 from utils.kafka_logger import KafkaLogger
 
+def _should_log(last_times: dict, key: str, interval_sec: float, now: float = None) -> bool:
+    now = now or time.time()
+    last = last_times.get(key, 0.0)
+    if now - last >= interval_sec:
+        last_times[key] = now
+        return True
+    return False
 
-async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: multiprocessing.Queue = None, participant_identity: str = ""):
-    print("[INFO] AI Processing Loop Started", flush=True)
+
+async def ai_process_loop(
+    room: rtc.Room,
+    video_stream: rtc.VideoStream,
+    queue: multiprocessing.Queue = None,
+    participant_identity: str = "",
+    session_id: str = None,
+    initial_score: float = 100.0,
+    score_cache: dict = None,
+):
+    print(f"[INFO] AI Processing Loop Started (SessionID: {session_id})", flush=True)
     
     # Initialize Logic
     extractor = FeatureExtractor() # Use original extractor
@@ -36,20 +51,26 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
     drowsy_det = DrowsinessDetector()
     phone_det = PhoneDetector()
     fuser = StateFuser()
-    scorer = FocusScorer()
+    scorer = FocusScorer(initial_score=initial_score)
 
     # 카프카 로거 초기화
-    kafka_logger = KafkaLogger(session_id=room.name)
+    # [FIX] Use session_id if provided, else fallback to room.name (though likely to fail in backend)
+    logger_id = session_id if session_id else room.name
+    kafka_logger = KafkaLogger(session_id=logger_id)
     
     last_valid_event = "FOCUS" # [NEW] To hold state during UNKNOWN
     last_phone_signal = PhoneSignal(phone_present=False)
+    log_times = {}
+    last_state_logged = None
 
     frame_count = 0
     # Sampling controls (30 FPS 기준)
-    DROWSY_EVERY_N_FRAMES = 3   # 약 10 FPS (졸음 실시간성)
-    PHONE_EVERY_N_FRAMES = 75   # 약 2.5초 (폰 감지 지연 허용)
-    last_sent_time = 0
-    SEND_INTERVAL = 0.1 # Send data every 100ms
+    DROWSY_EVERY_N_FRAMES = 5   # 약 6 FPS (부하 완화)
+    PHONE_EVERY_N_FRAMES = 150  # 약 5초마다 (부하 완화)
+    last_status_sent_time = 0
+    last_score_sent_time = 0
+    STATUS_SEND_INTERVAL = 0.1 # Status every 100ms
+    SCORE_SEND_INTERVAL = 1.0  # Score every 1s
 
     async for frame in video_stream:
         start_time = time.time()
@@ -83,6 +104,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         # Flip for processing 
         img = cv2.flip(img, 1)
         h, w, _ = img.shape
+        log_now = time.time()
         
         # [DEBUG] Check resolution immediately
         if frame_count <= 10:
@@ -96,7 +118,6 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
         )
 
         # 2. Detectors
-        sig_abs = abs_det.process(feats["face_detected"])
         sig_drowsy = drowsy_det.process(feats["face_detected"], feats["ear"], feats["pitch"])
         if do_phone:
             sig_phone = phone_det.process(
@@ -108,6 +129,7 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
             last_phone_signal = sig_phone
         else:
             sig_phone = last_phone_signal
+        sig_abs = abs_det.process(feats["face_present"], sig_phone.phone_present)
         
         # [DEBUG] Print raw values to debug detection failure
         # [DEBUG] Print raw values to debug detection failure
@@ -120,68 +142,67 @@ async def ai_process_loop(room: rtc.Room, video_stream: rtc.VideoStream, queue: 
              process_time = time.time() - start_time
              fps = 1.0 / process_time if process_time > 0 else 0
              
-             # Print THRESHOLD to confirm it updated
-             print(f"[DEBUG] EAR: {ear_val:.3f} (Th: {Config.EAR_DROWSY_TH}), Pitch: {pitch_val:.3f} (Th: {Config.PITCH_PHONE_USE_TH}), Phone: {phone_val:.3f}, FPS: {fps:.1f}", flush=True)
+             # Print THRESHOLD to confirm it updated (rate-limited)
+             if _should_log(log_times, "raw", 1.0, log_now):
+                 print(f"[DEBUG] EAR: {ear_val:.3f} (Th: {Config.EAR_DROWSY_TH}), Pitch: {pitch_val:.3f} (Th: {Config.PITCH_PHONE_USE_TH}), Phone: {phone_val:.3f}, FPS: {fps:.1f}", flush=True)
         else:
-             print(f"[DEBUG] NO FACE DETECTED", flush=True)
+             if _should_log(log_times, "noface", 1.0, log_now):
+                 print(f"[DEBUG] NO FACE DETECTED", flush=True)
 
         signals = FrameSignals(drowsy=sig_drowsy, absent=sig_abs, phone=sig_phone)
         decision = fuser.decide(signals)
         snap = scorer.update(decision.state)
+        if score_cache is not None:
+            score_cache[participant_identity] = snap.score
 
-        # [DEBUG] Decision Trace - Check if PHONE is really decided
-        if signals.phone.phone_in_use or decision.state == FocusState.PHONE:
-             print(f"[DEBUG-DECISION] Final: {decision.state.name}, PhoneInUse: {signals.phone.phone_in_use}", flush=True)
+        # [DEBUG] State change log (rate-limited)
+        if decision.state != last_state_logged and _should_log(log_times, "state", 1.0, log_now):
+            print(f"[STATE] {decision.state.name} | Conf: {decision.confidence:.2f} | Reason: {decision.reason}", flush=True)
+            last_state_logged = decision.state
 
         # [KAFKA] Log State
         kafka_logger.log_state(decision.state)
 
         # 3. Prepare & Send Data Payload (Simplified)
-        current_time = time.time()
-        if current_time - last_sent_time >= SEND_INTERVAL:
-            # STATUS MAPPING
-            # Frontend Spec: 
-            # "FOCUS" : 0
-            # "SLEEP" : 1 (Drowsy)
-            # "PHONE" : 1
-            # "AWAY" : 1 (Absent/Empty)
-            
-            raw_state = decision.state.name # FOCUSED, DROWSY, ABSENT, PHONE, UNKNOWN
-            
-            # [NEW] Hold Last Valid State
-            if raw_state != "UNKNOWN":
-                event_type = raw_state
-                if raw_state == "FOCUSED": event_type = "FOCUS"
-                elif raw_state == "DROWSY": event_type = "SLEEP"
-                elif raw_state == "ABSENT": event_type = "AWAY"
-                last_valid_event = event_type
-            else:
-                event_type = last_valid_event # Maintain previous
-            
-            # Value Logic
-            value = 0 if event_type == "FOCUS" else 1
+        # STATUS MAPPING
+        # Frontend Spec:
+        # "FOCUS" : 0
+        # "SLEEP" : 1 (Drowsy)
+        # "PHONE" : 1
+        # "AWAY" : 1 (Absent/Empty)
+        raw_state = decision.state.name # FOCUSED, DROWSY, ABSENT, PHONE, UNKNOWN
+        
+        # [NEW] Hold Last Valid State
+        if raw_state != "UNKNOWN":
+            event_type = raw_state
+            if raw_state == "FOCUSED": event_type = "FOCUS"
+            elif raw_state == "DROWSY": event_type = "SLEEP"
+            elif raw_state == "ABSENT": event_type = "AWAY"
+            last_valid_event = event_type
+        else:
+            event_type = last_valid_event # Maintain previous
+        
+        # Value Logic
+        value = 0 if event_type == "FOCUS" else 1
 
+        current_time = time.time()
+        if current_time - last_status_sent_time >= STATUS_SEND_INTERVAL:
             # Send STATUS Event (Strict JSON Spec)
             # We pass 'event_type' as category, but _send_data will now ensure it maps to 'eventType'
             await _send_data(room, event_type, value, queue, participant_identity)
-            
-            # Send SCORE Event (Separate)
-            await _send_data(room, "SCORE", int(snap.score), queue, participant_identity)
+            last_status_sent_time = current_time
 
-            last_sent_time = current_time
+        if current_time - last_score_sent_time >= SCORE_SEND_INTERVAL:
+            # Send SCORE Event (Separate, lower rate)
+            await _send_data(room, "SCORE", int(snap.score), queue, participant_identity)
+            last_score_sent_time = current_time
 
     # [KAFKA] Close Logger
     kafka_logger.close()
 
 async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessing.Queue = None, participant_identity: str = ""):
-    
-
-
-    payload_dict = {"category": category, "value": value}
-    
-    payload = json.dumps(payload_dict)
-    data = payload.encode('utf-8')
-    await room.local_participant.publish_data(data, reliable=False)
+    # [Fix] Disable AI bot LiveKit publish to avoid cross-user mixups.
+    # State updates are sent only via the AI WebSocket queue.
 
     # 2. Queue(소켓)로 보낼 때
     if queue:
@@ -197,23 +218,68 @@ async def _send_data(room: rtc.Room, category: str, value, queue: multiprocessin
 async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
     print(f"[DEBUG] run_bot started! Connecting to: {url}", flush=True)
     room = rtc.Room()
-    
+    track_tasks: dict[str, asyncio.Task] = {}
+    participant_tracks: dict[str, set[str]] = {}
+    score_cache: dict[str, float] = {}
+
+    def _start_video_task(track: rtc.Track, participant: rtc.RemoteParticipant):
+        track_sid = getattr(track, "sid", None)
+        if not track_sid:
+            return
+        if track_sid in track_tasks:
+            return
+        video_stream = rtc.VideoStream(track)
+        session_id = participant.metadata
+        initial_score = score_cache.get(participant.identity, 100.0)
+        task = asyncio.create_task(
+            ai_process_loop(
+                room,
+                video_stream,
+                queue,
+                participant.identity,
+                session_id,
+                initial_score,
+                score_cache,
+            )
+        )
+        track_tasks[track_sid] = task
+        participant_tracks.setdefault(participant.identity, set()).add(track_sid)
+
+    def _stop_track(track_sid: str):
+        task = track_tasks.pop(track_sid, None)
+        if task:
+            task.cancel()
+
     @room.on("track_subscribed")
     def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
         if track.kind == rtc.TrackKind.KIND_VIDEO:
             print(f"[INFO] Subscribed to Video Track from {participant.identity}", flush=True)
             # [Fix] Request High Quality Video for AI Analysis
             # publication.set_video_quality(rtc.VideoQuality.HIGH) # Unsupported in v1.0.23
-            video_stream = rtc.VideoStream(track)
-            asyncio.create_task(ai_process_loop(room, video_stream, queue, participant.identity))
+            _start_video_task(track, participant)
 
     @room.on("track_published")
     def on_track_published(publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
         print(f"[DEBUG] Track Published: {publication.kind} from {participant.identity}", flush=True)
 
+    @room.on("track_unsubscribed")
+    def on_track_unsubscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
+        track_sid = getattr(track, "sid", None)
+        if track_sid:
+            print(f"[INFO] Track Unsubscribed: {participant.identity} ({track_sid})", flush=True)
+            _stop_track(track_sid)
+            participant_tracks.get(participant.identity, set()).discard(track_sid)
+
     @room.on("participant_connected")
     def on_participant_connected(participant: rtc.RemoteParticipant):
         print(f"[DEBUG] Participant Connected: {participant.identity}", flush=True)
+
+    @room.on("participant_disconnected")
+    def on_participant_disconnected(participant: rtc.RemoteParticipant):
+        print(f"[INFO] Participant Disconnected: {participant.identity}", flush=True)
+        track_ids = participant_tracks.pop(participant.identity, set())
+        for track_sid in track_ids:
+            _stop_track(track_sid)
 
     print(f"[INFO] Connecting to LiveKit Room...", flush=True)
     try:
@@ -233,8 +299,7 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                      print(f"[INFO] Found existing subscribed video, starting loop for {identity}", flush=True)
                      # [Fix] Request High Quality Video for AI Analysis
                      publication.set_video_quality(rtc.VideoQuality.HIGH)
-                     video_stream = rtc.VideoStream(publication.track)
-                     asyncio.create_task(ai_process_loop(room, video_stream, queue, identity))
+                     _start_video_task(publication.track, participant)
                      pass
                 
                 # 2. 구독 안 됨 -> 구독 시도
@@ -250,6 +315,8 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
         
         # [수정 1] 대기 시간을 30초로 늘림 (프론트엔드 연결 지연 대비)
         MAX_WAIT_SECONDS = 30.0
+        last_room_log_time = 0.0
+        last_room_count = None
         while True:
             await asyncio.sleep(1) # 1초 대기
             
@@ -277,13 +344,19 @@ async def run_bot(url: str, token: str, queue: multiprocessing.Queue = None):
                     # 이미 구독됐는데 AI가 안 돌고 있는 경우는?
                     # (여기서 처리하기보단 on_track_subscribed가 해결해줍니다)
 
-            # Periodic check for debug
+            # Periodic check for debug (rate-limited)
             if count > 0:
-                 # 로그가 너무 많이 쌓이면 보기 힘드므로 5초에 한 번만 출력하거나 그대로 둠
-                 print(f"[DEBUG] Room Status: {count} participants connected.", flush=True)
+                 now = time.time()
+                 if count != last_room_count or (now - last_room_log_time) >= 10.0:
+                     print(f"[DEBUG] Room Status: {count} participants connected.", flush=True)
+                     last_room_log_time = now
+                     last_room_count = count
     except Exception as e:
         print(f"[ERROR] Connection failed: {e}")
     finally:
+        for task in list(track_tasks.values()):
+            task.cancel()
+        track_tasks.clear()
         await room.disconnect()
 
 if __name__ == "__main__":

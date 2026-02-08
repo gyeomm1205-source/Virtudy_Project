@@ -1,10 +1,30 @@
 <script setup lang="ts">
+<<<<<<< HEAD
+import { computed, ref } from 'vue';
+=======
 import { computed, ref, watch } from 'vue';
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 import CharacterAvatar from '@/shared/ui/avatar/CharacterAvatar.vue';
 import type { AvatarConfig } from '@/shared/types/common.types';
 import { getScoreColor } from '../logic/scoreUtils';
 import FlashbangEffect from '../ui/FlashbangEffect.vue';
 
+<<<<<<< HEAD
+// SVG를 문자열(raw string)로 가져옴 
+import heartPixelSvg from '@/assets/room/heart_pixel.svg?raw';
+
+// 이미지 에셋 임포트
+import roomWoodBg from '@/assets/room/room_wood_bg.png';
+import bgPhotoGreen from '@/assets/room/bg_photo_1.png';
+import bgPhotoYellow from '@/assets/room/bg_photo_2.png';
+import bgPhotoRed from '@/assets/room/bg_photo_3.png';
+import footerBarBg from '@/assets/room/footer_bar_bg.png';
+
+// BgState 타입 정의
+type BgState = 'GREEN' | 'YELLOW' | 'RED';
+
+=======
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 const props = defineProps<{
   focusSeconds: number;
   myAvatarConfig: AvatarConfig;
@@ -15,6 +35,10 @@ const props = defineProps<{
   isWakeUpAvailable: boolean;
   onOpenWakeUpModal: () => void;
   isStunned?: boolean;
+<<<<<<< HEAD
+  bgState: BgState; // 배경 상태
+=======
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 }>();
 
 // 안내 메시지 표시 상태
@@ -22,6 +46,10 @@ const showGuideMessage = ref(false);
 
 // 깨우기 버튼 클릭 핸들러 (PIP 전용)
 const handlePipWakeUpClick = () => {
+<<<<<<< HEAD
+  props.onOpenWakeUpModal();
+  showGuideMessage.value = true;
+=======
   // 1. 메인 윈도우의 모달 열기 함수 실행
   props.onOpenWakeUpModal();
   
@@ -29,6 +57,7 @@ const handlePipWakeUpClick = () => {
   showGuideMessage.value = true;
 
   // 3. 10초 뒤에 다시 버튼/상태 표시로 복귀
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
   setTimeout(() => {
     showGuideMessage.value = false;
   }, 10000);
@@ -42,11 +71,48 @@ const formattedTime = computed(() => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 });
 
+<<<<<<< HEAD
+// 배경 이미지 동적 선택 (채우기 옵션용)
+const currentBgImage = computed(() => {
+  switch (props.bgState) {
+    case 'GREEN': return `url(${bgPhotoGreen})`;
+    case 'YELLOW': return `url(${bgPhotoYellow})`;
+    case 'RED': return `url(${bgPhotoRed})`;
+    default: return `url(${bgPhotoGreen})`;
+  }
+});
+
+// AI 상태 매핑 Helpers
+=======
 // AI 상태 매핑
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 const getAiDrowsy = (status: string) => (status === 'SLEEP' ? 1 : 0);
 const getAiPhone = (status: string) => (status === 'PHONE' ? 1 : 0);
 const getAiAbsent = (status: string) => (status === 'AWAY' ? 1 : 0);
 
+<<<<<<< HEAD
+// 현재 상태 텍스트 로직
+const currentStatusText = computed(() => {
+  switch (props.aiStatus) {
+    case 'SLEEP': return '자는 중';
+    case 'PHONE': return '핸드폰 하는 중';
+    case 'AWAY': return '자리비움';
+    case 'FOCUS': 
+    default: return '집중 중!';
+  }
+});
+
+// 깨우기 버튼 표시 여부 로직
+// 1. 깨우기가 활성화 상태여야 함 (isWakeUpAvailable)
+// 2. 동시에 내 상태가 'FOCUS'(집중 중)여야 함
+const showWakeUpButton = computed(() => {
+  const isFocusing = !props.aiStatus || props.aiStatus === 'FOCUS';
+  return props.isWakeUpAvailable && isFocusing;
+});
+
+// 색상 유틸리티
+=======
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 const shadeColor = (hex: string, percent: number) => {
   const normalized = hex.replace('#', '');
   if (normalized.length !== 6) return hex;
@@ -63,6 +129,10 @@ const shadeColor = (hex: string, percent: number) => {
   return `#${toHex(rr)}${toHex(gg)}${toHex(bb)}`;
 };
 
+<<<<<<< HEAD
+// 하트 스타일 생성
+=======
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 const getHeartStyle = (score: number) => {
   const base = getScoreColor(score);
   return {
@@ -80,7 +150,11 @@ const getEmptyHeartStyle = () => ({
   '--heart-shadow': '#C0C0C0'
 });
 
+<<<<<<< HEAD
+// 팀원 하트 슬롯
+=======
 // 팀원 하트 5개 슬롯 생성
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 const teamHeartSlots = computed(() => {
   const maxSlots = 5;
   const slots: Array<{ filled: boolean; style: Record<string, string> }> = [];
@@ -88,13 +162,19 @@ const teamHeartSlots = computed(() => {
   for (let i = 0; i < maxSlots; i++) {
     const teammate = props.teammates[i];
     if (teammate) {
+<<<<<<< HEAD
+=======
       // ????? ??? ???: ??? ????? ??? ???
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
       slots.push({
         filled: true,
         style: getHeartStyle(teammate.score)
       });
     } else {
+<<<<<<< HEAD
+=======
       // ????? ??? ???: ??? (?????
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
       slots.push({
         filled: false,
         style: getEmptyHeartStyle()
@@ -106,6 +186,11 @@ const teamHeartSlots = computed(() => {
 </script>
 
 <template>
+<<<<<<< HEAD
+  <div class="pip-container" :style="{ backgroundImage: `url(${roomWoodBg})` }">
+    
+    <svg class="heart-symbols" aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;">
+=======
   <div class="pip-container">
     <svg class="heart-symbols" aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;">
       <symbol id="heart-pixel-symbol" viewBox="0 0 32 24">
@@ -189,6 +274,7 @@ const teamHeartSlots = computed(() => {
             <path d="M18.6667 0H21.3333V2.66667H18.6667V0Z"/>
             </g>
             </symbol>
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
     </svg>
     
     <FlashbangEffect :visible="!!isStunned" />
@@ -203,6 +289,65 @@ const teamHeartSlots = computed(() => {
     </div>
 
     <template v-else>
+<<<<<<< HEAD
+      <div class="frame-border">
+        
+        <div class="top-section-wrapper" :style="{ backgroundImage: currentBgImage }">
+          <div class="top-section">
+            <div class="avatar-layer">
+              <CharacterAvatar 
+                :config="myAvatarConfig"
+                :aiDrowsy="getAiDrowsy(aiStatus)"
+                :aiPhone="getAiPhone(aiStatus)"
+                :aiAbsent="getAiAbsent(aiStatus)"
+                :isBlinking="false"
+                offsetX="0%"
+                offsetY="7%"
+                mouthState="closed"
+              />
+            </div>
+
+            <div class="overlay-layer" :class="{ 'wakeup-mode': showWakeUpButton }">
+              <div class="status-row">
+                <template v-if="showWakeUpButton">
+                  <button 
+                    class="btn-pixel-action btn-wakeup active"
+                    @click="handlePipWakeUpClick"
+                  >
+                    깨우기!
+                  </button>
+                </template>
+                <template v-else>
+                  <span class="pixel-text">{{ currentStatusText }}</span>
+                </template>
+              </div>
+              
+              <div v-if="!showWakeUpButton" class="my-heart-wrapper">
+                <div 
+                  class="pixel-heart-icon big" 
+                  :style="getHeartStyle(aiScore)"
+                  v-html="heartPixelSvg"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-section" :style="{ backgroundImage: `url(${footerBarBg})` }">
+          <div class="timer-text">{{ formattedTime }}</div>
+          <div class="team-hearts-row">
+            <div v-for="(slot, idx) in teamHeartSlots" :key="idx" class="heart-slot">
+                <div 
+                  class="pixel-heart-icon small" 
+                  :style="slot.style"
+                  v-html="heartPixelSvg"
+                ></div>
+            </div>
+          </div>
+        </div>
+
+      </div> 
+=======
       <div class="top-section-wrapper">
         <div class="top-section">
           <div class="avatar-layer">
@@ -252,18 +397,26 @@ const teamHeartSlots = computed(() => {
           </div>
         </div>
       </div>
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
     </template>
 
   </div>
 </template>
 
 <style scoped>
+<<<<<<< HEAD
+/* 폰트 및 기본 설정 */
+.pip-container {
+  width: 100vw;
+  height: 100vh;
+=======
 
 .pip-container {
   width: 100vw;
   height: 100vh;
   /* 베이지색 배경 */
   background-color: #FFF4D9; 
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -271,16 +424,30 @@ const teamHeartSlots = computed(() => {
   padding: 10px;
   box-sizing: border-box;
   font-family: 'PfStardust30S', monospace, sans-serif;
+<<<<<<< HEAD
+  color: #5d4037;
+  overflow: hidden;
+  position: relative;
+  background-color: #FFF4D9;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+=======
   color: #5d4037; /* 진한 갈색 텍스트 */
   overflow: hidden;
   position: relative;
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 }
 
 /* 안내 메시지 오버레이 */
 .guide-overlay {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
+<<<<<<< HEAD
+  background-color: rgba(255, 244, 217, 0.95);
+=======
   background-color: rgba(255, 244, 217, 0.95); /* 배경색과 동일하되 약간 투명 */
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
   display: flex; align-items: center; justify-content: center;
   z-index: 50; text-align: center;
 }
@@ -293,11 +460,41 @@ const teamHeartSlots = computed(() => {
 }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+<<<<<<< HEAD
+/* 액자 프레임 스타일 */
+.frame-border {
+  border: 5px solid #805143;
+  box-shadow: 5px 5px 0px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  width: 100%;
+  max-width: 240px;
+  overflow: hidden; 
+  border-radius: 2px;
+}
+
+/* 상단 섹션 */
+=======
 /* 상단 아바타 영역 래퍼: 배경색이 늘어날 때 아바타만 둥둥 뜨지 않도록 처리 */
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 .top-section-wrapper {
   flex: 0 0 auto;
   width: 100%;
   display: flex;
+<<<<<<< HEAD
+  justify-content: center;
+  background-repeat: no-repeat;
+  background-size: cover; 
+  background-position: center;
+  background-color: transparent;
+  padding-bottom: 6px;
+}
+
+.top-section {
+  position: relative;
+  width: 100%;
+=======
   justify-content: center; /* 아바타 중앙 정렬 */
   background-color: #ffeaa7; /* 아바타 배경색이 좌우로 꽉 차게 */
   padding-bottom: 6px;
@@ -307,6 +504,7 @@ const teamHeartSlots = computed(() => {
 .top-section {
   position: relative; /* 겹치기 위한 기준점 */
   width: 200px;
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
   height: 230px;
   flex-shrink: 0;
 }
@@ -318,6 +516,31 @@ const teamHeartSlots = computed(() => {
   left: 0;
   width: 100%;
   height: 100%;
+<<<<<<< HEAD
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+/* Layer 2: 오버레이 */
+.overlay-layer {
+  position: absolute;
+  top: 10px; /* 기본 위치 */
+  left: 0;
+  width: 100%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  transition: top 0.3s ease; /* 위치 변경 시 부드럽게 */
+}
+
+/* 깨우기 모드일 때 위치 변경 */
+.overlay-layer.wakeup-mode {
+  top: 20px;
+=======
   z-index: 1; /* 아래층 */
   display: flex;
   justify-content: center;
@@ -335,12 +558,53 @@ const teamHeartSlots = computed(() => {
   flex-direction: column;
   align-items: center; /* 가운데 정렬 */
   gap: 5px;
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 }
 
 .pixel-text {
   font-size: 1.5rem;
   font-weight: bold;
   color: #5d4037;
+<<<<<<< HEAD
+  text-shadow: 1px 1px 0px rgba(255,255,255,0.8);
+}
+
+/* 하트 스타일링 */
+.pixel-heart-icon.big {
+  width: 40px;
+  height: 30px;
+  filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.2));
+  animation: beat 1.5s infinite;
+}
+.pixel-heart-icon.big :deep(svg) { width: 100%; height: 100%; }
+
+.pixel-heart-icon.small {
+  width: 32px;
+  height: 24px;
+  transition: all 0.3s ease;
+  filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.1));
+}
+.pixel-heart-icon.small :deep(svg) { width: 100%; height: 100%; }
+
+/* SVG 내부 ID 타겟팅 */
+.pixel-heart-icon :deep(#heart_line path) { 
+  fill: var(--heart-line, #668128); 
+  transition: fill 0.3s ease;
+}
+.pixel-heart-icon :deep(#heart_base path) { 
+  fill: var(--heart-base, #B8D576); 
+  transition: fill 0.3s ease;
+}
+.pixel-heart-icon :deep(#heart_shadow path) { 
+  fill: var(--heart-shadow, #91B248); 
+  transition: fill 0.3s ease;
+}
+.pixel-heart-icon :deep(#heart_highlight path) { 
+  fill: var(--heart-highlight, #FFFFDB); 
+}
+
+/* 하단 섹션 */
+=======
   text-shadow: 1px 1px 0px rgba(255,255,255,0.8); /* 가독성을 위한 흰 테두리 */
 }
 
@@ -354,6 +618,7 @@ const teamHeartSlots = computed(() => {
 }
 
 /* === 하단 200x80 영역 === */
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 .bottom-section {
   width: 100%;
   min-height: 60px;
@@ -361,8 +626,17 @@ const teamHeartSlots = computed(() => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+<<<<<<< HEAD
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  
+  border-top: 2px solid #805143;
+=======
   background-color: #FFF4D9;
   border-top: 2px dashed #dcdcdc; /* 구분선 */
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
   padding-bottom: 10px;
   padding: 6px 0;
 }
@@ -377,6 +651,11 @@ const teamHeartSlots = computed(() => {
 
 .team-hearts-row {
   display: flex;
+<<<<<<< HEAD
+  gap: 5px;
+}
+
+=======
   gap: 5px; /* 하트 사이 간격 */
 }
 
@@ -395,14 +674,20 @@ const teamHeartSlots = computed(() => {
 .heart-shadow path,
 #heart_shadow path { fill: var(--heart-shadow, var(--heart-line, #668128)); }
 
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 @keyframes beat {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
 }
 
+<<<<<<< HEAD
+.btn-wakeup {
+  background: #FFD966;
+=======
 /* 깨우기 버튼 스타일 (PIP 전용) */
 .btn-wakeup {
   background: #FFD966; /* 기본 노란색 */
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
   color: #805143;
   border: 2px solid #805143;
   padding: 5px 15px;
@@ -411,11 +696,17 @@ const teamHeartSlots = computed(() => {
   border-radius: 20px;
   cursor: pointer;
   box-shadow: 0px 4px 0px #805143;
+<<<<<<< HEAD
+=======
   /* 애니메이션: 활성화 시에만 작동 */
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
   animation: bounce 1s infinite;
 }
 
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+<<<<<<< HEAD
+</style>
+=======
 
 .feedback-toast {
     position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
@@ -427,3 +718,4 @@ const teamHeartSlots = computed(() => {
 
 @keyframes fadeOut { 0% {opacity: 1;} 80% {opacity: 1;} 100% {opacity: 0;} }
 </style>
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186

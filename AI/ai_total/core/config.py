@@ -5,6 +5,7 @@ class Config:
     # --- Absence ---
     ABSENT_WINDOW = 15          # Frame window size
     ABSENT_TRUE_RATIO = 0.8     # Ratio of frames to confirm absence
+    ABSENT_GRACE_SEC = 3.0      # [TUNED] Grace period before absence triggers
 
     # --- Drowsy ---
     EAR_DROWSY_TH = 0.18        # Threshold for Eye Aspect Ratio (Adjusted for user)
@@ -24,6 +25,7 @@ class Config:
 
     # --- Scoring ---
     # Penalty/Reward per second
+    SCORE_RATE_SCALE = 5.0     # [NEW] Scale score change rate (1x -> 5x)
     REWARD_FOCUSED = 1.0        # [NEW] Reward for focusing
     PENALTY_FOCUSED = 0.0
     PENALTY_DROWSY = 3.0

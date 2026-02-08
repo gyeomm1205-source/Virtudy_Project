@@ -23,8 +23,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.http.MediaType;
+import java.util.*;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
@@ -70,11 +75,52 @@ public class StudySessionService {
 
         // [Fix] Ghost Session Logic: 기존 세션이 있다면 강제 종료 후 재입장 허용
         studySessionRepository.findByMemberAndEndTimeIsNull(member)
+<<<<<<< HEAD
+                .ifPresent(
+                        studySession -> {
+                            studySession.close(0);
+                        });
+=======
                 .ifPresent(StudySession::close);
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
 
         int currentUsers = studySessionRepository.findByRoomAndEndTimeIsNull(room).size();
         if (currentUsers >= MAX_USER) {
             throw new BaseException(BaseErrorCode.ROOM_FULL_ERROR);
+        }
+
+        // [New] AI Bot Trigger: If first user, spawn AI
+        if (currentUsers == 0) {
+            try {
+                String botIdentity = "AI_Bot_" + roomId;
+                AccessToken botToken = new AccessToken(liveKitConfig.getLiveKitApiKey(),
+                        liveKitConfig.getLiveKitApiSecret());
+                botToken.setName("AI_Bot");
+                botToken.setIdentity(botIdentity);
+                botToken.addGrants(new RoomJoin(true), new RoomName(roomId));
+                // Ensure data publish capabilities if needed (LiveKit Java SDK defaults often
+                // suffice for basic)
+
+                String jwt = botToken.toJwt();
+
+                // Fire-and-forget request to AI Server
+                // Note: liveKitConfig.getLiveKitUrl() gets the raw value (e.g. wss://) which is
+                // what the bot needs
+                WebClient.create().post()
+                        .uri("http://localhost:8000/bot/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(Map.of(
+                                "url", liveKitConfig.getLiveKitUrl(),
+                                "token", jwt,
+                                "room_id", roomId))
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .subscribe(
+                                res -> System.out.println("[AI-Trigger] Success: " + roomId),
+                                err -> System.err.println("[AI-Trigger] Failed to start AI: " + err.getMessage()));
+            } catch (Exception e) {
+                System.err.println("[AI-Trigger] Error spawning AI: " + e.getMessage());
+            }
         }
 
         if (!roomMemberRepository.existsByMemberAndRoom(member, room)) {

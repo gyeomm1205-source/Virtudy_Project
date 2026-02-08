@@ -2,19 +2,17 @@
 import { ref, computed, onMounted } from 'vue';
 import { getMyRank, getRankList } from '../api/rankingApi';
 import type { RankItem, RankType, MyRankInfo } from '../types/ranking.types';
-import { useAuthStore } from '@/stores/authStore';
-
 export const useRanking = () => {
   // --- 상태 (State) ---
   const rankType = ref<RankType>('private');
   const searchKeyword = ref('');
-  const rawRankList = ref<RankItem[]>([]);
+  const allRankList = ref<RankItem[]>([]);
   const myRankInfo = ref<MyRankInfo | null>(null);
   const isLoading = ref(false);
-  
-  // 페이지네이션 상태
+
+  // 페이지 상태
   const currentPage = ref(0);
-  const totalPages = ref(10); 
+  const PAGE_SIZE = 10;
   const paginationSize = 5;
 
   // --- 기능 (Actions) ---
@@ -23,17 +21,23 @@ export const useRanking = () => {
       myRankInfo.value = await getMyRank(rankType.value);
     } catch (e) {
       console.error(e);
-      // [수정] 500 에러 등 실패 시 콘솔만 찍고 myRankInfo를 null로 유지
-      // 이렇게 해야 화면에서 데이터 없음을 인지하고 대체 텍스트를 띄워줄 수 있음
-      console.warn("신규 유저이거나 순위 데이터가 없습니다.", e);
+      console.warn('내 순위 데이터가 없습니다.', e);
       myRankInfo.value = null;
     }
   };
 
-  const fetchList = async () => {
+  const fetchAllPages = async () => {
     isLoading.value = true;
     try {
-      rawRankList.value = await getRankList(currentPage.value, rankType.value);
+      const all: RankItem[] = [];
+      const MAX_PAGES = 100;
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const list = await getRankList(page, rankType.value);
+        if (!list.length) break;
+        all.push(...list);
+        if (list.length < PAGE_SIZE) break;
+      }
+      allRankList.value = all;
     } catch (e) {
       console.error(e);
     } finally {
@@ -46,25 +50,33 @@ export const useRanking = () => {
     currentPage.value = 0;
     searchKeyword.value = '';
     fetchMyRank();
-    fetchList();
+    fetchAllPages();
   };
 
   const changePage = (page: number) => {
     if (page < 0 || page >= totalPages.value) return;
     currentPage.value = page;
-    fetchList();
   };
 
   const handleSearch = () => {
     currentPage.value = 0;
   };
 
-  const rankList = computed(() => {
+  const filteredList = computed(() => {
     const query = searchKeyword.value.trim().toLowerCase();
-    if (!query) return rawRankList.value;
-    return rawRankList.value.filter((item) =>
+    if (!query) return allRankList.value;
+    return allRankList.value.filter((item) =>
       item.nickName.toLowerCase().includes(query)
     );
+  });
+
+  const totalPages = computed(() => {
+    return Math.max(1, Math.ceil(filteredList.value.length / PAGE_SIZE));
+  });
+
+  const rankList = computed(() => {
+    const start = currentPage.value * PAGE_SIZE;
+    return filteredList.value.slice(start, start + PAGE_SIZE);
   });
 
   // --- 계산된 속성 (Computed) ---
@@ -79,10 +91,9 @@ export const useRanking = () => {
   // 초기화
   onMounted(() => {
     fetchMyRank();
-    fetchList();
+    fetchAllPages();
   });
 
-  // 템플릿에서 쓸 것들만 리턴
   return {
     rankType,
     searchKeyword,

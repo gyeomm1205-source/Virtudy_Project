@@ -157,6 +157,13 @@ export function useStudyRoom() {
                 const directType = payload?.eventType || payload?.data?.eventType;
                 const signalType = payload?.type;
                 if (signalType === 'AI_EVENT' || signalType === 'AI_STATE' || directType) {
+<<<<<<< HEAD
+                    // Only apply local AI events (LiveKit broadcasts include senderId).
+                    if (senderId) {
+                        return;
+                    }
+=======
+>>>>>>> 534ac489f4d1ef6e5778811614806bbc06aaa186
                     const eventType = (directType || payload?.data?.state || payload?.data?.focusState) as FocusEventType | undefined;
                     if (eventType === 'FOCUS' || eventType === 'SLEEP' || eventType === 'PHONE' || eventType === 'AWAY') {
                         focusEventType.value = eventType;
