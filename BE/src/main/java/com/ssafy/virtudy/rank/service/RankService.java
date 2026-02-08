@@ -154,6 +154,9 @@ public class RankService {
             rankIndex = redisTemplate.opsForZSet().reverseRank(RANK_TEAM_KEY, studyRoom.getRoomId());
             scoreVal = redisTemplate.opsForZSet().score(RANK_TEAM_KEY, studyRoom.getRoomId());
             avatarDto = AvatarResponse.from(owner.getAvatar());
+            // null 방어 로직
+            if (rankIndex == null) {rankIndex = -1L ;}
+            if (scoreVal == null) scoreVal = 0.0;
         }
 
         if (type.equals(ROOMTYPE_PRIVATE) && rankIndex == null) {
